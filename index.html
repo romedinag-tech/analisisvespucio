@@ -828,12 +828,20 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line-2)
 .rp i{font-style:normal;font-weight:600;margin-left:3px;opacity:.9}
 /* FLECHA DE TENDENCIA, la del mapa «Dinámica por punto de cobro» del tablero del
    cliente: círculo de color con la flecha blanca, y al lado el porcentaje chico */
-.tdm{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;
+:root{--rp-pct:1;--rp-fl:1}
+.tdm{display:inline-flex;align-items:center;justify-content:center;width:calc(15px*var(--rp-fl));height:calc(15px*var(--rp-fl));
  border-radius:50%;background:var(--c);border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.35);
  margin:0 0 0 5px;vertical-align:-3px;-webkit-text-stroke:0}
-.tdm svg{width:9px;height:9px;stroke:#fff;fill:none;stroke-width:3.2;stroke-linecap:round;
+.tdm svg{width:calc(9px*var(--rp-fl));height:calc(9px*var(--rp-fl));stroke:#fff;fill:none;stroke-width:3.2;stroke-linecap:round;
  stroke-linejoin:round}
-.rp .tdp{font-size:9.5px;margin-left:3px}
+.rp .tdp{font-size:calc(9.5px*var(--rp-pct));margin-left:3px}
+/* control de tamaño de porcentajes y flechas, el mismo en los tres mapas */
+.tamrot{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap}
+/* la tabla de alcance de los archivos desbordaba 11 px en teléfono (ya en la v9): se desliza dentro de su caja */
+#medAlcance{display:block;overflow-x:auto}
+.tamrot label{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;color:var(--mut)}
+.tamrot input[type=range]{width:96px;accent-color:var(--accent)}
+.tamrot output{font-family:var(--font-data);font-size:.76rem;min-width:3.2em;color:var(--ink)}
 /* los pórticos hacia el poniente (y el túnel hacia El Salto) rotulan al otro lado
    del punto: los pares que comparten ubicación en sentidos opuestos ya no se tapan */
 .rp.rp-b{transform:translate(calc(-100% - 7px),3px)}
@@ -1239,6 +1247,9 @@ body.oyeAbierto{padding-bottom:86px}
       <label><input type="checkbox" id="lPtos" checked> Pórticos</label>
       <label><input type="checkbox" id="lTend" checked> Tendencia</label>
       <label><input type="checkbox" id="lCalles"> Nombres de calle</label>
+      <span class="tamrot"><span class="seglab">Tamaño</span>
+        <label>porcentaje <input type="range" data-tam="pct" min="0.7" max="2.2" step="0.1" value="1" aria-label="Tamaño del porcentaje"><output>100 %</output></label>
+        <label>flecha <input type="range" data-tam="fl" min="0.7" max="2.2" step="0.1" value="1" aria-label="Tamaño de la flecha"><output>100 %</output></label></span>
     </div>
 
     <div class="grid">
@@ -1602,14 +1613,43 @@ body.oyeAbierto{padding-bottom:86px}
         <button data-v="abs">Valor absoluto</button></span>
     </div>
     <div class="maprow">
+      <span class="seglab">Medida del mapa</span>
+      <select id="mMedida" aria-label="Medida del mapa">
+        <option value="tx">Tránsito anual</option>
+        <option value="uf">Ingreso anual, UF</option>
+      </select>
+      <span class="seglab">Vista</span>
+      <div class="seg" id="mVista" role="group" aria-label="Vista del mapa">
+        <button class="on" data-v="grosor">Grosor por sentido</button>
+        <button data-v="tramo">Tramo tarificado</button>
+      </div>
       <span class="seglab">Mapa base</span>
       <div class="seg" id="mBase" role="group" aria-label="Mapa base">
+        <button data-v="propia">Red propia</button>
         <button data-v="claro" class="on">Claro</button>
         <button data-v="calles">Calles</button>
         <button data-v="satelite">Satélite</button></div>
-      <span class="lyr">
-        <label><input type="checkbox" id="mCalles"> Nombres de calle</label>
-      </span>
+    </div>
+    <div class="maprow">
+      <span class="seglab"><label for="mAnio">Año</label></span>
+      <input type="range" id="mAnio" step="1" style="flex:1;max-width:420px">
+      <b id="mAnioTxt" style="font-family:var(--font-data);color:var(--accent)"></b>
+      <span class="seglab" style="margin-left:8px">Flecha contra</span>
+      <div class="seg" id="mComp" role="group" aria-label="Año de comparación de la flecha">
+        <button data-v="1">Año anterior</button>
+        <button data-v="2" class="on">Dos años antes</button></div>
+    </div>
+    <div class="maprow lyr">
+      <span class="seglab">Capas</span>
+      <label><input type="checkbox" id="mCtx" checked> Red vial de contexto</label>
+      <label><input type="checkbox" id="mEnl"> Enlaces de entrada y salida</label>
+      <label><input type="checkbox" id="mEje" checked> Eje de la concesión</label>
+      <label><input type="checkbox" id="mPtos" checked> Pórticos</label>
+      <label><input type="checkbox" id="mTend" checked> Tendencia</label>
+      <label><input type="checkbox" id="mCalles"> Nombres de calle</label>
+      <span class="tamrot"><span class="seglab">Tamaño</span>
+        <label>porcentaje <input type="range" data-tam="pct" min="0.7" max="2.2" step="0.1" value="1" aria-label="Tamaño del porcentaje"><output>100 %</output></label>
+        <label>flecha <input type="range" data-tam="fl" min="0.7" max="2.2" step="0.1" value="1" aria-label="Tamaño de la flecha"><output>100 %</output></label></span>
     </div>
     <div class="grid gridM">
       <div>
@@ -1631,7 +1671,7 @@ body.oyeAbierto{padding-bottom:86px}
           <div class="legend" id="medLuf"></div>
         </div>
       </div>
-      <div id="mapM"></div>
+      <div><div id="mapM"></div><div class="legend" id="medLmapa"></div></div>
     </div>
     <div class="aviso" id="medNota"></div>
   </div>
@@ -1763,6 +1803,9 @@ body.oyeAbierto{padding-bottom:86px}
         <label><input type="checkbox" id="cRot" checked> Nombre del pórtico</label>
         <label><input type="checkbox" id="cCalles"> Nombres de calle</label>
       </span>
+      <span class="tamrot"><span class="seglab">Tamaño</span>
+        <label>porcentaje <input type="range" data-tam="pct" min="0.7" max="2.2" step="0.1" value="1" aria-label="Tamaño del porcentaje"><output>100 %</output></label>
+        <label>flecha <input type="range" data-tam="fl" min="0.7" max="2.2" step="0.1" value="1" aria-label="Tamaño de la flecha"><output>100 %</output></label></span>
     </div>
     <div class="grid">
       <div id="mapC"></div>
@@ -2306,6 +2349,23 @@ function despejaRotulos(cont){
     puestos.push({left:b.left, right:b.right, top:b.top+dy, bottom:b.bottom+dy});
   });
 }
+
+/* TAMAÑO DE PORCENTAJES Y FLECHAS (RM, 13-09-2026). Un solo ajuste para los tres mapas con rótulos: los controles de cada
+   mapa se sincronizan, el valor se recuerda en el navegador y los rótulos se vuelven a despejar porque cambian de ancho. */
+const TAM_ROT = {pct:1, fl:1};
+try{ const t = JSON.parse(localStorage.getItem('tam_rot')||'null');
+  if(t){ TAM_ROT.pct = Math.min(2.2, Math.max(.7, +t.pct||1)); TAM_ROT.fl = Math.min(2.2, Math.max(.7, +t.fl||1)); } }catch(e){}
+function aplicaTamRot(){
+  document.documentElement.style.setProperty('--rp-pct', TAM_ROT.pct);
+  document.documentElement.style.setProperty('--rp-fl', TAM_ROT.fl);
+  document.querySelectorAll('input[data-tam]').forEach(el=>{ el.value = TAM_ROT[el.dataset.tam];
+    const o = el.parentElement.querySelector('output'); if(o) o.textContent = Math.round(TAM_ROT[el.dataset.tam]*100)+' %'; });
+  try{ localStorage.setItem('tam_rot', JSON.stringify(TAM_ROT)); }catch(e){}
+  ['map','mapC','mapM'].forEach(id=>despejaRotulos(document.getElementById(id)));
+}
+document.querySelectorAll('input[data-tam]').forEach(el=>{
+  el.oninput = ()=>{ TAM_ROT[el.dataset.tam] = +el.value; aplicaTamRot(); }; });
+aplicaTamRot();
 
 /* en el mapa del estudio la flecha es lo que el MODELO proyecta: la medida elegida
    en el año elegido contra el anterior */
@@ -5193,6 +5253,13 @@ const mapaM = L.map('mapM',{zoomControl:true,attributionControl:false,preferCanv
   zoomSnap:0.25})
   .setView([-33.415,-70.70], 11);
 const capaCtxM = L.geoJSON(D.geo_contexto,{style:estCtx(), interactive:false});
+/* MISMAS OPCIONES QUE EL MAPA DE PROYECCIONES (RM, 13-09-2026): medida, vista por grosor o por tramo, año, red propia,
+   y capas de contexto, enlaces, eje, pórticos y tendencia. Lo que cambia es el dato: aquí sólo lo que registró la
+   concesionaria, y el color sigue siendo el crecimiento medido (no hay modelo con qué comparar en esta sección). */
+const capaEnlM = L.geoJSON(D.geo_enlaces,{style:{color:tok('--enl'),weight:1.8,opacity:.95,dashArray:'4 3'}, interactive:false});
+const capaEjeM = L.geoJSON(D.geo_corredor,{style:{color:tok('--ink-lo'),weight:1.1,opacity:.45}, interactive:false});
+const capaPtosM = L.layerGroup();
+const MMAP = {medida:'tx', vista:'grosor', comp:2, anio:null};
 let baseM = null;
 /* Mismo estandar que los otros dos mapas: el conmutador de fondo no es un extra,
    es lo que permite mirar la misma geografia en calles o en satelite sin cambiar
@@ -5203,12 +5270,31 @@ function ponBaseM(k){
   if(BASES[k]){ baseM = BASES[k](); baseM.addTo(mapaM); baseM.bringToBack(); }
   capaCtxM.setStyle(estCtx());
 }
-capaCtxM.addTo(mapaM);
+capaCtxM.addTo(mapaM); capaEjeM.addTo(mapaM);
 ponBaseM('claro');
 seg('mBase', v=>ponBaseM(v));
 calles(mapaM, 'mCalles', _calM);
 const capaM = L.featureGroup().addTo(mapaM);
+capaPtosM.addTo(mapaM);
 const rotM = L.layerGroup().addTo(mapaM);
+function aniosM(){ return Object.keys((SP.RED||{tx:{}}).tx).map(Number)
+  .filter(a=>(C.historia_parcial||[]).indexOf(a)<0).sort((a,b)=>a-b); }
+seg('mVista', v=>{ MMAP.vista = v; pintaMapaM(); });
+seg('mComp', v=>{ MMAP.comp = +v; pintaMapaM(); });
+document.getElementById('mMedida').onchange = e=>{ MMAP.medida = e.target.value; pintaMapaM(); };
+(function(){
+  const A = aniosM(), r = document.getElementById('mAnio');
+  MMAP.anio = A[A.length-1];
+  r.min = A[0]; r.max = A[A.length-1]; r.value = MMAP.anio;
+  document.getElementById('mAnioTxt').textContent = MMAP.anio;
+  r.oninput = e=>{ MMAP.anio = +e.target.value; document.getElementById('mAnioTxt').textContent = MMAP.anio; pintaMapaM(); };
+})();
+Object.entries({mCtx:capaCtxM, mEnl:capaEnlM, mEje:capaEjeM, mPtos:capaPtosM, mTend:null}).forEach(([id,capa])=>{
+  const el = document.getElementById(id);
+  el.onchange = ()=>{ if(capa){ el.checked ? capa.addTo(mapaM) : mapaM.removeLayer(capa); }
+    else { el.checked ? rotM.addTo(mapaM) : mapaM.removeLayer(rotM); }
+    if(mapaM.hasLayer(capaPtosM)) capaPtosM.eachLayer(l=>l.bringToFront && l.bringToFront()); };
+});
 let encM = 0;
 
 /* Mismo patrón que el mapa del contraste: encuadre ANTES de dibujar, con el
@@ -5236,53 +5322,88 @@ function pintaMapaM(){
       encM = w;
     }
   }
-  capaM.clearLayers(); rotM.clearLayers();
-  const anios = Object.keys((SP.RED||{tx:{}}).tx).map(Number)
-    .filter(a=>(C.historia_parcial||[]).indexOf(a)<0).sort((a,b)=>a-b);
-  const u = anios[anios.length-1], p = u-2;
+  capaM.clearLayers(); rotM.clearLayers(); capaPtosM.clearLayers();
+  const A = aniosM(), k = MMAP.medida;
+  const u = MMAP.anio || A[A.length-1], p = u - MMAP.comp;
+  const val = (cod, a) => ((SP[cod]||{})[k]||{})[a];
+  const cre = cod => { const v1 = val(cod,u), v0 = val(cod,p); return v1 && v0 ? (v1/v0-1)*100 : null; };
+  /* grosor en escala ABSOLUTA de toda la serie, como en el mapa de proyecciones: el ancho se compara entre años */
   let mx = 0;
-  D.geo_tramos.features.forEach(f=>{
-    const t = (SP[f.properties.cod]||{tx:{}}).tx || {};
-    mx = Math.max(mx, t[u]||0); });
+  Object.keys(SP).forEach(c=>{ if(c==='RED') return; Object.values((SP[c]||{})[k]||{}).forEach(v=>{ if(v>mx) mx = v; }); });
   const gr = v => 1.2 + (mx>0 ? Math.min(1, v/mx) : 0)*14;
-  D.geo_tramos.features.forEach(f=>{
-    const cod = f.properties.cod, t = (SP[cod]||{tx:{}}).tx || {};
-    if(!t[u]) return;
-    const cre = t[p] ? (t[u]/t[p]-1)*100 : null;
-    const pts = f.geometry.coordinates.map(x=>[x[1],x[0]]);
-    const w = gr(t[u]);
-    const off = offsetPx(pts, f.properties.dir==='WE' ? w/2+1.5 : -(w/2+1.5), mapaM);
-    const sel = cod === medAmb;
-    if(sel) L.polyline(off,{color:tok('--focus'),weight:w+13,opacity:.55,
-      lineCap:'round',interactive:false}).addTo(capaM);
-    /* color por CRECIMIENTO reciente, no por brecha: en esta sección no hay
-       modelo con qué comparar, y lo que interesa es dónde el tránsito se mueve. */
-    const col = cre==null ? tok('--line-2')
-      : mezcla(tok('--ts'), tok('--tbfp'), Math.max(0, Math.min(1, (cre+6)/12)));
-    L.polyline(off,{color:col,weight:w,opacity:.97,lineCap:'round'})
-      .bindTooltip('<b>'+cod+'</b><br>'+u+': '+nf.format(t[u])
-        + (cre!=null ? '<br>'+p+'→'+u+': <b>'+cPct(cre)+'</b>' : ''), {sticky:true})
-      .on('click', ()=>eligeM(cod))
-      .addTo(capaM);
-  });
+  const colCre = c => c==null ? tok('--line-2') : mezcla(tok('--ts'), tok('--tbfp'), Math.max(0, Math.min(1, (c+6)/12)));
+  const uni = k==='uf' ? 'UF' : 'transacciones';
+  const tipM = cod => { const v = val(cod,u), c = cre(cod);
+    return '<b>'+cod+'</b><br>'+u+': '+(v!=null ? nf.format(Math.round(v))+' '+uni : 'sin dato')
+      + (c!=null ? '<br>'+p+'→'+u+': <b>'+cPct(c)+'</b>' : ''); };
+  if(MMAP.vista === 'tramo'){
+    D.geo_tramos.features.forEach(f=>{
+      const cod = f.properties.cod, v = val(cod,u);
+      if(!v) return;
+      const pts = f.geometry.coordinates.map(x=>[x[1],x[0]]);
+      const w = gr(v);
+      const off = offsetPx(pts, f.properties.dir==='WE' ? w/2+1.5 : -(w/2+1.5), mapaM);
+      if(cod === medAmb) L.polyline(off,{color:tok('--focus'),weight:w+13,opacity:.55,lineCap:'round',interactive:false}).addTo(capaM);
+      /* color por CRECIMIENTO medido, no por brecha: en esta sección no hay modelo con qué comparar */
+      L.polyline(off,{color:colCre(cre(cod)),weight:w,opacity:.97,lineCap:'round'})
+        .bindTooltip(tipM(cod), {sticky:true}).on('click', ()=>eligeM(cod)).addTo(capaM);
+    });
+  } else {
+    /* GROSOR POR SENTIDO a lo largo del eje, interpolando entre pórticos con dato ese año (P16–P17 desde 2014, túnel desde 2008) */
+    D.geo_ejes.features.forEach(f=>{
+      const co = f.geometry.coordinates.map(c=>[c[1],c[0]]);
+      const cru = f.properties.porticos, ps = (typeof cru === 'string' ? JSON.parse(cru) : cru)
+        .filter(q=>val(q.cod,u)).sort((a,b)=>a.pos-b.pos);
+      if(!ps.length) return;
+      const vs = ps.map(q=>({pos:q.pos, v:val(q.cod,u)})), cs = ps.filter(q=>cre(q.cod)!=null).map(q=>({pos:q.pos, v:cre(q.cod)}));
+      const anchoMax = gr(Math.max(...vs.map(x=>x.v)));
+      const des = offsetPx(co, anchoMax/2 + 1.5, mapaM);
+      for(let i=0;i<des.length-1;i++){
+        const t = (i+.5)/(des.length-1), v = interp(vs, t), c = cs.length ? interp(cs, t) : null;
+        const cerca = ps.reduce((m,q)=>Math.abs(q.pos-t)<Math.abs(m.pos-t)?q:m, ps[0]);
+        L.polyline([des[i],des[i+1]], {color:colCre(c), weight:gr(v), opacity:.95, lineCap:'round', lineJoin:'round'})
+          .bindTooltip(()=>'<b>'+f.properties.sentido+'</b> · km '+nd(t*f.properties.km)+' de '+f.properties.km
+            + '<br>'+uni+' '+u+': <b>'+nf.format(Math.round(v))+'</b>'
+            + '<br><span style="opacity:.7">pórtico más cercano: '+cerca.cod+'</span>', {sticky:true})
+          .on('click', ()=>eligeM(cerca.cod)).addTo(capaM);
+      }
+      const im = Math.floor(des.length/2), ok = visible(mapaM) && isFinite(mapaM.getZoom());
+      const a1 = ok ? mapaM.latLngToLayerPoint(L.latLng(...des[im])) : {x:0,y:0};
+      const b1 = ok ? mapaM.latLngToLayerPoint(L.latLng(...des[Math.min(im+1,des.length-1)])) : {x:1,y:0};
+      const ang = Math.atan2(b1.y-a1.y, b1.x-a1.x)*180/Math.PI;
+      L.marker(des[im], {interactive:false, icon:L.divIcon({className:'', iconSize:[16,16], iconAnchor:[8,8],
+        html:'<div style="transform:rotate('+(isFinite(ang)?ang:0)+'deg);color:'+colCre(cs.length?interp(cs,.5):null)
+          + ';font-size:15px;line-height:16px;text-align:center;text-shadow:0 0 3px var(--surface)">&#10148;</div>'})}).addTo(capaM);
+    });
+  }
   /* el punto del pórtico elige y va encima: ver la nota en pintaMapaC */
   D.geo_porticos.features.forEach(f=>{
     const cod = f.properties.cod, c = f.geometry.coordinates, sel = cod === medAmb;
     L.circleMarker([c[1],c[0]],{radius: sel?6.5:4.5, weight:2, color:tok('--surface'),
       fillColor: sel?tok('--accent'):tok('--navy'), fillOpacity:1})
       .bindTooltip('<b>'+cod+'</b> · clic para ver su serie', {sticky:true})
-      .on('click', ()=>eligeM(cod)).addTo(capaM);
+      .on('click', ()=>eligeM(cod)).addTo(capaPtosM);
   });
   D.geo_porticos.features.forEach(f=>{
     const cod = f.properties.cod, c = f.geometry.coordinates;
-    const t = (SP[cod]||{tx:{}}).tx || {};
-    const cre = t[p] && t[u] ? (t[u]/t[p]-1)*100 : null;
     L.marker([c[1],c[0]],{zIndexOffset: cod===medAmb?1000:0, keyboard:false,
       icon:L.divIcon({className:'rotPor',
-        html:'<span class="rp'+(cod===medAmb?' on':'')+ladoRp(cod)+'">'+cod+tendHTML(cre)+'</span>',
+        html:'<span class="rp'+(cod===medAmb?' on':'')+ladoRp(cod)+'">'+cod+tendHTML(cre(cod))+'</span>',
         iconSize:[0,0], iconAnchor:[0,0]})}).on('click', ()=>eligeM(cod)).addTo(rotM);
   });
   despejaRotulos(mapaM.getContainer());
+  const ley = document.getElementById('medLmapa');
+  if(ley){
+    const pasos = [.25,.5,.75,1].map(t=>mx*t);
+    ley.innerHTML = '<span class="ttl">'+(k==='uf'?'Ingreso anual, UF':'Tránsito anual')+' '+u+'</span>'
+      + pasos.map(v=>'<span class="grp" style="gap:4px"><i style="background:'+tok('--ink-lo')+';height:'+Math.max(3,Math.round(gr(v)))
+        + 'px;width:18px"></i><span>'+nf.format(Math.round(v/(k==='uf'?1e3:1e6)))+(k==='uf'?' mil':' M')+'</span></span>').join('')
+      + '<span class="grp"><span class="ttl">Color y flecha</span><span>crecimiento medido de '+u+' contra '+p
+      + ': verde sube, rojo baja, gris si se mueve menos de 1 %.</span></span>'
+      + '<span class="grp"><span class="ttl">Escala</span><span>absoluta, del máximo de toda la serie: comparable entre años.'
+      + (MMAP.vista==='grosor' ? ' Cada calzada se desplaza a la derecha de su avance.' : ' Cada trazo es el arco que cobra el pórtico.')
+      + '</span></span>';
+  }
 }
 
 function medKpis(){
