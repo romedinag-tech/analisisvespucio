@@ -924,14 +924,16 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line-2)
 .pjunto-h span{font-size:.72rem;color:var(--ink-lo);font-weight:600}
 .pjunto-c{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
 @media(max-width:760px){.pjunto{grid-column:auto}.pjunto-c{grid-template-columns:1fr}}
-/* SIMULADOR EN CUATRO CUARTOS (14-09-2026): vías competidoras a la izquierda, el gráfico en los dos del medio y las
+/* COLUMNAS (14-09-2026, segunda vuelta): en pantalla ancha las barras van en dos columnas angostas y el gráfico toma el resto,
+   porque el gráfico anual y el histograma del Montecarlo son lo que se mira; reparto elegido midiendo en 1440 y 1920 px.
+   SIMULADOR EN CUATRO CUARTOS (14-09-2026): vías competidoras a la izquierda, el gráfico en los dos del medio y las
    demás variables a la derecha, para ver al instante qué hace cada barra. En pantalla ancha el gráfico queda fijo al
    bajar; en tablet va arriba a todo el ancho y en teléfono primero el gráfico, luego las variables y al final las vías. */
 .sim4{display:grid;gap:14px;align-items:start;grid-template-columns:minmax(0,1fr);grid-template-areas:"cen" "der" "izq"}
 .sim-izq{grid-area:izq}.sim-cen{grid-area:cen;min-width:0}.sim-der{grid-area:der}
 .sim-izq,.sim-der{display:flex;flex-direction:column;gap:12px;min-width:0}
 @media(min-width:761px){.sim4{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"cen cen" "izq der"}}
-@media(min-width:1100px){.sim4{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:"izq cen cen der"}
+@media(min-width:1100px){.sim4{grid-template-columns:minmax(0,1fr) minmax(0,3fr) minmax(0,1fr);grid-template-areas:"izq cen der"}
  .sim-cen{position:sticky;top:8px}}
 .sim4 .pjunto{grid-column:auto;padding:8px}
 .sim4 .pjunto-c{grid-template-columns:1fr}
@@ -987,6 +989,25 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line-2)
 .par.mcoff .mcband{background:color-mix(in srgb,var(--ink-lo) 22%,transparent)}
 .par.mcoff .mctxt{color:var(--ink-lo)}
 .mcnum:not([hidden]){display:flex;align-items:center;gap:4px;font-size:.68rem;color:var(--mut)}
+/* UNA BARRA POR VARIABLE, SEGÚN EL MODO: en «Puntual» se ve la perilla del valor; en «Montecarlo», el riel del rango con su
+   casilla de sorteo en el rótulo. La moda del sorteo triangular es el valor puntual y queda marcada sobre el riel. */
+.sim4:not(.modo-mc) .mcrail,.sim4:not(.modo-mc) .mcnum,.sim4:not(.modo-mc) .mc26,
+.sim4:not(.modo-mc) .parh .mcsw,.sim4:not(.modo-mc) .parh .mctxt{display:none!important}
+.sim4.modo-mc .par.conmc > .val,.sim4.modo-mc .par.conmc .pvp{display:none}
+.parh .mcsw{margin-right:5px;vertical-align:-1px}
+.parh .mctxt{font-family:var(--font-data);font-size:.8rem;white-space:nowrap;text-align:right}
+.mcmoda{position:absolute;top:2px;width:2px;height:12px;border-radius:1px;background:var(--tbp);transform:translateX(-1px);pointer-events:none}
+.mc26{display:block;font-size:.66rem;color:var(--ink-lo)}
+/* globo de ayuda sobre un botón o un selector: la misma caja que los «?», sin cambiar el aspecto del control */
+.tipb{position:relative;display:inline-flex}
+.tipb > .tip{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:60;width:min(340px,80vw);background:var(--surface);
+ border:1px solid var(--line-2);border-radius:var(--r-sm);box-shadow:0 8px 22px rgba(0,0,0,.16);padding:8px 10px;
+ font-size:.74rem;font-weight:400;line-height:1.45;color:var(--mut);text-align:left;white-space:normal;pointer-events:none}
+.tipb:hover > .tip,.tipb:has(:focus-visible) > .tip{display:block}
+.tipb.der > .tip{left:auto;right:0}
+@media(max-width:760px){.tipb > .tip{position:fixed;left:10px;right:10px;top:auto;bottom:10px;width:auto}}
+/* en la ampliación las curvas de referencia siguen siendo botones */
+.lupaLey .leyb{cursor:pointer}
 .mcnum input{width:62px;font:inherit;font-size:.7rem;padding:1px 4px;border:1px solid var(--line-2);border-radius:6px;background:var(--surface);color:var(--ink)}
 /* resultado del Montecarlo */
 #simMCres svg{display:block;width:100%;height:auto}
@@ -5854,7 +5875,7 @@ function medidoDia(){ medDiaSel(); medPerfilDia(); medCatTar(); }
    colores RESUELTOS —`tok()` devuelve el valor computado, no la variable CSS—, de
    modo que serializarlos da una imagen completa que se ve igual fuera del
    tablero. Para el PNG se dibuja ese SVG en un canvas al triple de tamaño. */
-let lupaSVG = null, lupaNom = 'grafico';
+let lupaSVG = null, lupaNom = 'grafico', lupaOrigen = null;
 
 function lupaAbre(svg, titulo){
   /* EN UN TELÉFONO LA LUPA MUESTRA LA VERSIÓN COMPLETA. El gráfico de la página se
@@ -5862,6 +5883,8 @@ function lupaAbre(svg, titulo){
      lupa lo rehace a su ancho de diseño, lo copia y deja la página como estaba. */
   let fuente = svg;
   const angosta = anchoDisp() < 1000;
+  { const host = svg.closest('[id]'), lista = host ? [...host.querySelectorAll('svg')].filter(x=>!x.closest('.oyeFila')) : [];
+    lupaOrigen = host ? {host: host.id, i: lista.indexOf(svg), titulo} : null; }
   if(angosta){
     const host = svg.closest('[id]'), lista = host ? [...host.querySelectorAll('svg')].filter(x=>!x.closest('.oyeFila')) : [];
     const i = lista.indexOf(svg);
@@ -5890,7 +5913,13 @@ function lupaAbre(svg, titulo){
     const c = l.cloneNode(true);
     c.querySelectorAll('.tipw').forEach(t=>{ const tip = t.querySelector('.tip'), d = document.createElement('div');
       d.className = 'lupaTip'; d.innerHTML = tip ? tip.innerHTML : ''; t.replaceWith(d); });
-    c.querySelectorAll('button').forEach(b=>{ const sp = document.createElement('span'); sp.className = b.className;
+    c.querySelectorAll('button').forEach(b=>{
+      /* las curvas de referencia del simulador se eligen también acá: con todas a la vez no se distinguen */
+      if(b.dataset.curva){ b.onclick = ev=>{ ev.stopPropagation(); SIMX.curvas[b.dataset.curva] = !SIMX.curvas[b.dataset.curva];
+        simPinta(); const o = lupaOrigen, h = o && document.getElementById(o.host);
+        const n = h && [...h.querySelectorAll('svg')].filter(x=>!x.closest('.oyeFila'))[o.i];
+        if(n) lupaAbre(n, o.titulo); }; return; }
+      const sp = document.createElement('span'); sp.className = b.className;
       sp.innerHTML = b.innerHTML; b.replaceWith(sp); });
     c.classList.add('lupaLey'); cuerpo.appendChild(c); });
   document.getElementById('lupaTitulo').textContent = titulo || 'Gráfico';
@@ -6322,15 +6351,14 @@ function simPars(){
           + posRiel(k,x.ref) + '">estudio</em>'
           + (x.refMed !== undefined ? '<i class="med" id="rfm_' + k + '"></i><em class="med" id="rfme_' + k + '"></em>' : '')
           + '</div>' : '';
-      const rango = x.mc ? `<div class="mcrail"><span class="mcband" id="mcb_${k}"></span>
+      const rango = x.mc ? `<div class="mcrail"><span class="mcband" id="mcb_${k}"></span><i class="mcmoda" id="mcm_${k}" title="valor puntual: moda del sorteo triangular"></i>
           <input type="range" class="mclo" id="mclo_${k}" min="${x.min}" max="${x.max}" step="${x.step}" value="${x.mc[0]}" aria-label="${x.rot}: mínimo del Montecarlo">
           <input type="range" class="mchi" id="mchi_${k}" min="${x.min}" max="${x.max}" step="${x.step}" value="${x.mc[1]}" aria-label="${x.rot}: máximo del Montecarlo"></div>
-        <div class="mcpie"><button type="button" class="mctxt" id="mct_${k}" title="Escribir el rango"></button>
-          <label class="mcsw"><input type="checkbox" id="mcon_${k}"${x.mcOn ? ' checked' : ''}> sortear</label></div>
+        ${k === 'salto' ? '<small class="mc26" id="mc26_' + k + '"></small>' : ''}
         <div class="mcnum" id="mcn_${k}" hidden>de <input type="number" id="mcnlo_${k}" step="${x.step}" aria-label="mínimo">
           a <input type="number" id="mcnhi_${k}" step="${x.step}" aria-label="máximo"></div>` : '';
-      return `<div class="par${x.mcOn ? '' : ' mcoff'}" id="par_${k}">
-        <div class="parh"><span>${x.rot}</span><b id="pv_${k}">${muestra(k)}</b></div>
+      return `<div class="par${x.mc ? ' conmc' : ''}${x.mcOn ? '' : ' mcoff'}" id="par_${k}">
+        <div class="parh"><span>${x.mc ? '<label class="mcsw" title="Sortear esta variable en el Montecarlo"><input type="checkbox" id="mcon_' + k + '"' + (x.mcOn ? ' checked' : '') + ' aria-label="Sortear ' + x.rot + '"></label>' : ''}${x.rot}</span><b class="pvp" id="pv_${k}">${muestra(k)}</b>${x.mc ? '<button type="button" class="mctxt" id="mct_' + k + '" title="Rango del sorteo: toca para escribirlo"></button>' : ''}</div>
         <input type="range" class="val" id="pr_${k}" min="${x.min}" max="${x.max}"
           step="${x.step}" value="${x.v}" aria-label="${x.rot}" aria-describedby="ay_${k}">
         <div class="ayuda" role="tooltip" id="ay_${k}">${x.ay}</div>
@@ -6362,22 +6390,48 @@ function simPars(){
     + 'Los escenarios V&R conservan los rangos que hayas movido; sólo el del salto de 2026 se recalcula.';
   const calcTip = '<b>Puntual:</b> la línea que resulta de los valores de las barras; cambia al instante. '
     + '<b>Montecarlo:</b> sortea cada variable marcada «sortear» dentro de su rango (el riel fino bajo la barra; arrastra sus extremos '
-    + 'o toca el texto para escribirlo) y recalcula la trayectoria las veces elegidas. Triangular pone la moda en el valor de la barra; '
-    + 'uniforme da el mismo peso a todo el rango. El salto de 2026 se sortea con los demás valores en su punto: su rango es un rango de '
+    + 'o toca la cifra del rango para escribirla) y recalcula la trayectoria las veces elegidas. Triangular pone la moda en el valor de la barra; '
+    + 'uniforme da el mismo peso a todo el rango. En modo Montecarlo cada barra muestra su rango y la casilla del rótulo decide si se sortea. El salto de 2026 se sortea con los demás valores en su punto: su rango es un rango de '
     + 'nivel 2026. Semilla fija: la misma configuración da siempre el mismo resultado; «Otra semilla» comprueba que no depende del azar.';
   const leeTip = 'Cada cuadro es una pieza de la proyección. La cifra de la esquina es lo que aporta en el estudio entre 2025 y '
     + DEC.fin + ', en puntos de logaritmo. Pasa el mouse sobre una barra para ver qué mide; la marca «estudio» bajo ella es el valor que '
     + 'usa o implica la consultora.';
+  /* cada control explica lo que hace al pasar el mouse (pedido de RM, 14-09-2026) */
+  const tb = (ctrl, txt, cls) => '<span class="tipb' + (cls ? ' ' + cls : '') + '">' + ctrl + '<span class="tip" role="tooltip">' + txt + '</span></span>';
+  const oj = ELA.cierre_2026_optimista.sin_julio;
+  const TIP_ESC = {
+    est: '<b>Estudio.</b> Todas las barras en su marca «estudio» y los rangos del sorteo por defecto. La curva naranja crece exactamente '
+      + 'como el estudio Diadro 2023 (caso «Nuevo PIB»), pero partiendo de lo medido en 2025: es el punto de partida para ver qué mueve cada barra.',
+    ten: '<b>V&R tendencial.</b> El escenario de la consultora: PIB base actualizado (tasa equivalente 2027–2037), elasticidad de veinte años '
+      + 'de serie (' + nd(ELA.principal.e,2) + '), población y precio sin efecto, vías competidoras del estudio en fechas vigentes, sin el ajuste '
+      + 'de la regresión y 2026 en el cierre medido. Reproduce la pestaña «Escenario V&R».',
+    opt: '<b>V&R optimista.</b> Lo mismo que el tendencial, con 2026 en el cierre sin julio de la revisión de JV (' + nd(oj.A_M) + ' a '
+      + nd(oj.B_M) + ' M; la barra toma el centro, ' + nd(oj.centro_M) + ' M) y las vías competidoras en cero: nadie le quita demanda a la autopista.',
+    pes: '<b>V&R pesimista.</b> PIB actualizado pesimista y 2026 en el cierre más bajo de los métodos V&R. Provisorio: se rehará con los '
+      + 'porcentajes de vías competidoras de la modelación de Cristian.'};
+  const TIP_CALC = {
+    modo: '<b>Puntual:</b> una sola trayectoria con el valor de cada barra; cambia al instante. <b>Montecarlo:</b> cada barra pasa a mostrar su '
+      + 'rango; la casilla del rótulo decide si esa variable se sortea, y el tránsito se recalcula tantas veces como corridas elijas.',
+    n: '<b>Número de corridas.</b> Cuántas trayectorias se sortean. Con más corridas los percentiles se mueven menos entre una semilla y otra, '
+      + 'a cambio de unos milisegundos más.',
+    dist: '<b>Cómo se sortea cada variable dentro de su rango.</b> <b>Triangular:</b> el valor más probable (la moda) es el valor puntual de la '
+      + 'barra, marcado sobre el riel, y la probabilidad baja en línea recta hasta cero en los extremos; concentra las corridas cerca de tu '
+      + 'supuesto central. <b>Uniforme:</b> todo el rango tiene la misma probabilidad; úsala cuando no hay razón para preferir un valor, y da '
+      + 'bandas más anchas. Si la moda queda fuera del rango se lleva al extremo más cercano.',
+    corre: '<b>Correr.</b> Sortea las corridas con los rangos actuales y dibuja las bandas de percentiles en el gráfico anual y el histograma de 2037.',
+    sem: '<b>Otra semilla.</b> El sorteo usa una secuencia pseudoaleatoria fija, así que la misma configuración da siempre el mismo resultado y '
+      + 'se puede reproducir. Este botón cambia la secuencia y vuelve a correr: si los percentiles se mueven apenas unas décimas de millón, el '
+      + 'resultado no depende del azar; si se mueven mucho, sube el número de corridas.'};
   document.getElementById('simBar').innerHTML =
     '<div class="sbrow">' + tip('Escenario', escTip)
-    + '<button class="btnrst" id="simRst">Estudio</button><button class="btnrst" id="simVyr">V&R tendencial</button>'
-    + '<button class="btnrst" id="simVyrO">V&R optimista</button><button class="btnrst" id="simVyrP">V&R pesimista</button>'
+    + tb('<button class="btnrst" id="simRst">Estudio</button>', TIP_ESC.est) + tb('<button class="btnrst" id="simVyr">V&R tendencial</button>', TIP_ESC.ten)
+    + tb('<button class="btnrst" id="simVyrO">V&R optimista</button>', TIP_ESC.opt) + tb('<button class="btnrst" id="simVyrP">V&R pesimista</button>', TIP_ESC.pes)
     + '<span class="sbsp"></span>' + tip('Lectura', leeTip, 'der') + '</div>'
     + '<div class="sbrow">' + tip('Cálculo', calcTip)
-    + '<span class="mseg"><button type="button" id="modoP">Puntual</button><button type="button" id="modoM">Montecarlo</button></span>'
-    + '<select id="mcN" aria-label="Número de corridas"><option value="1000">1.000</option><option value="5000">5.000</option><option value="10000">10.000</option></select>'
-    + '<select id="mcDist" aria-label="Distribución del sorteo"><option value="tri">triangular</option><option value="uni">uniforme</option></select>'
-    + '<button class="btnrst btnmc" id="mcCorre">Correr</button><button class="btnrst" id="mcSem">Otra semilla</button>'
+    + tb('<span class="mseg"><button type="button" id="modoP">Puntual</button><button type="button" id="modoM">Montecarlo</button></span>', TIP_CALC.modo)
+    + tb('<select id="mcN" aria-label="Número de corridas"><option value="1000">1.000</option><option value="5000">5.000</option><option value="10000">10.000</option></select>', TIP_CALC.n)
+    + tb('<select id="mcDist" aria-label="Distribución del sorteo"><option value="tri">triangular</option><option value="uni">uniforme</option></select>', TIP_CALC.dist)
+    + tb('<button class="btnrst btnmc" id="mcCorre">Correr</button>', TIP_CALC.corre) + tb('<button class="btnrst" id="mcSem">Otra semilla</button>', TIP_CALC.sem, 'der')
     + '<span class="mcest" id="mcEst"></span></div>';
 
   /* ── manejo de las barras y de sus rangos ── */
@@ -6386,8 +6440,10 @@ function simPars(){
     b.style.left = posRiel(k, x.mc[0]);
     b.style.width = 'calc((100% - 16px) * ' + ((x.mc[1]-x.mc[0])/(x.max-x.min)).toFixed(4) + ')';
     document.getElementById('mclo_' + k).value = x.mc[0];  document.getElementById('mchi_' + k).value = x.mc[1];
-    document.getElementById('mct_' + k).textContent = 'rango ' + fv(k, x.mc[0]) + ' a ' + fv(k, x.mc[1])
-      + (k === 'salto' ? ' · 2026: ' + nd(nivel26(x.mc[0])/1e6) + '–' + nd(nivel26(x.mc[1])/1e6) + ' M' : '');
+    document.getElementById('mct_' + k).textContent = fv(k, x.mc[0]) + ' a ' + fv(k, x.mc[1]);
+    document.getElementById('mcm_' + k).style.left = posRiel(k, Math.max(x.mc[0], Math.min(x.mc[1], x.v)));
+    const n26 = document.getElementById('mc26_' + k);
+    if(n26) n26.textContent = 'nivel 2026: ' + nd(nivel26(x.mc[0])/1e6) + ' a ' + nd(nivel26(x.mc[1])/1e6) + ' M';
     document.getElementById('par_' + k).classList.toggle('mcoff', !x.mcOn);
     document.getElementById('mcon_' + k).checked = !!x.mcOn; };
   const bandas = () => Object.keys(SIM).forEach(k=>{ if(SIM[k].mc) banda(k); });
@@ -6397,6 +6453,7 @@ function simPars(){
       document.getElementById('pv_'+k).textContent = muestra(k);
       if(k === 'epob') simRefs();
       if(SIM.salto.mc) banda('salto');
+      if(x.mc) banda(k);
       sucio();  simPinta(); };
     if(!x.mc) return;
     const lo_ = document.getElementById('mclo_'+k), hi_ = document.getElementById('mchi_'+k);
@@ -6456,48 +6513,49 @@ function mcPinta(M, sim){
   const on = MC.modo === 'montecarlo';
   document.getElementById('modoP').classList.toggle('on', !on);
   document.getElementById('modoM').classList.toggle('on', on);
+  const s4 = document.querySelector('#vPropio .sim4'); if(s4) s4.classList.toggle('modo-mc', on);
   const est = document.getElementById('mcEst'), box = document.getElementById('simMCres');
   est.classList.toggle('sucio', !!(MC.res && MC.sucio));
   est.textContent = !MC.res ? 'sin correr' : (MC.sucio ? 'cambiaste valores: vuelve a correr'
     : nf.format(MC.res.n) + ' corridas · ' + (MC.res.dist === 'uni' ? 'uniforme' : 'triangular') + ' · ' + nd(MC.res.ms,0) + ' ms');
   if(!M){ box.innerHTML = ''; return; }
   const i37 = ANIOS.indexOf(2037), e37 = S('tx', i37), BR = ELA.escenario_rm.bandas;
-  const t37 = BR.tendencial['2037'], REF = [
-    ['estudio', e37, tok('--ts')], ['V&R tendencial', t37, tok('--accent')], ['V&R pesimista', BR.pesimista['2037'], tok('--ink-lo')],
-    ['V&R optimista', vrOptimista37(), tok('--ser-c')], ['estudio 2026', ELA.curvas_externas.diadro_2026.M['2037']*1e6, tok('--ser-b')],
-    ['concesionaria', ELA.curvas_externas.concesionaria_17.M['2037']*1e6, tok('--ser-a')], ['puntual', sim[2037], tok('--tbp')]];
+  const t37 = BR.tendencial['2037'], VC = SIMX.curvas, REF = [
+    VC.est23 && ['estudio 2023', e37, tok('--ts')], ['V&R tendencial', t37, tok('--accent')], ['V&R pesimista', BR.pesimista['2037'], tok('--ink-lo')],
+    ['V&R optimista', vrOptimista37(), tok('--ser-c')], VC.d26 && ['estudio 2026', ELA.curvas_externas.diadro_2026.M['2037']*1e6, tok('--ser-b')],
+    VC.conc && ['concesionaria', ELA.curvas_externas.concesionaria_17.M['2037']*1e6, tok('--ser-a')], ['puntual', sim[2037], tok('--tbp')]].filter(Boolean);
   const h = M.h37; let lo = Infinity, hi = -Infinity;
   for(let i=0; i<h.length; i++){ if(h[i] < lo) lo = h[i]; if(h[i] > hi) hi = h[i]; }
   REF.forEach(r=>{ lo = Math.min(lo, r[1]); hi = Math.max(hi, r[1]); });
   const pad = (hi-lo)*.04; lo -= pad; hi += pad;
-  const NB = 40, cnt = new Array(NB).fill(0);
+  const NB = 50, cnt = new Array(NB).fill(0);
   for(let i=0; i<h.length; i++) cnt[Math.min(NB-1, Math.floor((h[i]-lo)/(hi-lo)*NB))]++;
   /* rótulos de las marcas: las que caen en el mismo valor se funden («V&R tendencial = puntual») y las cercanas bajan
      de fila, para que no se monten */
-  const W = anchoSvg(470), ml = 8, iw = W - 16, mx = Math.max.apply(null, cnt);
+  const W = anchoSvg(640), ml = 8, iw = W - 16, mx = Math.max.apply(null, cnt);
   const X = v => ml + (v-lo)/(hi-lo)*iw;
   const MK = [];
   REF.slice().sort((a,b)=>a[1]-b[1]).forEach(r=>{ const u = MK[MK.length-1];
     if(u && Math.abs(X(r[1]) - X(u.v)) < 2) u.t += ' = ' + r[0]; else MK.push({t:r[0], v:r[1], c:r[2], punt:r[0] === 'puntual'}); });
   const filas = [];
-  MK.forEach(m=>{ const x = X(m.v), w = m.t.length*4.2 + 6; let f = 0;
+  MK.forEach(m=>{ const x = X(m.v), w = m.t.length*4.8 + 6; let f = 0;
     while(filas[f] && filas[f].some(q=>Math.abs(q - x) < (w + 40)/2)) f++;
     (filas[f] = filas[f] || []).push(x); m.f = f; m.x = Math.min(ml + iw - w/2, Math.max(ml + w/2, x)); });
-  const top = 22 + filas.length*10, ih = 56, H = top + ih + 18;
-  let s = '<text x="' + ml + '" y="10" font-size="9.5" font-weight="700" fill="' + tok('--ink') + '">Tránsito 2037 en las '
+  const top = 24 + filas.length*11, ih = 100, H = top + ih + 18;
+  let s = '<text x="' + ml + '" y="11" font-size="10" font-weight="700" fill="' + tok('--ink') + '">Tránsito 2037 en las '
     + nf.format(M.n) + ' corridas</text>';
   cnt.forEach((c,i)=>{ const hh = c/mx*ih;
     s += '<rect x="' + (ml + i*iw/NB + .5).toFixed(1) + '" y="' + (top+ih-hh).toFixed(1) + '" width="' + (iw/NB - 1).toFixed(1)
       + '" height="' + hh.toFixed(1) + '" fill="' + tok('--tbp') + '" opacity="' + (MC.sucio ? .3 : .55) + '"/>'; });
-  MK.forEach(m=>{ const x = X(m.v), yl = 22 + m.f*10;
+  MK.forEach(m=>{ const x = X(m.v), yl = 24 + m.f*11;
     s += '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + (yl+2) + '" y2="' + (top+ih) + '" stroke="' + m.c
       + '" stroke-width="1.6"' + (m.punt ? ' stroke-dasharray="3 2"' : '') + '/>'
-      + '<text x="' + m.x.toFixed(1) + '" y="' + yl + '" text-anchor="middle" font-size="8" font-weight="700" fill="' + m.c + '">'
+      + '<text x="' + m.x.toFixed(1) + '" y="' + yl + '" text-anchor="middle" font-size="9" font-weight="700" fill="' + m.c + '">'
       + m.t + '</text>'; });
   s += '<line x1="' + ml + '" x2="' + (ml+iw) + '" y1="' + (top+ih) + '" y2="' + (top+ih) + '" stroke="' + tok('--line-2') + '"/>';
   const paso = Math.max(10, Math.ceil((hi-lo)/1e6/5/10)*10);
   for(let v = Math.ceil(lo/1e6/paso)*paso; v <= hi/1e6; v += paso)
-    s += '<text x="' + X(v*1e6).toFixed(1) + '" y="' + (top+ih+13) + '" text-anchor="middle" font-size="8.5" fill="' + tok('--ink-lo') + '">' + v + ' M</text>';
+    s += '<text x="' + X(v*1e6).toFixed(1) + '" y="' + (top+ih+14) + '" text-anchor="middle" font-size="9" fill="' + tok('--ink-lo') + '">' + v + ' M</text>';
   const fila = a => '<tr><td>' + a + '</td>' + M.p[a].map(v=>'<td>' + nd(v/1e6) + '</td>').join('')
     + '<td>' + nd((a === 2030 ? M.alc30 : M.alc37)*100, 1) + ' %</td></tr>';
   box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Histograma del Montecarlo">' + s + '</svg>'
@@ -6546,7 +6604,7 @@ function simPinta(){
     .concat(...['d26','conc'].filter(k=>VIS[k]).map(k=>serieExt(CX_CLAVE[k]).map(p=>p[1])));
   /* el eje no parte en cero: con 0–500 las bandas de variabilidad quedaban como una línea gruesa */
   const my = Math.ceil(Math.max.apply(null, vals)/50)*50, yPiso = Math.max(0, Math.floor((Math.min.apply(null, vals) - 20)/50)*50);
-  const g1 = ejes(470,236,40,18,30), fy = [yPiso, my, v=>Math.round(v)];
+  const g1 = ejes(640,268,40,18,30), fy = [yPiso, my, v=>Math.round(v)];
   const xh = y => g1.ml + (y-fx[0])/(fx[1]-fx[0])*g1.iw;
   const yv = v => g1.ih - (v/1e6 - fy[0])/(fy[1]-fy[0])*g1.ih + g1.mt;
   /* bandas del Montecarlo (percentil 10–90 y 25–75), ancladas en lo medido de 2025, con borde para que se lean sobre
@@ -6577,17 +6635,17 @@ function simPinta(){
     + L(Object.keys(sim).map(y=>[+y,sim[y]/1e6]), tok('--tbp'), 2.6) + HS.frente
     + '</svg>';
   /* las curvas de referencia son botones: un clic las muestra u oculta */
-  const conm = (k, col, txt, dash) => '<button type="button" class="leyb' + (VIS[k] ? '' : ' off') + '" data-curva="' + k + '" aria-pressed="'
-    + (VIS[k] ? 'true' : 'false') + '" title="' + (VIS[k] ? 'Ocultar' : 'Mostrar') + ' esta curva"><svg width="22" height="8" aria-hidden="true"><line x1="1" y1="4" x2="21" y2="4" stroke="'
+  const conm = (k, col, txt, dash, largo) => '<button type="button" class="leyb' + (VIS[k] ? '' : ' off') + '" data-curva="' + k + '" aria-pressed="'
+    + (VIS[k] ? 'true' : 'false') + '" title="' + largo + ': clic para ' + (VIS[k] ? 'ocultarla' : 'mostrarla') + '"><svg width="22" height="8" aria-hidden="true"><line x1="1" y1="4" x2="21" y2="4" stroke="'
     + col + '" stroke-width="2.4" stroke-dasharray="' + dash + '"/></svg>' + txt + '</button>';
   document.getElementById('simL1').innerHTML =
-    '<span class="ttl">Series</span>' + chip(tok('--ink'),'Medido 2017–2025')
-    + chip(tok('--tbp'),'Lo que resulta de tus valores')
-    + conm('est23', tok('--ts'), 'Estudio Diadro 2023 (caso Nuevo PIB)', '6 4')
-    + conm('d26', tok('--ser-b'), 'Estudio Diadro 2026 (actualización)', '8 3 2 3')
-    + conm('conc', tok('--ser-a'), 'Concesionaria, estimación interna (17 pórticos)', '1.5 2.5')
-    + (M ? '<span class="grp" style="gap:5px"><i style="background:' + tok('--tbp') + ';opacity:.35;height:9px;width:16px"></i>'
-      + '<span>Montecarlo: percentil 25–75 (oscura), 10–90 (clara) y mediana (punteada)</span></span>' : '')
+    /* rótulos cortos para que la leyenda quepa en dos renglones; el nombre completo va en el globo de cada botón */
+    chip(tok('--ink'),'Medido') + chip(tok('--tbp'),'Tus valores')
+    + conm('est23', tok('--ts'), 'Diadro 2023', '6 4', 'Estudio Diadro 2023, caso «Nuevo PIB»')
+    + conm('d26', tok('--ser-b'), 'Diadro 2026', '8 3 2 3', 'Estudio Diadro 2026, actualización')
+    + conm('conc', tok('--ser-a'), 'Concesionaria (17 pórticos)', '1.5 2.5', 'Concesionaria, estimación interna con los 17 pórticos de AVN y el túnel')
+    + (M ? '<span class="grp" style="gap:5px" title="Banda oscura: percentil 25 a 75; clara: 10 a 90; línea punteada: mediana"><i style="background:' + tok('--tbp') + ';opacity:.35;height:9px;width:16px"></i>'
+      + '<span>Montecarlo P25–75, P10–90 y mediana</span></span>' : '')
     /* los hitos numerados del gráfico van en un globo: la columna del medio tiene que caber en pantalla */
     + '<span class="tipw der" tabindex="0">Hitos del gráfico <span class="tipi">?</span><span class="tip" role="tooltip">' + HS.ley + '</span></span>';
   document.querySelectorAll('#simL1 [data-curva]').forEach(b=>{ b.onclick = ()=>{ SIMX.curvas[b.dataset.curva] = !SIMX.curvas[b.dataset.curva]; simPinta(); }; });
