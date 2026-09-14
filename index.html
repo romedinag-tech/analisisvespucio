@@ -915,6 +915,14 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line-2)
 .pjunto-h span{font-size:.72rem;color:var(--ink-lo);font-weight:600}
 .pjunto-c{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
 @media(max-width:760px){.pjunto{grid-column:auto}.pjunto-c{grid-template-columns:1fr}}
+/* todas las perillas del simulador en un solo marco; «Crecimiento propio» va apilado
+   bajo «Vías competidoras» (.pcol) para que la fila no deje huecos */
+#simPars{border:1px solid var(--line-2);border-radius:var(--r);padding:14px 16px 16px;background:var(--surface)}
+.pcol{display:flex;flex-direction:column;gap:15px;min-width:0}
+.par-rst label,.par-rst select{max-width:100%}
+@media(min-width:1100px){#simPars{grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr))}
+ #simPars .pjunto{grid-column:auto}}
+@media(min-width:761px) and (max-width:1099px){#simPars{grid-template-columns:repeat(2,minmax(0,1fr))}}
 select{border:1px solid var(--line-2);background:var(--surface);color:var(--ink);
  border-radius:22px;padding:6px 12px;font:inherit;font-size:.82rem;font-weight:600;
  cursor:pointer}
@@ -6045,7 +6053,7 @@ function simPars(){
           + nd(lo*100,1) + ' a +' + nd(hi*100,1) + ' puntos entre los dos; el reparto no se puede medir, '
           + 'así que al bajar una elasticidad hay que subir la otra para volver al estudio</span></div>'
           + '<div class="pjunto-c">' + caja(G[0]) + caja(G[1]) + '</div></div>'
-          + G.slice(2).map(caja).join(''); })()
+          + '<div class="pcol">' + caja(G[2]) + caja(G[5]) + '</div>' + caja(G[3]) + caja(G[4]); })()
     + `<div class="par par-rst">
         <button class="btnrst" id="simRst">Volver a los valores que reproducen el estudio</button>
         <button class="btnrst" id="simVyr">Cargar el escenario V&R tendencial</button>
