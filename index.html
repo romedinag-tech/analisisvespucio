@@ -917,6 +917,13 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line-2)
 .parref i.med{background:var(--accent);height:11px}
 .parref em.med{color:var(--accent);top:16px}
 /* PIB y población en un marco común, ocupando dos columnas */
+/* crecimiento propio, fuera de los escenarios: marco gris punteado */
+.pfuera{border:1.5px dashed var(--ink-lo);border-radius:var(--r);padding:8px;display:flex;flex-direction:column;gap:8px;
+ background:color-mix(in srgb,var(--ink-lo) 6%,transparent)}
+.pfuera .pgrp{border-left-color:var(--ink-lo);background:var(--surface)}
+.pfuera-h .tipw{color:var(--mut)}
+.pgrp-nota{margin-top:-6px}
+.pgrp-nota .tipw{font-size:.7rem;font-weight:600;color:var(--ink-lo)}
 .pjunto{grid-column:span 2;border:1.5px dashed color-mix(in srgb,var(--accent) 45%,var(--line-2));
  border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:10px}
 .pjunto-h{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
@@ -6109,7 +6116,8 @@ function mcTri(u, a, m, b){
 }
 function mcDefectos(){
   const P = ELA.principal;
-  const d = {gpib:[1.0,3.5,true], epib:[P.e-P.ee_e, P.e+P.ee_e, true], prop:[0,1,true],
+  /* crecimiento propio: rango 0 a 1 % pedido por RM, pero sin sortear por defecto porque ningún escenario lo usa (14-09-2026) */
+  const d = {gpib:[1.0,3.5,true], epib:[P.e-P.ee_e, P.e+P.ee_e, true], prop:[0,1,false],
     gpob:[0.5,0.9,false], epob:[0,1,false], gtar:[SIM.gtar.v-1, SIM.gtar.v+1, false], epre:[0,0.1,false],
     ev_r68_avn:[-5,0,true], ev_r68_tsc:[-2,0,true], ev_osa_avn:[-3.3,0,true], ev_osa_tsc:[-3.7,1.7,true],
     ev_onp_avn:[-4,0,true], ev_onp_tsc:[-2,2.3,true]};
@@ -6369,17 +6377,28 @@ function simPars(){
   const a1 = DEC.aportes_pob_1, a0 = DEC.aportes_pob_0;
   const lo = Math.min(a1.pib_y_poblacion, a0.pib_y_poblacion), hi = Math.max(a1.pib_y_poblacion, a0.pib_y_poblacion);
 
+  /* CRECIMIENTO PROPIO VA APARTE (RM, 14-09-2026): ningún escenario V&R lo usa, así que va bajo vías competidoras en un marco
+     distinto, y en el Montecarlo no se sortea salvo que se marque su casilla */
   document.getElementById('simIzq').innerHTML = caja(G[2],
     '<label class="simsel">Fechas <select id="simFechas" aria-label="Fechas de las vías competidoras">'
     + '<option value="estudio">del estudio (2027, 2030, 2034)</option>'
-    + '<option value="vigentes">vigentes (2028–29, 2030, 2034–35)</option></select></label>');
-  /* PIB y población van en un marco común: se mueven por separado, pero lo que el dato fija es su suma */
-  document.getElementById('simDer').innerHTML =
-    '<div class="pjunto"><div class="pjunto-h">' + tip('PIB y población, juntos', 'Aportan +' + nd(lo*100,1) + ' a +' + nd(hi*100,1)
-      + ' puntos entre los dos. El reparto no se puede medir: al bajar una elasticidad hay que subir la otra para volver al estudio, '
-      + 'y sortear las dos a la vez en el Montecarlo ensancha la banda más de lo que el dato justifica.') + '</div>'
-    + '<div class="pjunto-c">' + caja(G[0]) + caja(G[1]) + '</div></div>'
-    + caja(G[3]) + caja(G[4]) + caja(G[5]);
+    + '<option value="vigentes">vigentes (2028–29, 2030, 2034–35)</option></select></label>')
+    + '<div class="pfuera"><div class="pfuera-h">' + tip('Fuera de los escenarios', 'Ningún escenario V&R usa crecimiento propio: todos lo dejan en 0. '
+      + 'Queda para explorar qué pasaría si el corredor creciera por sobre lo que explican el PIB y la población. En el Montecarlo no se '
+      + 'sortea salvo que marques su casilla.') + '</div>' + caja(G[5]) + '</div>';
+  /* LA COLUMNA DERECHA VA DE MAYOR A MENOR IMPACTO (RM, 14-09-2026): se ordena por el aporte medio de cada pieza en el estudio,
+     en valor absoluto. PIB y población ya no van en un marco común porque el orden los separa; su advertencia viaja en una nota
+     dentro de cada cuadro, porque lo que el dato fija sigue siendo su suma */
+  const mid = (x, y) => Math.abs((x + y) / 2);
+  const juntos = otro => '<div class="pgrp-nota">' + tip('Se mueve junto con ' + otro, 'PIB y población aportan +' + nd(lo*100,1) + ' a +'
+      + nd(hi*100,1) + ' puntos entre los dos. El reparto no se puede medir: al bajar una elasticidad hay que subir la otra para volver al '
+      + 'estudio, y sortear las dos a la vez en el Montecarlo ensancha la banda más de lo que el dato justifica.') + '</div>';
+  const orden = [
+    {g:G[0], m:mid(a1.pib, a0.pib), x:juntos('Población')},
+    {g:G[1], m:mid(a0.poblacion, a1.poblacion), x:juntos('Economía')},
+    {g:G[3], m:Math.abs(a1.salto_2026)},
+    {g:G[4], m:Math.abs(a1.precio)}].sort((p, q) => q.m - p.m);
+  document.getElementById('simDer').innerHTML = orden.map(o => caja(o.g, o.x)).join('');
 
   const escTip = '<b>Estudio:</b> todas las barras en su marca y los rangos por defecto; la curva naranja crece exactamente como la roja. '
     + '<b>V&R tendencial:</b> PIB actualizado base como tasa equivalente 2027–2037, elasticidad histórica, población y precio sin efecto, '
