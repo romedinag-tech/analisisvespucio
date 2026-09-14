@@ -880,7 +880,7 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line-2)
 .par .ayuda{display:none;position:absolute;left:-6px;right:-6px;top:calc(100% + 2px);z-index:40;
  background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-sm);
  box-shadow:0 8px 22px rgba(0,0,0,.16);padding:8px 10px;font-size:.74rem;line-height:1.4;color:var(--mut);pointer-events:none}
-.par:hover .ayuda,.par:focus-within .ayuda{display:block}
+.par .parh:hover ~ .ayuda,.par .val:hover ~ .ayuda,.par .val:focus ~ .ayuda{display:block}
 .par .ayuda .mcr{display:block;margin-top:5px;padding-top:5px;border-top:1px solid var(--line);color:var(--ink)}
 /* los cuadros por variable del simulador: la tasa arriba y su elasticidad abajo */
 #simPars{align-items:start}
@@ -924,19 +924,76 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line-2)
 .pjunto-h span{font-size:.72rem;color:var(--ink-lo);font-weight:600}
 .pjunto-c{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
 @media(max-width:760px){.pjunto{grid-column:auto}.pjunto-c{grid-template-columns:1fr}}
-/* todas las perillas del simulador en un solo marco; las cajas cortas van apiladas en
-   una columna (.pcol) para que la fila no deje huecos */
-#simPars{border:1px solid var(--line-2);border-radius:var(--r);padding:14px 16px 16px;background:var(--surface)}
-.pcol{display:flex;flex-direction:column;gap:15px;min-width:0}
-/* vías competidoras a todo el ancho: una columna por proyecto, AVN arriba y túnel abajo */
-#simPars .pvias{grid-column:1/-1}
-.pvias-c{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:auto auto;grid-auto-flow:column;gap:12px 26px}
-@media(max-width:760px){.pvias-c{grid-template-columns:1fr;grid-auto-flow:row}}
+/* SIMULADOR EN CUATRO CUARTOS (14-09-2026): vías competidoras a la izquierda, el gráfico en los dos del medio y las
+   demás variables a la derecha, para ver al instante qué hace cada barra. En pantalla ancha el gráfico queda fijo al
+   bajar; en tablet va arriba a todo el ancho y en teléfono primero el gráfico, luego las variables y al final las vías. */
+.sim4{display:grid;gap:14px;align-items:start;grid-template-columns:minmax(0,1fr);grid-template-areas:"cen" "der" "izq"}
+.sim-izq{grid-area:izq}.sim-cen{grid-area:cen;min-width:0}.sim-der{grid-area:der}
+.sim-izq,.sim-der{display:flex;flex-direction:column;gap:12px;min-width:0}
+@media(min-width:761px){.sim4{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"cen cen" "izq der"}}
+@media(min-width:1100px){.sim4{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:"izq cen cen der"}
+ .sim-cen{position:sticky;top:8px}}
+.sim4 .pjunto{grid-column:auto;padding:8px}
+.sim4 .pjunto-c{grid-template-columns:1fr}
 .parh b{white-space:nowrap}
-.par-rst label,.par-rst select{max-width:100%}
-@media(min-width:1100px){#simPars{grid-template-columns:minmax(0,2fr) repeat(2,minmax(0,1fr))}
- #simPars .pjunto{grid-column:auto}}
-@media(min-width:761px) and (max-width:1099px){#simPars{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.parh span{min-width:0}
+.simsel{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--mut);font-weight:600}
+.simsel select{padding:3px 8px;font-size:.72rem;max-width:100%}
+/* barra de mando sobre el gráfico */
+.simbar{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.sbrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.sbsp{flex:1}
+.simbar .btnrst{padding:4px 10px;font-size:.74rem}
+.simbar select{padding:3px 8px;font-size:.74rem}
+.btnmc{border-color:var(--accent)!important;color:var(--accent)!important}
+.mseg{display:inline-flex;border:1px solid var(--line-2);border-radius:20px;overflow:hidden}
+.mseg button{border:0;background:var(--surface);color:var(--mut);font:inherit;font-size:.74rem;font-weight:600;padding:4px 11px;cursor:pointer}
+.mseg button.on{background:var(--accent);color:#fff}
+.mcest{font-size:.7rem;color:var(--ink-lo)}
+.mcest.sucio{color:var(--ts);font-weight:600}
+/* globos de texto: lo que antes ocupaba espacio fijo aparece al pasar el mouse (o con foco) */
+.tipw{position:relative;display:inline-flex;align-items:center;gap:4px;font-size:.78rem;font-weight:700;color:var(--ink);cursor:help;outline:none}
+.tipi{font-style:normal;font-size:.6rem;width:14px;height:14px;border-radius:50%;border:1px solid var(--line-2);display:inline-grid;place-items:center;color:var(--ink-lo);font-weight:700}
+.tipw .tip{display:none;position:absolute;left:0;top:calc(100% + 4px);z-index:50;width:min(360px,80vw);background:var(--surface);
+ border:1px solid var(--line-2);border-radius:var(--r-sm);box-shadow:0 8px 22px rgba(0,0,0,.16);padding:8px 10px;
+ font-size:.74rem;font-weight:400;line-height:1.45;color:var(--mut);text-transform:none;letter-spacing:0}
+.tipw:hover .tip,.tipw:focus .tip,.tipw:focus-within .tip{display:block}
+.sim-der .tipw .tip,.tipw.der .tip{left:auto;right:0}
+/* en teléfono el globo no cabe junto al rótulo: se abre como franja al pie de la pantalla */
+@media(max-width:760px){.tipw .tip,.sim-der .tipw .tip,.tipw.der .tip{position:fixed;left:10px;right:10px;top:auto;bottom:10px;width:auto}}
+.kpis-sim{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 8px}
+.kpis-sim .kpi{padding:7px 9px 7px 12px}
+.kpis-sim .kpi .v{font-size:1.08rem;margin:2px 0 1px}
+.kpis-sim .kpi .label{font-size:.6rem}
+.kpis-sim .kpi .s{font-size:.66rem}
+@media(max-width:600px){.kpis-sim{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* el rango del Montecarlo bajo cada barra: un riel fino con dos manijas, el texto del rango y «sortear» */
+.par .mcrail{position:relative;height:16px;margin-top:1px}
+.par .mcrail::before{content:"";position:absolute;left:8px;right:8px;top:7px;height:2px;border-radius:1px;background:var(--line-2)}
+.mcband{position:absolute;top:5px;height:6px;border-radius:3px;background:color-mix(in srgb,var(--accent) 45%,transparent)}
+.par .mcrail input[type=range]{position:absolute;left:0;top:0;width:100%;height:16px;margin:0;padding:0;background:none;
+ pointer-events:none;-webkit-appearance:none;appearance:none}
+.par .mcrail input[type=range]::-webkit-slider-runnable-track{height:16px;background:transparent;border:0}
+.par .mcrail input[type=range]::-moz-range-track{height:16px;background:transparent;border:0}
+.par .mcrail input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;pointer-events:auto;width:16px;height:14px;
+ margin-top:1px;border-radius:4px;background:var(--surface);border:2px solid var(--accent);cursor:ew-resize;box-sizing:border-box}
+.par .mcrail input[type=range]::-moz-range-thumb{pointer-events:auto;width:16px;height:14px;border-radius:4px;background:var(--surface);
+ border:2px solid var(--accent);cursor:ew-resize;box-sizing:border-box}
+.mcpie{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.mctxt{border:0;background:none;padding:0;font:inherit;font-size:.66rem;color:var(--accent);font-weight:600;cursor:pointer;text-align:left}
+.mctxt:hover{text-decoration:underline}
+.mcsw{font-size:.64rem;color:var(--ink-lo);display:inline-flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap}
+.mcsw input{margin:0;width:12px;height:12px}
+.par.mcoff .mcband{background:color-mix(in srgb,var(--ink-lo) 22%,transparent)}
+.par.mcoff .mctxt{color:var(--ink-lo)}
+.mcnum:not([hidden]){display:flex;align-items:center;gap:4px;font-size:.68rem;color:var(--mut)}
+.mcnum input{width:62px;font:inherit;font-size:.7rem;padding:1px 4px;border:1px solid var(--line-2);border-radius:6px;background:var(--surface);color:var(--ink)}
+/* resultado del Montecarlo */
+#simMCres svg{display:block;width:100%;height:auto}
+.mctab{margin-top:6px;font-size:.72rem}
+.mctab th,.mctab td{padding:3px 5px;text-align:right;cursor:default}
+.mctab th:first-child,.mctab td:first-child{text-align:left}
+.mcaviso{font-size:.7rem;color:var(--ts);margin-top:4px}
 select{border:1px solid var(--line-2);background:var(--surface);color:var(--ink);
  border-radius:22px;padding:6px 12px;font:inherit;font-size:.82rem;font-weight:600;
  cursor:pointer}
@@ -1434,30 +1491,30 @@ body.oyeAbierto{padding-bottom:86px}
 <section id="vPropio" hidden>
   <div class="card">
     <h2>Mueve las variables</h2>
-    <p class="desc">Los valores de partida son los del estudio, leídos de su propia
-      proyección: con ellos la curva naranja crece exactamente como la roja. Corre
-      paralela y no encima porque parte de lo medido en 2025, que es menos de lo que el
-      modelo supuso. Muévelos y verás cuánto se separa.</p>
-    <div class="pars" id="simPars"></div>
-    <div class="kpis" id="simKpis"></div>
-    <div class="grid2">
-      <div class="chartbox">
-        <div class="t">Transacciones anuales de la red</div>
-        <div class="d">Lo medido hasta 2025 y, de ahí en adelante, la proyección del
-          estudio contra la que resulta de los valores que elegiste.</div>
-        <div id="simG1"></div>
-        <div class="legend" id="simL1"></div>
+    <p class="desc">Los valores de partida son los del estudio: con ellos la curva naranja crece exactamente como la roja,
+      paralela porque parte de lo medido en 2025. Mueve una barra y mira el gráfico.</p>
+    <div class="sim4">
+      <div class="sim-izq" id="simIzq"></div>
+      <div class="sim-cen">
+        <div class="simbar" id="simBar"></div>
+        <div class="kpis kpis-sim" id="simKpis"></div>
+        <div class="chartbox">
+          <div class="t">Transacciones anuales de la red</div>
+          <div id="simG1"></div>
+          <div class="legend" id="simL1"></div>
+          <div id="simMCres"></div>
+        </div>
       </div>
-      <div class="chartbox">
-        <div class="t">De dónde viene el crecimiento que elegiste</div>
-        <div class="d">Aporte acumulado de 2025 a 2037. La raya negra marca lo que pone
-          el estudio en cada pieza; PIB y población van juntos porque su reparto no se
-          puede medir.</div>
-        <div id="simG2"></div>
-        <div class="legend" id="simL2"></div>
-      </div>
+      <div class="sim-der" id="simDer"></div>
     </div>
-    <div class="aviso" id="simVeredicto"></div>
+    <div class="aviso" id="simVeredicto" style="margin-top:14px"></div>
+    <div class="chartbox" style="margin-top:14px">
+      <div class="t">De dónde viene el crecimiento que elegiste</div>
+      <div class="d">Aporte acumulado de 2025 a 2037. La raya negra marca lo que pone el estudio en cada pieza; PIB y
+        población van juntos porque su reparto no se puede medir.</div>
+      <div id="simG2"></div>
+      <div class="legend" id="simL2"></div>
+    </div>
   </div>
 
   <div class="card">
@@ -5897,13 +5954,15 @@ function simEventos(R, val){
 }
 
 /* ── MONTECARLO ──────────────────────────────────────────────────────────────
-   Rangos acordados por RM el 14-09-2026: PIB 1 a 3,5 % anual; crecimiento propio 0 a 1 %; vías competidoras por
-   proyecto y concesión; 2026 entre el cierre V&R más bajo de sus métodos y el nivel 2026 de la tendencia de JV.
-   Criterio V&R (hipótesis declarada): elasticidad al PIB dentro de ±1 error estándar de la estimación anual.
-   Distribución triangular: mínimo y máximo del rango, moda en el valor de la barra (acotado al rango), para que el
-   Montecarlo se centre en el escenario cargado. Población y precio no se sortean: quedan en el valor de su barra.
-   Semilla fija: la misma corrida en cada apertura. */
-const MC = {n: 5000, on: true, sem: 20260914};
+   Cada barra tiene un valor puntual y un rango (el riel fino bajo ella). El cálculo puntual es la línea de siempre; el
+   Montecarlo se corre con un botón: sortea cada variable marcada «sortear» dentro de su rango, MC.n veces, con
+   distribución triangular (moda en el valor puntual, acotado al rango) o uniforme, y semilla fija.
+   Rangos por defecto: acuerdos de la reunión (RM, 14-09-2026) —PIB 1 a 3,5 %, crecimiento propio 0 a 1 %, vías por
+   proyecto y concesión, 2026 hasta el nivel más alto discutido— y criterio V&R declarado como hipótesis: elasticidad
+   al PIB ±1 error estándar de la estimación anual; población 0,5–0,9 %, elasticidad a la población 0–1, precio ±1 punto
+   y elasticidad al precio 0–0,1, estas cuatro sin sortear por defecto (PIB y población no se separan en el dato).
+   El salto de 2026 se sortea con los demás valores en su punto, de modo que su rango es un rango de nivel 2026. */
+const MC = {modo:'puntual', n:5000, dist:'tri', sem:20260914, res:null, sucio:false};
 function mcAzar(sem){ let t = sem >>> 0;
   return () => { t += 0x6D2B79F5; let r = Math.imul(t ^ t >>> 15, t | 1);
     r ^= r + Math.imul(r ^ r >>> 7, r | 61); return ((r ^ r >>> 14) >>> 0) / 4294967296; }; }
@@ -5911,8 +5970,25 @@ function mcTri(u, a, m, b){
   if(b <= a) return a; m = Math.min(b, Math.max(a, m)); const c = (m-a)/(b-a);
   return u < c ? a + Math.sqrt(u*(b-a)*(m-a)) : b - Math.sqrt((1-u)*(b-a)*(b-m));
 }
-function mc26(){ return [Math.min(ELA.escenario_rm.bandas.pesimista['2026'], C.proyeccion.porticos.RED.tx.valor),
-                         ELA.cierre_2026_optimista.M*1e6]; }
+function mcDefectos(){
+  const P = ELA.principal;
+  const d = {gpib:[1.0,3.5,true], epib:[P.e-P.ee_e, P.e+P.ee_e, true], prop:[0,1,true],
+    gpob:[0.5,0.9,false], epob:[0,1,false], gtar:[SIM.gtar.v-1, SIM.gtar.v+1, false], epre:[0,0.1,false],
+    ev_r68_avn:[-5,0,true], ev_r68_tsc:[-2,0,true], ev_osa_avn:[-3.3,0,true], ev_osa_tsc:[-3.7,1.7,true],
+    ev_onp_avn:[-4,0,true], ev_onp_tsc:[-2,2.3,true]};
+  Object.keys(d).forEach(k=>{ SIM[k].mc = [d[k][0], d[k][1]]; SIM[k].mcOn = d[k][2]; });
+  mcSaltoDefecto();
+}
+/* rango del salto: el que lleva 2026 al cierre V&R más bajo de los métodos y al nivel más alto discutido, con los demás valores en su punto */
+function mcSaltoDefecto(){
+  const lo = Math.min(ELA.escenario_rm.bandas.pesimista['2026'], C.proyeccion.porticos.RED.tx.valor), hi = ELA.cierre_2026_optimista.M*1e6;
+  SIM.salto.mc = [Math.floor(saltoPara(lo)), Math.ceil(saltoPara(hi))];  SIM.salto.mcOn = true;
+}
+function nivel26(s){
+  const R = refEstudio(SIM.epob.v);
+  return C.historia['2025']*Math.exp(SIM.epib.v*Math.log(1+SIM.gpib.v/100) + SIM.epob.v*Math.log(1+SIM.gpob.v/100)
+    - SIM.epre.v*Math.log(1+SIM.gtar.v/100) + R.salto*s/100);
+}
 
 /* Los valores de partida se leen del estudio y de su descomposicion, no se
    escriben a mano: asi reproducen su proyeccion exactamente. El PIB y el precio
@@ -5938,7 +6014,7 @@ function calibraSim(){
   SIM.gpob.v = D.supuestos.poblacion_rm_anual;  SIM.gpob.ref = SIM.gpob.v;
   SIM.gpob.ay = 'Anual, Región Metropolitana. <b>Declarado por el estudio</b> a partir '
     + 'de proyecciones del INE: el mismo valor todos los años.';
-  SIM.epob.v = 1.0;  SIM.epob.banda = [0, 1];
+  SIM.epob.v = 1.0;
   SIM.epob.ay = '<b>No identificable.</b> Como la población del estudio crece igual '
     + 'todos los años, cualquier valor reproduce su proyección si el PIB se corrige '
     + 'en sentido contrario. Muévela y mira cómo se corre la marca del PIB.';
@@ -5950,14 +6026,12 @@ function calibraSim(){
     + nd(R.epre,3) + ', y no significativa: su modelo casi no responde al precio.';
   /* vías competidoras: la marca es el efecto implícito del estudio en cada concesión (contraste_efectos_red.py);
      el rango del Montecarlo es el que fijó RM el 14-09-2026 */
-  const MCEV = {ev_r68_avn:[-5,0], ev_r68_tsc:[-2,0], ev_osa_avn:[-3.3,0], ev_osa_tsc:[-3.7,1.7], ev_onp_avn:[-4,0], ev_onp_tsc:[-2,2.3]};
   EVS.forEach(k=>{ const x = SIM[k], e0 = ELA.efectos_red_estudio[x.ev][x.conc];
-    x.v = e0;  x.ref = e0;  x.mc = MCEV[k];
+    x.v = e0;  x.ref = e0;
     x.ay = 'Cuánto cambia la demanda ' + (x.conc === 'AVN' ? 'de AVN' : 'del túnel') + ' cuando entra '
       + DEC.nombres_eventos[x.ev] + ' (' + x.ev + ' en el estudio). La marca «estudio» es el efecto implícito en sus salidas: '
       + cPct(e0) + '. En 0 % el proyecto no le quita ni le da tránsito.'; });
-  SIM.gpib.mc = [1.0, 3.5];
-  SIM.epib.mc = [ELA.principal.e - ELA.principal.ee_e, ELA.principal.e + ELA.principal.ee_e];
+
   SIM.salto.v = 100;  SIM.salto.ref = 100;
   SIM.salto.ay = 'El estudio pone ' + cPct(salto26) + ' en 2026, y ' + cPct(R.salto*100)
     + ' de eso no lo explican el PIB, la población ni el precio.'
@@ -5965,10 +6039,11 @@ function calibraSim(){
       + '</b> (banda ' + cPct(pr.lo/h25*100-100) + ' a ' + cPct(pr.hi/h25*100-100) + ').' : '')
     + ' <span id="refTxt_salto"></span>';
   SIM.salto.refMed = 0;  SIM.epib.refMed = 0;
-  SIM.prop.v = 0;  SIM.prop.mc = [0, 1];
+  SIM.prop.v = 0;
   SIM.prop.ay = 'Crecimiento anual que no explican el PIB ni la población. El estudio no pone ninguno aparte de su población. '
     + '<b>No identificado en lo medido:</b> el modelo mensual lo estima en 0 % para 2022–2026, con especificaciones que llegan a +1,5 %.';
   Object.keys(SIM).forEach(k=>{ SIM0[k] = SIM[k].v; });
+  mcDefectos();
 }
 calibraSim();
 
@@ -5999,29 +6074,36 @@ function simSerie(){
   return {serie: out, ap, R};
 }
 
-/* El Montecarlo: MC.n trayectorias con PIB, elasticidad, crecimiento propio, las seis vías y el nivel de 2026 sorteados;
-   el resto, como en simSerie. Devuelve percentiles por año y la fracción de corridas que alcanza al estudio en 2037. */
+/* El Montecarlo. Devuelve percentiles 10, 25, 50, 75 y 90 por año, la fracción de corridas que alcanza al estudio en
+   2030 y 2037, y los 2037 sorteados para el histograma. Si se sortean las elasticidades a la población, los parámetros
+   implícitos del estudio (salto, ajuste, descuentos) quedan en los del valor puntual. */
 function simMC(){
+  const t0 = performance.now();
   const R = refEstudio(SIM.epob.v), aS = ANIOS.filter(a=>a>2026), nAj = ANIOS.filter(a=>a>2025).length - 1;
-  const lPob = SIM.epob.v*Math.log(1+SIM.gpob.v/100), lPr = -SIM.epre.v*Math.log(1+SIM.gtar.v/100);
-  const aj = SIMX.ajuste ? R.resto/nAj : 0, rnd = mcAzar(MC.sem), r26 = mc26();
-  const c26actual = simSerie().serie[2026];
-  const K = ['gpib','epib','prop'].concat(EVS), Y = [2026].concat(aS), res = {};
+  const rnd = mcAzar(MC.sem), K = Object.keys(SIM), aj = SIMX.ajuste ? R.resto/nAj : 0;
+  const sortea = (k, u) => { const x = SIM[k]; if(!x.mcOn || !x.mc) return x.v;
+    return MC.dist === 'uni' ? x.mc[0] + u*(x.mc[1]-x.mc[0]) : mcTri(u, x.mc[0], x.v, x.mc[1]); };
+  const l26p = Math.log(C.historia['2025']) + SIM.epib.v*Math.log(1+SIM.gpib.v/100) + SIM.epob.v*Math.log(1+SIM.gpob.v/100)
+    - SIM.epre.v*Math.log(1+SIM.gtar.v/100);
+  const Y = [2026].concat(aS), res = {};
   Y.forEach(a=>{ res[a] = new Float64Array(MC.n); });
   for(let i=0; i<MC.n; i++){
-    const v = {}; K.forEach(k=>{ v[k] = mcTri(rnd(), SIM[k].mc[0], SIM[k].v, SIM[k].mc[1]); });
-    const c26 = mcTri(rnd(), r26[0], c26actual, r26[1]), EV = simEventos(R, v);
-    const lg = v.epib*Math.log(1+v.gpib/100) + lPob + lPr + aj + v.prop/100;
-    let l = Math.log(c26); res[2026][i] = c26;
+    const v = {}; K.forEach(k=>{ v[k] = sortea(k, rnd()); });
+    const EV = simEventos(R, v);
+    const lg = v.epib*Math.log(1+v.gpib/100) + v.epob*Math.log(1+v.gpob/100) - v.epre*Math.log(1+v.gtar/100) + aj + v.prop/100;
+    let l = l26p + R.salto*v.salto/100 + (EV[2026] || 0);
+    res[2026][i] = Math.exp(l);
     aS.forEach(a=>{ l += lg + (EV[a] || 0); res[a][i] = Math.exp(l); });
   }
-  const q = (arr, p) => { const s = Array.from(arr).sort((x,y)=>x-y), h = (s.length-1)*p, j = Math.floor(h);
-    return s[j] + (s[Math.min(j+1, s.length-1)] - s[j])*(h-j); };
-  const out = {p10:{}, p50:{}, p90:{}};
-  Y.forEach(a=>{ out.p10[a] = q(res[a], .10); out.p50[a] = q(res[a], .50); out.p90[a] = q(res[a], .90); });
-  const est37 = S('tx', ANIOS.indexOf(2037));
-  out.alcanza = Array.from(res[2037]).filter(x=>x >= est37).length / MC.n;
-  out.r26 = r26;
+  const PC = [.10,.25,.50,.75,.90], out = {p:{}, n:MC.n, dist:MC.dist, sem:MC.sem};
+  Y.forEach(a=>{ const o = res[a].slice().sort();
+    out.p[a] = PC.map(q=>{ const h = (o.length-1)*q, j = Math.floor(h); return o[j] + (o[Math.min(j+1, o.length-1)] - o[j])*(h-j); }); });
+  const e30 = S('tx', ANIOS.indexOf(2030)), e37 = S('tx', ANIOS.indexOf(2037));
+  out.alc30 = res[2030].filter(x=>x >= e30).length / MC.n;
+  out.alc37 = res[2037].filter(x=>x >= e37).length / MC.n;
+  out.h37 = res[2037];
+  out.pob = (SIM.gpob.mcOn || SIM.epob.mcOn) && SIM.gpib.mcOn;
+  out.ms = performance.now() - t0;
   return out;
 }
 
@@ -6119,104 +6201,194 @@ function simGrupos(){
 
 function simPars(){
   const muestra = k => nd(SIM[k].v, SIM[k].dec) + SIM[k].uni;
-  const ancho = (k, a, b) => ';width:calc((100% - 16px) * ' + ((b-a)/(SIM[k].max-SIM[k].min)).toFixed(4) + ')';
+  const fv = (k, v) => (v<0?'−':'') + nd(Math.abs(v), SIM[k].dec) + SIM[k].uni;
+  const tip = (lbl, txt, cls) => '<span class="tipw' + (cls ? ' ' + cls : '') + '" tabindex="0">' + lbl
+    + ' <span class="tipi">?</span><span class="tip" role="tooltip">' + txt + '</span></span>';
   const par = k => { const x = SIM[k];
-      /* franja del Montecarlo, banda de lo no identificable y marcas del estudio y de lo medido */
-      const mc = x.mc ? '<span class="mc" style="left:' + posRiel(k,x.mc[0]) + ancho(k, x.mc[0], x.mc[1]) + '"></span>' : '';
-      const marca = x.banda
-        ? '<div class="parref"><span class="banda" style="left:' + posRiel(k,x.banda[0]) + ancho(k, x.banda[0], x.banda[1])
-          + '"></span><em style="left:' + posRiel(k,(x.banda[0]+x.banda[1])/2)
-          + '">rango explorado · no identificable</em></div>'
-        : (x.ref !== undefined || x.mc ? '<div class="parref' + (x.refMed !== undefined ? ' doble' : '') + '">' + mc
-          + (x.ref !== undefined ? '<i id="rf_' + k + '" style="left:'
-          + posRiel(k,x.ref) + '"></i><em id="rfe_' + k + '" style="left:' + posRiel(k,x.ref)
-          + '">estudio</em>' : '')
-          + (x.refMed !== undefined ? '<i class="med" id="rfm_' + k + '"></i><em class="med" id="rfme_'
-            + k + '"></em>' : '') + '</div>' : '');
-      const f = v => (v<0?'−':'') + nd(Math.abs(v), Math.max(1, x.dec)) + x.uni;
-      const mcTxt = x.mc ? '<span class="mcr"><b>Montecarlo:</b> de ' + f(x.mc[0]) + ' a ' + f(x.mc[1])
-          + ', con la moda en el valor de la barra.</span>'
-        : (k === 'salto' ? '<span class="mcr"><b>Montecarlo:</b> sortea el nivel de 2026 entre ' + nd(mc26()[0]/1e6)
-          + ' y ' + nd(mc26()[1]/1e6) + ' M (el cierre V&R más bajo y el del escenario optimista), con la moda en el que da esta barra.</span>'
-        : (['gpob','epob','gtar','epre'].indexOf(k) >= 0 ? '<span class="mcr"><b>Montecarlo:</b> no se sortea; queda en el valor de la barra.</span>' : ''));
-      return `<div class="par">
+      const marca = x.ref !== undefined ? '<div class="parref' + (x.refMed !== undefined ? ' doble' : '') + '">'
+          + '<i id="rf_' + k + '" style="left:' + posRiel(k,x.ref) + '"></i><em id="rfe_' + k + '" style="left:'
+          + posRiel(k,x.ref) + '">estudio</em>'
+          + (x.refMed !== undefined ? '<i class="med" id="rfm_' + k + '"></i><em class="med" id="rfme_' + k + '"></em>' : '')
+          + '</div>' : '';
+      const rango = x.mc ? `<div class="mcrail"><span class="mcband" id="mcb_${k}"></span>
+          <input type="range" class="mclo" id="mclo_${k}" min="${x.min}" max="${x.max}" step="${x.step}" value="${x.mc[0]}" aria-label="${x.rot}: mínimo del Montecarlo">
+          <input type="range" class="mchi" id="mchi_${k}" min="${x.min}" max="${x.max}" step="${x.step}" value="${x.mc[1]}" aria-label="${x.rot}: máximo del Montecarlo"></div>
+        <div class="mcpie"><button type="button" class="mctxt" id="mct_${k}" title="Escribir el rango"></button>
+          <label class="mcsw"><input type="checkbox" id="mcon_${k}"${x.mcOn ? ' checked' : ''}> sortear</label></div>
+        <div class="mcnum" id="mcn_${k}" hidden>de <input type="number" id="mcnlo_${k}" step="${x.step}" aria-label="mínimo">
+          a <input type="number" id="mcnhi_${k}" step="${x.step}" aria-label="máximo"></div>` : '';
+      return `<div class="par${x.mcOn ? '' : ' mcoff'}" id="par_${k}">
         <div class="parh"><span>${x.rot}</span><b id="pv_${k}">${muestra(k)}</b></div>
-        <input type="range" id="pr_${k}" min="${x.min}" max="${x.max}"
+        <input type="range" class="val" id="pr_${k}" min="${x.min}" max="${x.max}"
           step="${x.step}" value="${x.v}" aria-label="${x.rot}" aria-describedby="ay_${k}">
-        ${marca}
-        <div class="ayuda" role="tooltip" id="ay_${k}">${x.ay}${mcTxt}</div></div>`; };
-  document.getElementById('simPars').innerHTML =
-    '<div class="pars-nota">Cada cuadro es una pieza de la proyección, en orden de cuánto pesa en '
-    + 'el crecimiento del tránsito que el estudio proyecta entre 2025 y ' + DEC.fin + ', según su '
-    + 'descomposición. La cifra de la esquina es ese aporte, en puntos de logaritmo. <b>Pasa el mouse sobre una barra</b> '
-    + '(o tócala) para ver qué mide; la franja clara bajo ella es el rango que recorre el Montecarlo.</div>'
-    + (function(){ const G = simGrupos(), caja = g => '<div class="pgrp"><div class="pgrp-h"><b>' + g.t
-          + '</b><span>aporta ' + g.peso + '</span></div>' + g.k.map(par).join('') + '</div>';
-        const a1 = DEC.aportes_pob_1, a0 = DEC.aportes_pob_0;
-        const lo = Math.min(a1.pib_y_poblacion, a0.pib_y_poblacion), hi = Math.max(a1.pib_y_poblacion, a0.pib_y_poblacion);
-        /* PIB y población van en un marco común: se mueven por separado, pero lo que
-           el dato fija es su suma, y el reparto entre ambos no se puede medir */
-        return '<div class="pjunto"><div class="pjunto-h"><b>PIB y población, juntos</b><span>aportan +'
-          + nd(lo*100,1) + ' a +' + nd(hi*100,1) + ' puntos entre los dos; el reparto no se puede medir, '
-          + 'así que al bajar una elasticidad hay que subir la otra para volver al estudio</span></div>'
-          + '<div class="pjunto-c">' + caja(G[0]) + caja(G[1]) + '</div></div>'
-          + '<div class="pcol">' + caja(G[3]) + caja(G[5]) + '</div>' + caja(G[4])
-          + '<div class="pgrp pvias"><div class="pgrp-h"><b>' + G[2].t + '</b><span>aporta ' + G[2].peso
-          + ' en el estudio · efecto de cada proyecto sobre la demanda de cada concesión</span></div>'
-          + '<div class="pvias-c">' + G[2].k.map(par).join('') + '</div></div>'; })()
-    + `<div class="par par-rst">
-        <span class="mcopt" style="flex-basis:100%">Cargar escenario</span>
-        <button class="btnrst" id="simRst">Estudio</button>
-        <button class="btnrst" id="simVyr">V&R tendencial</button>
-        <button class="btnrst" id="simVyrO">V&R optimista</button>
-        <button class="btnrst" id="simVyrP">V&R pesimista</button>
-        <label class="mcopt"><input type="checkbox" id="simMC" ${MC.on ? 'checked' : ''}> Montecarlo, ${nf.format(MC.n)} corridas</label>
-        <label style="display:block;margin-top:8px;font-size:.85rem">Fechas de las vías competidoras
-          <select id="simFechas" aria-label="Fechas de las vías competidoras">
-            <option value="estudio">las del estudio (2027, 2030, 2034)</option>
-            <option value="vigentes">las del calendario vigente (2028–29, 2030, 2034–35)</option></select></label>
-        <small><b>Estudio:</b> todas las barras en su marca; la curva naranja crece exactamente como la roja.
-        <b>V&R tendencial:</b> PIB actualizado base como tasa equivalente 2027–2037, elasticidad histórica, población y precio
-        sin efecto, las vías del estudio en fechas vigentes, sin ajuste de la regresión y 2026 en el cierre medido; reproduce
-        el tendencial de la pestaña «Escenario V&R». <b>V&R optimista:</b> lo mismo, con 2026 en el nivel más alto que se
-        discutió (${nd(ELA.cierre_2026_optimista.M)} M). <b>V&R pesimista:</b> PIB actualizado pesimista y el cierre 2026 más bajo
-        de los métodos V&R. <b>Montecarlo:</b> sortea PIB, elasticidad, crecimiento propio, las seis vías y el nivel de 2026
-        dentro de sus franjas (triangular, moda en la barra); población y precio quedan fijos. La banda del gráfico va del
-        percentil 10 al 90.</small>
-       </div>`;
-  /* la marca de la elasticidad al PIB se reubica tras pintar: su posicion final
-     depende del supuesto de poblacion y se centraliza en simRefs */
+        <div class="ayuda" role="tooltip" id="ay_${k}">${x.ay}</div>
+        ${marca}${rango}</div>`; };
+  const G = simGrupos();
+  const caja = (g, extra) => '<div class="pgrp"><div class="pgrp-h"><b>' + g.t + '</b><span>aporta ' + g.peso + '</span></div>'
+    + (extra || '') + g.k.map(par).join('') + '</div>';
+  const a1 = DEC.aportes_pob_1, a0 = DEC.aportes_pob_0;
+  const lo = Math.min(a1.pib_y_poblacion, a0.pib_y_poblacion), hi = Math.max(a1.pib_y_poblacion, a0.pib_y_poblacion);
+
+  document.getElementById('simIzq').innerHTML = caja(G[2],
+    '<label class="simsel">Fechas <select id="simFechas" aria-label="Fechas de las vías competidoras">'
+    + '<option value="estudio">del estudio (2027, 2030, 2034)</option>'
+    + '<option value="vigentes">vigentes (2028–29, 2030, 2034–35)</option></select></label>');
+  /* PIB y población van en un marco común: se mueven por separado, pero lo que el dato fija es su suma */
+  document.getElementById('simDer').innerHTML =
+    '<div class="pjunto"><div class="pjunto-h">' + tip('PIB y población, juntos', 'Aportan +' + nd(lo*100,1) + ' a +' + nd(hi*100,1)
+      + ' puntos entre los dos. El reparto no se puede medir: al bajar una elasticidad hay que subir la otra para volver al estudio, '
+      + 'y sortear las dos a la vez en el Montecarlo ensancha la banda más de lo que el dato justifica.') + '</div>'
+    + '<div class="pjunto-c">' + caja(G[0]) + caja(G[1]) + '</div></div>'
+    + caja(G[3]) + caja(G[4]) + caja(G[5]);
+
+  const escTip = '<b>Estudio:</b> todas las barras en su marca y los rangos por defecto; la curva naranja crece exactamente como la roja. '
+    + '<b>V&R tendencial:</b> PIB actualizado base como tasa equivalente 2027–2037, elasticidad histórica, población y precio sin efecto, '
+    + 'las vías del estudio en fechas vigentes, sin ajuste de la regresión y 2026 en el cierre medido; reproduce la pestaña «Escenario V&R». '
+    + '<b>V&R optimista:</b> lo mismo, con 2026 en ' + nd(ELA.cierre_2026_optimista.M) + ' M, el nivel más alto discutido. '
+    + '<b>V&R pesimista:</b> PIB actualizado pesimista y el cierre 2026 más bajo de los métodos V&R. '
+    + 'Los escenarios V&R conservan los rangos que hayas movido; sólo el del salto de 2026 se recalcula.';
+  const calcTip = '<b>Puntual:</b> la línea que resulta de los valores de las barras; cambia al instante. '
+    + '<b>Montecarlo:</b> sortea cada variable marcada «sortear» dentro de su rango (el riel fino bajo la barra; arrastra sus extremos '
+    + 'o toca el texto para escribirlo) y recalcula la trayectoria las veces elegidas. Triangular pone la moda en el valor de la barra; '
+    + 'uniforme da el mismo peso a todo el rango. El salto de 2026 se sortea con los demás valores en su punto: su rango es un rango de '
+    + 'nivel 2026. Semilla fija: la misma configuración da siempre el mismo resultado; «Otra semilla» comprueba que no depende del azar.';
+  const leeTip = 'Cada cuadro es una pieza de la proyección. La cifra de la esquina es lo que aporta en el estudio entre 2025 y '
+    + DEC.fin + ', en puntos de logaritmo. Pasa el mouse sobre una barra para ver qué mide; la marca «estudio» bajo ella es el valor que '
+    + 'usa o implica la consultora.';
+  document.getElementById('simBar').innerHTML =
+    '<div class="sbrow">' + tip('Escenario', escTip)
+    + '<button class="btnrst" id="simRst">Estudio</button><button class="btnrst" id="simVyr">V&R tendencial</button>'
+    + '<button class="btnrst" id="simVyrO">V&R optimista</button><button class="btnrst" id="simVyrP">V&R pesimista</button>'
+    + '<span class="sbsp"></span>' + tip('Lectura', leeTip, 'der') + '</div>'
+    + '<div class="sbrow">' + tip('Cálculo', calcTip)
+    + '<span class="mseg"><button type="button" id="modoP">Puntual</button><button type="button" id="modoM">Montecarlo</button></span>'
+    + '<select id="mcN" aria-label="Número de corridas"><option value="1000">1.000</option><option value="5000">5.000</option><option value="10000">10.000</option></select>'
+    + '<select id="mcDist" aria-label="Distribución del sorteo"><option value="tri">triangular</option><option value="uni">uniforme</option></select>'
+    + '<button class="btnrst btnmc" id="mcCorre">Correr</button><button class="btnrst" id="mcSem">Otra semilla</button>'
+    + '<span class="mcest" id="mcEst"></span></div>';
+
+  /* ── manejo de las barras y de sus rangos ── */
+  const sucio = () => { if(MC.res) MC.sucio = true; };
+  const banda = k => { const x = SIM[k], b = document.getElementById('mcb_' + k); if(!b) return;
+    b.style.left = posRiel(k, x.mc[0]);
+    b.style.width = 'calc((100% - 16px) * ' + ((x.mc[1]-x.mc[0])/(x.max-x.min)).toFixed(4) + ')';
+    document.getElementById('mclo_' + k).value = x.mc[0];  document.getElementById('mchi_' + k).value = x.mc[1];
+    document.getElementById('mct_' + k).textContent = 'rango ' + fv(k, x.mc[0]) + ' a ' + fv(k, x.mc[1])
+      + (k === 'salto' ? ' · 2026: ' + nd(nivel26(x.mc[0])/1e6) + '–' + nd(nivel26(x.mc[1])/1e6) + ' M' : '');
+    document.getElementById('par_' + k).classList.toggle('mcoff', !x.mcOn);
+    document.getElementById('mcon_' + k).checked = !!x.mcOn; };
+  const bandas = () => Object.keys(SIM).forEach(k=>{ if(SIM[k].mc) banda(k); });
   Object.keys(SIM).forEach(k=>{
-    const el = document.getElementById('pr_'+k);
-    el.oninput = ()=>{ SIM[k].v = +el.value;
+    const x = SIM[k], el = document.getElementById('pr_'+k);
+    el.oninput = ()=>{ x.v = +el.value;
       document.getElementById('pv_'+k).textContent = muestra(k);
       if(k === 'epob') simRefs();
-      simPinta(); };
+      if(SIM.salto.mc) banda('salto');
+      sucio();  simPinta(); };
+    if(!x.mc) return;
+    const lo_ = document.getElementById('mclo_'+k), hi_ = document.getElementById('mchi_'+k);
+    const mueve = ()=>{ let a = +lo_.value, b = +hi_.value; if(a > b){ const t = a; a = b; b = t; }
+      x.mc = [a, b];  banda(k);  sucio();  simPinta(); };
+    lo_.oninput = mueve;  hi_.oninput = mueve;
+    document.getElementById('mcon_'+k).onchange = e=>{ x.mcOn = e.target.checked; banda(k); sucio(); simPinta(); };
+    document.getElementById('mct_'+k).onclick = ()=>{ const n = document.getElementById('mcn_'+k);
+      n.hidden = !n.hidden;
+      if(!n.hidden){ document.getElementById('mcnlo_'+k).value = x.mc[0]; document.getElementById('mcnhi_'+k).value = x.mc[1]; } };
+    ['mcnlo_','mcnhi_'].forEach(p=>{ document.getElementById(p+k).onchange = ()=>{
+      const c = v => Math.max(x.min, Math.min(x.max, isNaN(v) ? x.v : v));
+      let a = c(parseFloat(document.getElementById('mcnlo_'+k).value)), b = c(parseFloat(document.getElementById('mcnhi_'+k).value));
+      if(a > b){ const t = a; a = b; b = t; }
+      x.mc = [a, b];  banda(k);  sucio();  simPinta(); }; });
   });
+  bandas();
   const fija = (k, v) => { SIM[k].v = v; document.getElementById('pr_'+k).value = v;
     document.getElementById('pv_'+k).textContent = muestra(k); };
   const fe = document.getElementById('simFechas');
   fe.value = SIMX.fechas;
-  fe.onchange = ()=>{ SIMX.fechas = fe.value; simPinta(); };
+  fe.onchange = ()=>{ SIMX.fechas = fe.value; sucio(); simPinta(); };
   document.getElementById('simRst').onclick = ()=>{
     Object.keys(SIM).forEach(k=>fija(k, SIM0[k]));
     SIMX.fechas = 'estudio'; SIMX.ajuste = true; SIMX.evPob1 = false; fe.value = 'estudio';
-    simRefs();  simPinta(); };
+    simRefs();  mcDefectos();  bandas();  sucio();  simPinta(); };
   /* escenarios V&R: con estas perillas 2037 coincide con escSerie (misma aritmética logarítmica). Difieren en la senda
      de PIB y en el nivel de 2026: tendencial = cierre medido; optimista = nivel 2026 más alto discutido (14-09-2026);
      pesimista = PIB pesimista y el cierre más bajo de los métodos, como la banda pesimista de la pestaña «Escenario V&R» */
-  const cargaVyr = (senda, nivel26) => {
+  const cargaVyr = (senda, nivel) => {
     let sl = 0; for(let a=2027; a<=2037; a++) sl += Math.log(1+ELA.pib_escenario[senda][a]/100);
     fija('gpib', +((Math.exp(sl/11)-1)*100).toFixed(4)); fija('epib', ELA.principal.e); fija('epob', 0); fija('epre', 0);
     EVS.forEach(k=>fija(k, SIM0[k])); fija('prop', 0);
     SIMX.fechas = 'vigentes'; SIMX.ajuste = false; SIMX.evPob1 = true; fe.value = 'vigentes';
-    fija('salto', saltoPara(nivel26));
-    simRefs();  simPinta(); };
+    fija('salto', saltoPara(nivel));
+    simRefs();  mcSaltoDefecto();  bandas();  sucio();  simPinta(); };
   document.getElementById('simVyr').onclick = ()=> cargaVyr('base', C.proyeccion.porticos.RED.tx.valor);
   document.getElementById('simVyrO').onclick = ()=> cargaVyr('base', ELA.cierre_2026_optimista.M*1e6);
   document.getElementById('simVyrP').onclick = ()=> cargaVyr('pesimista', ELA.escenario_rm.bandas.pesimista['2026']);
-  document.getElementById('simMC').onchange = e => { MC.on = e.target.checked; simPinta(); };
+
+  /* ── cálculo puntual o Montecarlo ── */
+  const nSel = document.getElementById('mcN'), dSel = document.getElementById('mcDist');
+  nSel.value = String(MC.n);  dSel.value = MC.dist;
+  nSel.onchange = ()=>{ sucio(); simPinta(); };  dSel.onchange = ()=>{ sucio(); simPinta(); };
+  const corre = ()=>{ MC.n = +nSel.value; MC.dist = dSel.value; MC.res = simMC(); MC.sucio = false; MC.modo = 'montecarlo'; simPinta(); };
+  document.getElementById('mcCorre').onclick = corre;
+  document.getElementById('mcSem').onclick = ()=>{ MC.sem = (Math.imul(MC.sem, 1664525) + 1013904223) >>> 0; corre(); };
+  document.getElementById('modoP').onclick = ()=>{ MC.modo = 'puntual'; simPinta(); };
+  document.getElementById('modoM').onclick = ()=>{ if(!MC.res) corre(); else { MC.modo = 'montecarlo'; simPinta(); } };
   simRefs();
+}
+
+/* Estado del cálculo, histograma de 2037 con las marcas de referencia y cuadro de percentiles */
+function mcPinta(M, sim){
+  const on = MC.modo === 'montecarlo';
+  document.getElementById('modoP').classList.toggle('on', !on);
+  document.getElementById('modoM').classList.toggle('on', on);
+  const est = document.getElementById('mcEst'), box = document.getElementById('simMCres');
+  est.classList.toggle('sucio', !!(MC.res && MC.sucio));
+  est.textContent = !MC.res ? 'sin correr' : (MC.sucio ? 'cambiaste valores: vuelve a correr'
+    : nf.format(MC.res.n) + ' corridas · ' + (MC.res.dist === 'uni' ? 'uniforme' : 'triangular') + ' · ' + nd(MC.res.ms,0) + ' ms');
+  if(!M){ box.innerHTML = ''; return; }
+  const i37 = ANIOS.indexOf(2037), e37 = S('tx', i37), BR = ELA.escenario_rm.bandas;
+  const t37 = BR.tendencial['2037'], REF = [
+    ['estudio', e37, tok('--ts')], ['V&R tendencial', t37, tok('--accent')], ['V&R pesimista', BR.pesimista['2037'], tok('--ink-lo')],
+    ['V&R optimista', t37*ELA.cierre_2026_optimista.M*1e6/BR.tendencial['2026'], tok('--ser-b')], ['puntual', sim[2037], tok('--tbp')]];
+  const h = M.h37; let lo = Infinity, hi = -Infinity;
+  for(let i=0; i<h.length; i++){ if(h[i] < lo) lo = h[i]; if(h[i] > hi) hi = h[i]; }
+  REF.forEach(r=>{ lo = Math.min(lo, r[1]); hi = Math.max(hi, r[1]); });
+  const pad = (hi-lo)*.04; lo -= pad; hi += pad;
+  const NB = 40, cnt = new Array(NB).fill(0);
+  for(let i=0; i<h.length; i++) cnt[Math.min(NB-1, Math.floor((h[i]-lo)/(hi-lo)*NB))]++;
+  /* rótulos de las marcas: las que caen en el mismo valor se funden («V&R tendencial = puntual») y las cercanas bajan
+     de fila, para que no se monten */
+  const W = anchoSvg(470), ml = 8, iw = W - 16, mx = Math.max.apply(null, cnt);
+  const X = v => ml + (v-lo)/(hi-lo)*iw;
+  const MK = [];
+  REF.slice().sort((a,b)=>a[1]-b[1]).forEach(r=>{ const u = MK[MK.length-1];
+    if(u && Math.abs(X(r[1]) - X(u.v)) < 2) u.t += ' = ' + r[0]; else MK.push({t:r[0], v:r[1], c:r[2], punt:r[0] === 'puntual'}); });
+  const filas = [];
+  MK.forEach(m=>{ const x = X(m.v), w = m.t.length*4.2 + 6; let f = 0;
+    while(filas[f] && filas[f].some(q=>Math.abs(q - x) < (w + 40)/2)) f++;
+    (filas[f] = filas[f] || []).push(x); m.f = f; m.x = Math.min(ml + iw - w/2, Math.max(ml + w/2, x)); });
+  const top = 22 + filas.length*10, ih = 56, H = top + ih + 18;
+  let s = '<text x="' + ml + '" y="10" font-size="9.5" font-weight="700" fill="' + tok('--ink') + '">Tránsito 2037 en las '
+    + nf.format(M.n) + ' corridas</text>';
+  cnt.forEach((c,i)=>{ const hh = c/mx*ih;
+    s += '<rect x="' + (ml + i*iw/NB + .5).toFixed(1) + '" y="' + (top+ih-hh).toFixed(1) + '" width="' + (iw/NB - 1).toFixed(1)
+      + '" height="' + hh.toFixed(1) + '" fill="' + tok('--tbp') + '" opacity="' + (MC.sucio ? .3 : .55) + '"/>'; });
+  MK.forEach(m=>{ const x = X(m.v), yl = 22 + m.f*10;
+    s += '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + (yl+2) + '" y2="' + (top+ih) + '" stroke="' + m.c
+      + '" stroke-width="1.6"' + (m.punt ? ' stroke-dasharray="3 2"' : '') + '/>'
+      + '<text x="' + m.x.toFixed(1) + '" y="' + yl + '" text-anchor="middle" font-size="8" font-weight="700" fill="' + m.c + '">'
+      + m.t + '</text>'; });
+  s += '<line x1="' + ml + '" x2="' + (ml+iw) + '" y1="' + (top+ih) + '" y2="' + (top+ih) + '" stroke="' + tok('--line-2') + '"/>';
+  const paso = Math.max(10, Math.ceil((hi-lo)/1e6/5/10)*10);
+  for(let v = Math.ceil(lo/1e6/paso)*paso; v <= hi/1e6; v += paso)
+    s += '<text x="' + X(v*1e6).toFixed(1) + '" y="' + (top+ih+13) + '" text-anchor="middle" font-size="8.5" fill="' + tok('--ink-lo') + '">' + v + ' M</text>';
+  const fila = a => '<tr><td>' + a + '</td>' + M.p[a].map(v=>'<td>' + nd(v/1e6) + '</td>').join('')
+    + '<td>' + nd((a === 2030 ? M.alc30 : M.alc37)*100, 1) + ' %</td></tr>';
+  box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Histograma del Montecarlo">' + s + '</svg>'
+    + '<div style="overflow-x:auto"><table class="mctab"><thead><tr><th>M</th><th>P10</th><th>P25</th><th>Mediana</th><th>P75</th><th>P90</th>'
+    + '<th title="Porcentaje de corridas que alcanza la proyección del estudio">≥ estudio</th></tr></thead>'
+    + '<tbody>' + fila(2030) + fila(2037) + '</tbody></table></div>'
+    + (M.pob ? '<div class="mcaviso">Estás sorteando PIB y población a la vez: como su reparto no se puede medir, la banda sale más ancha de lo que el dato justifica.</div>' : '');
 }
 
 function simPinta(){
@@ -6230,18 +6402,14 @@ function simPinta(){
   const cagr = (x,y,n)=> (Math.pow(y/x,1/n)-1)*100;
   const obs8 = cagr(hist(2017), hist(2025), 8);
   const conv = sim[2037] >= S('tx',i37);
-  const M = MC.on ? simMC() : null;
+  const M = MC.modo === 'montecarlo' && MC.res ? MC.res : null;
+  const PM = M ? (a, i) => M.p[a][i] : null;   /* i: 0 = P10, 1 = P25, 2 = mediana, 3 = P75, 4 = P90 */
 
   const K = [
-    ['Lo que resulta de tus valores', cPct(g*100), 'anual promedio 2025–2037', 'var(--tbp)'],
-    ['La del estudio', cPct(gmod*100), '2025 a 2037, su propia proyección', 'var(--ts)'],
-    ['La observada', cPct(obs8), '2017 a 2025, ocho años medidos', 'var(--ink)'],
-    ['Para alcanzar el nivel 2037', cPct(nec*100), 'desde lo medido en 2025',
-      conv ? 'var(--tbfp)' : 'var(--ts)'],
-    ['Tránsito en 2037', nd(sim[2037]/1e6)+' M', 'contra ' + nd(S('tx',i37)/1e6)
-      + ' M del estudio', 'var(--ink)']];
-  if(M) K.push(['Montecarlo, 2037', nd(M.p50[2037]/1e6)+' M', 'mediana; percentil 10 a 90: ' + nd(M.p10[2037]/1e6) + ' a '
-    + nd(M.p90[2037]/1e6) + ' M. Alcanza al estudio en ' + nd(M.alcanza*100,1) + ' % de las corridas', 'var(--tbp)']);
+    ['Tus valores', cPct(g*100), 'anual 2025–2037', 'var(--tbp)'],
+    ['El estudio', cPct(gmod*100), 'anual 2025–2037', 'var(--ts)'],
+    ['Observada', cPct(obs8), 'anual 2017–2025', 'var(--ink)'],
+    [M ? '2037, mediana MC' : 'Tránsito 2037', nd((M ? PM(2037,2) : sim[2037])/1e6)+' M', (M ? 'puntual ' + nd(sim[2037]/1e6) + ' M; ' : '') + 'estudio ' + nd(S('tx',i37)/1e6) + ' M', 'var(--ink)']];
   document.getElementById('simKpis').innerHTML = K.map(k=>
     '<div class="kpi"><div class="label">' + k[0] + '</div>'
     + '<div class="v" style="color:' + k[3] + '">' + k[1] + '</div>'
@@ -6253,17 +6421,19 @@ function simPinta(){
   const vals = hAn.map(y=>hist(y)/1e6)
     .concat(ANIOS.filter(x=>x>=2025).map(x=>S('tx',ANIOS.indexOf(x))/1e6))
     .concat(Object.keys(sim).map(y=>sim[y]/1e6))
-    .concat(M ? Object.values(M.p90).map(v=>v/1e6) : []);
+    .concat(M ? Object.keys(M.p).map(a=>M.p[a][4]/1e6) : []);
   const my = Math.ceil(Math.max.apply(null, vals)/50)*50;
   const g1 = ejes(470,230,40,18,30), fy = [0, my, v=>Math.round(v)];
   const xh = y => g1.ml + (y-fx[0])/(fx[1]-fx[0])*g1.iw;
   const yv = v => g1.ih - (v/1e6 - fy[0])/(fy[1]-fy[0])*g1.ih + g1.mt;
-  /* banda del Montecarlo, percentil 10 a 90, anclada en lo medido de 2025, y su mediana */
-  const aM = M ? Object.keys(M.p10).map(Number).sort((p,q)=>p-q) : [];
-  const bandaMC = M ? '<polygon points="' + xh(2025).toFixed(1) + ',' + yv(sim[2025]).toFixed(1) + ' '
-      + aM.map(a=>xh(a).toFixed(1) + ',' + yv(M.p90[a]).toFixed(1)).join(' ') + ' '
-      + aM.slice().reverse().map(a=>xh(a).toFixed(1) + ',' + yv(M.p10[a]).toFixed(1)).join(' ')
-      + '" fill="' + tok('--tbp') + '" opacity=".16"/>' : '';
+  /* bandas del Montecarlo (percentil 10–90 y 25–75), ancladas en lo medido de 2025; si cambiaste algo desde la última
+     corrida se atenúan hasta volver a correr */
+  const aM = M ? Object.keys(M.p).map(Number).sort((p,q)=>p-q) : [];
+  const poli = (i0, i1, op) => '<polygon points="' + xh(2025).toFixed(1) + ',' + yv(sim[2025]).toFixed(1) + ' '
+      + aM.map(a=>xh(a).toFixed(1) + ',' + yv(PM(a,i1)).toFixed(1)).join(' ') + ' '
+      + aM.slice().reverse().map(a=>xh(a).toFixed(1) + ',' + yv(PM(a,i0)).toFixed(1)).join(' ')
+      + '" fill="' + tok('--tbp') + '" opacity="' + (MC.sucio ? op/2.5 : op) + '"/>';
+  const bandaMC = M ? poli(0, 4, .13) + poli(1, 3, .2) : '';
   const HS = hitosSvg(xh, g1.mt, g1.ih+g1.mt, A0, A1, SIMX.fechas === 'vigentes' ? 'real' : 'estudio');
   const L = (pares,col,gr,dash) => { const s = linea(g1, pares, fx, fy, col, gr);
     return dash ? s.replace('/>', ' stroke-dasharray="' + dash + '"/>') : s; };
@@ -6277,7 +6447,7 @@ function simPinta(){
     + bandaMC
     + L(hAn.map(y=>[y,hist(y)/1e6]), tok('--ink'), 2.2)
     + L(ANIOS.filter(x=>x>=2025).map(x=>[x,S('tx',ANIOS.indexOf(x))/1e6]), tok('--ts'), 2, '6 4')
-    + (M ? L([[2025, sim[2025]/1e6]].concat(aM.map(a=>[a, M.p50[a]/1e6])), tok('--tbp'), 1.3, '2 3') : '')
+    + (M ? L([[2025, sim[2025]/1e6]].concat(aM.map(a=>[a, PM(a,2)/1e6])), tok('--tbp'), 1.4, '2 3') : '')
     + L(Object.keys(sim).map(y=>[+y,sim[y]/1e6]), tok('--tbp'), 2.6) + HS.frente
     + '</svg>';
   document.getElementById('simL1').innerHTML =
@@ -6285,8 +6455,11 @@ function simPinta(){
     + '<span class="grp" style="gap:5px"><i style="background:' + tok('--ts')
     + ';height:3px;width:16px;opacity:.6"></i><span>Proyección del estudio</span></span>'
     + chip(tok('--tbp'),'Lo que resulta de tus valores')
-    + (M ? '<span class="grp" style="gap:5px"><i style="background:' + tok('--tbp') + ';opacity:.3;height:9px;width:16px"></i>'
-      + '<span>Montecarlo: percentil 10 a 90 (punteada, mediana)</span></span>' : '') + HS.ley;
+    + (M ? '<span class="grp" style="gap:5px"><i style="background:' + tok('--tbp') + ';opacity:.35;height:9px;width:16px"></i>'
+      + '<span>Montecarlo: percentil 25–75 (oscura), 10–90 (clara) y mediana (punteada)</span></span>' : '')
+    /* los hitos numerados del gráfico van en un globo: la columna del medio tiene que caber en pantalla */
+    + '<span class="tipw der" tabindex="0">Hitos del gráfico <span class="tipi">?</span><span class="tip" role="tooltip">' + HS.ley + '</span></span>';
+  mcPinta(M, sim);
 
   /* Aportes ACUMULADOS 2025→2037, en puntos de logaritmo. La raya negra sobre
      cada barra es lo que pone el estudio: la distancia entre barra y raya es
