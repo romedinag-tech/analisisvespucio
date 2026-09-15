@@ -6078,7 +6078,7 @@ const SIM = {
   ev_onp_avn: {min:-8, max:4, step:0.1, uni:' %', dec:1, rot:'Orbital Norponiente · AVN', ev:'2034', conc:'AVN'},
   ev_onp_tsc: {min:-8, max:4, step:0.1, uni:' %', dec:1, rot:'Orbital Norponiente · túnel', ev:'2034', conc:'tunel'},
   salto:{min:-50, max:150, step:1, uni:' %', dec:0, rot:'Salto de 2026 que proyecta el estudio'},
-  prop: {min:-1, max:2, step:0.1, uni:' %', dec:1, rot:'Crecimiento propio del corredor, desde 2027'},
+  /* crecimiento propio: retirado por acuerdo metodológico (RM, 15-09-2026); no se usa en ninguna proyección */
 };
 const EVS = Object.keys(SIM).filter(k=>SIM[k].ev);
 /* opciones del simulador que no son perillas: fechas de las vías competidoras y ajuste de la regresión del estudio */
@@ -6086,7 +6086,7 @@ const SIMX = {fechas:'estudio', ajuste:true, evPob1:false, curvas:{est23:true, d
 const CX_CLAVE = {d26:'diadro_2026', conc:'concesionaria_17'};
 const SIM0 = {};
 /* ELASTICIDAD POR MODO (RM, 15-09-2026). La red crece en tres modos —autos, carga y motos— cada uno con su elasticidad al PIB, y
-   los demás términos (población, precio, salto, vías, crecimiento propio) son comunes. En logaritmos el aporte del PIB en un año es
+   los demás términos (población, precio, salto y vías) son comunes. En logaritmos el aporte del PIB en un año es
        ln Σ_m s_m(t−1) · (1+g)^e_m
    con s_m la mezcla del año anterior, que se actualiza cada año. Con las tres elasticidades iguales se reduce exactamente al modelo
    agregado, y por eso el botón «Estudio» sigue reproduciendo la proyección. Mezcla de partida: la medida en 2025 (ELA.modo). */
@@ -6129,7 +6129,7 @@ function simEventos(R, val){
    y las tres se sortean con el MISMO percentil, porque su error viene del mismo regresor; el PIB entre los escenarios pesimista y
    optimista actualizados, en tasa equivalente 2027–2037 (la entrega no trae una banda de error estadística del PIB: HIPÓTESIS
    V&R); vías por proyecto y concesión y 2026 del cierre V&R más bajo al nivel más alto de la revisión JV (acuerdos del 14-09-2026);
-   crecimiento propio 0 a 1 % sin sortear; población 0,5–0,9 %, elasticidad a la población 0–1, precio ±1 punto
+   el crecimiento propio no existe como variable (acuerdo metodológico, 15-09-2026); población 0,5–0,9 %, elasticidad a la población 0–1, precio ±1 punto
    y elasticidad al precio 0–0,1, estas cuatro sin sortear por defecto (PIB y población no se separan en el dato).
    El salto de 2026 se sortea con los demás valores en su punto, de modo que su rango es un rango de nivel 2026. */
 const MC = {modo:'puntual', n:5000, dist:'tri', sem:20260914, res:null, sucio:false};
@@ -6143,9 +6143,8 @@ function mcTri(u, a, m, b){
 function mcDefectos(){
   const M = ELA.modo.modos, PE = ELA.pib_escenario;
   const eq = s => { let x = 0; for(let a=2027; a<=2037; a++) x += Math.log(1+PE[s][a]/100); return +((Math.exp(x/11)-1)*100).toFixed(2); };
-  /* crecimiento propio: rango 0 a 1 % pedido por RM, pero sin sortear por defecto porque ningún escenario lo usa (14-09-2026) */
   const d = {gpib:[eq('pesimista'), eq('optimista'), true], epib:[M.autos.lo, M.autos.hi, true], ecar:[M.carga.lo, M.carga.hi, true],
-    emot:[M.motos.lo, M.motos.hi, true], prop:[0,1,false],
+    emot:[M.motos.lo, M.motos.hi, true],
     gpob:[0.5,0.9,false], epob:[0,1,false], gtar:[SIM.gtar.v-1, SIM.gtar.v+1, false], epre:[0,0.1,false],
     ev_r68_avn:[-5,0,true], ev_r68_tsc:[-2,0,true], ev_osa_avn:[-3.3,0,true], ev_osa_tsc:[-3.7,1.7,true],
     ev_onp_avn:[-4,0,true], ev_onp_tsc:[-2,2.3,true]};
@@ -6224,9 +6223,6 @@ function calibraSim(){
       + '</b> (banda ' + cPct(pr.lo/h25*100-100) + ' a ' + cPct(pr.hi/h25*100-100) + ').' : '')
     + ' <span id="refTxt_salto"></span>';
   SIM.salto.refMed = 0;  SIM.epib.refMed = 0;
-  SIM.prop.v = 0;
-  SIM.prop.ay = 'Crecimiento anual que no explican el PIB ni la población. El estudio no pone ninguno aparte de su población. '
-    + '<b>No identificado en lo medido:</b> el modelo mensual lo estima en 0 % para 2022–2026, con especificaciones que llegan a +1,5 %.';
   Object.keys(SIM).forEach(k=>{ SIM0[k] = SIM[k].v; });
   mcDefectos();
 }
@@ -6253,7 +6249,7 @@ function simSerie(){
     ap.bloque += lPp;  ap.precio += lPr;
     if(a === 2026){ const s = R.salto*SIM.salto.v/100; d += s; ap.salto += s; }
     else { const r = SIMX.ajuste ? R.resto/nAj : 0; d += r; ap.ajuste += r;
-      const p = SIM.prop.v/100; d += p; ap.propio += p; }
+    }
     if(EV[a] !== undefined){ const e = EV[a]; d += e; ap.red += e; }
     l += d;  out[a] = Math.exp(l);
   });
@@ -6280,7 +6276,7 @@ function simMC(){
     const v = {}; let uA = 0;
     K.forEach(k=>{ const u = rnd(); if(k === 'epib') uA = u; v[k] = sortea(k, (k === 'ecar' || k === 'emot') ? uA : u); });
     const EV = simEventos(R, v);
-    const lgp = Math.log(1+v.gpib/100), lc = v.epob*Math.log(1+v.gpob/100) - v.epre*Math.log(1+v.gtar/100) + aj + v.prop/100;
+    const lgp = Math.log(1+v.gpib/100), lc = v.epob*Math.log(1+v.gpob/100) - v.epre*Math.log(1+v.gtar/100) + aj;
     let l = l26p + R.salto*v.salto/100 + (EV[2026] || 0), sh = pm26.sh;
     res[2026][i] = Math.exp(l);
     aS.forEach(a=>{ const pm = pibModo(sh, v, lgp); sh = pm.sh; l += pm.d + lc + (EV[a] || 0); res[a][i] = Math.exp(l); });
@@ -6385,8 +6381,7 @@ function simGrupos(){
     {t:'Población', k:['gpob','epob'], peso:p(a0.poblacion)+' a '+p(a1.poblacion)+' puntos, no identificable'},
     {t:'Vías competidoras', k:EVS, peso:p(a1.red)+' puntos'},
     {t:'Salto de 2026', k:['salto'], peso:p(a1.salto_2026)+' puntos'},
-    {t:'Precio', k:['gtar','epre'], peso:p(a1.precio)+' puntos'},
-    {t:'Crecimiento propio', k:['prop'], peso:'0 en el estudio'}];
+    {t:'Precio', k:['gtar','epre'], peso:p(a1.precio)+' puntos'}];
 }
 
 function simPars(){
@@ -6418,15 +6413,10 @@ function simPars(){
   const a1 = DEC.aportes_pob_1, a0 = DEC.aportes_pob_0;
   const lo = Math.min(a1.pib_y_poblacion, a0.pib_y_poblacion), hi = Math.max(a1.pib_y_poblacion, a0.pib_y_poblacion);
 
-  /* CRECIMIENTO PROPIO VA APARTE (RM, 14-09-2026): ningún escenario V&R lo usa, así que va bajo vías competidoras en un marco
-     distinto, y en el Montecarlo no se sortea salvo que se marque su casilla */
   document.getElementById('simIzq').innerHTML = caja(G[2],
     '<label class="simsel">Fechas <select id="simFechas" aria-label="Fechas de las vías competidoras">'
     + '<option value="estudio">del estudio (2027, 2030, 2034)</option>'
-    + '<option value="vigentes">vigentes (2028–29, 2030, 2034–35)</option></select></label>')
-    + '<div class="pfuera"><div class="pfuera-h">' + tip('Fuera de los escenarios', 'Ningún escenario V&R usa crecimiento propio: todos lo dejan en 0. '
-      + 'Queda para explorar qué pasaría si el corredor creciera por sobre lo que explican el PIB y la población. En el Montecarlo no se '
-      + 'sortea salvo que marques su casilla.') + '</div>' + caja(G[5]) + '</div>';
+    + '<option value="vigentes">vigentes (2028–29, 2030, 2034–35)</option></select></label>');
   /* LA COLUMNA DERECHA VA DE MAYOR A MENOR IMPACTO (RM, 14-09-2026): se ordena por el aporte medio de cada pieza en el estudio,
      en valor absoluto. PIB y población ya no van en un marco común porque el orden los separa; su advertencia viaja en una nota
      dentro de cada cuadro, porque lo que el dato fija sigue siendo su suma */
@@ -6546,7 +6536,7 @@ function simPars(){
   const cargaVyr = (senda, nivel) => {
     let sl = 0; for(let a=2027; a<=2037; a++) sl += Math.log(1+ELA.pib_escenario[senda][a]/100);
     fija('gpib', +((Math.exp(sl/11)-1)*100).toFixed(4)); fija('epib', ELA.modo.modos.autos.e); fija('ecar', ELA.modo.modos.carga.e); fija('emot', ELA.modo.modos.motos.e); fija('epob', 0); fija('epre', 0);
-    EVS.forEach(k=>fija(k, SIM0[k])); fija('prop', 0);
+    EVS.forEach(k=>fija(k, SIM0[k])); 
     SIMX.fechas = 'vigentes'; SIMX.ajuste = false; SIMX.evPob1 = true; fe.value = 'vigentes';
     fija('salto', saltoPara(nivel));
     simRefs();  mcSaltoDefecto();  bandas();  sucio();  simPinta(); };
@@ -6917,8 +6907,8 @@ function simTabla(){
       + 'estudio hace entrar vías competidoras, estimados sobre su proyección. Cada uno se mueve por proyecto y concesión: el '
       + 'efecto en AVN y en el túnel se combina según el peso de cada concesión en la red. Se pueden poner en sus fechas del estudio o en las del '
       + 'calendario de obras vigente de V&R; en 2037 suman lo mismo.'],
-    ['Crecimiento propio', 'no identificable', 'El modelo mensual V&R lo estima en 0 % para 2022–2026, con un rango de 0 a +1,5 % '
-      + 'según la especificación. El estudio no pone uno aparte de la población.'],
+    ['Crecimiento propio', 'no se considera', 'Por acuerdo metodológico (15-09-2026) no entra en ninguna proyección: el crecimiento '
+      + 'de la demanda lo explican el PIB, con la elasticidad por modo, la población y las vías competidoras.'],
     ['Salto de 2026', 'inferido del estudio', 'Lo que el estudio pone ese año por sobre '
       + 'PIB, población y precio: coincide con la entrada del cuarto carril en la sección 6 '
       + 'y el fin del congelamiento de tarifas.'],
@@ -7623,7 +7613,8 @@ function elModo(){
     + nd(S_.autos.sin_escalon,2)+'; se adopta 2023 I, la fecha de la revisión JV. Y el túnel tiene elasticidad propia en esta especificación '
     + '(livianos '+nd(M.tunel_propia_no_usada.livianos_e,2)+', t '+nd(M.tunel_propia_no_usada.t,2)+'), pero por la regla acordada usa las de AVN por modo. '
     + 'La elasticidad agregada de veinte años de la tarjeta siguiente ('+nd(ELA.principal.e,3)+') queda como referencia: con la mezcla de la red, la '
-    + 'proyección por modo equivale a una agregada muy cercana.';
+    + 'proyección por modo equivale a una agregada muy cercana. <b>Crecimiento propio:</b> por acuerdo metodológico (15-09-2026) no se usa en '
+    + 'ninguna proyección; el modelo mensual que lo mide se conserva abajo sólo como antecedente.';
 }
 function econElast(){
   elModo();
@@ -7961,17 +7952,17 @@ function escSerie(aut, sinRed){
 function econEscenario(){
   /* elasticidad agregada EQUIVALENTE a la proyección por modo, 2027–2037: sólo para repartir la descomposición en piezas */
   const sR = escSerie(0, true); let slp = 0; for(let a=2027; a<=2037; a++) slp += Math.log(1+ELA.pib_escenario.base[a]/100);
-  const e = Math.log(sR[2037]/sR[2026])/slp, TECHO = 1.0;
+  const e = Math.log(sR[2037]/sR[2026])/slp;
   /* crecimiento propio central 0 % (modelo mensual 2022–2026) y techo +1 % anual; el piso anterior usaba el −0,4 % retirado el 13-09-2026 */
   /* banda: escenarios pesimista y optimista (PIB actualizado pesimista y optimista, cierre 2026 más bajo y más alto) */
   const BR = ELA.escenario_rm.bandas;
-  const V = {central: escSerie(0), alto: escSerie(TECHO), bmin: BR.pesimista, bmax: BR.optimista};
+  const V = {central: escSerie(0), bmin: BR.pesimista, bmax: BR.optimista};
   const dif37 = Math.abs(V.central[2037] - BR.tendencial['2037']);
   if(dif37 > 5e4) console.error('escenario V&R: el tablero no reproduce escenario_rm_2037.py', dif37);
   const i37 = ANIOS.indexOf(2037), s37 = S('tx', i37), c37 = V.central[2037];
   const cagr = (x,y,n) => (Math.pow(y/x,1/n)-1)*100;
   const K = [
-    ['Tránsito 2037, escenario V&R', nd(c37/1e6)+' M', nd(V.bmin[2037]/1e6)+' a '+nd(V.bmax[2037]/1e6)+' M entre pesimista y optimista; '+nd(V.alto[2037]/1e6)+' M con propio +1 %'],
+    ['Tránsito 2037, escenario V&R', nd(c37/1e6)+' M', nd(V.bmin[2037]/1e6)+' a '+nd(V.bmax[2037]/1e6)+' M entre pesimista y optimista'],
     ['Tránsito 2037, estudio', nd(s37/1e6)+' M', 'la proyección de la consultora'],
     ['Diferencia en 2037', sgnE((c37/s37-1)*100,1)+' %', nd((s37-c37)/1e6)+' millones de transacciones menos'],
     ['Crecimiento 2025–2037', sgnE(cagr(C.historia['2025'],c37,12),2)+' %', 'anual V&R; el estudio '+sgnE(cagr(S('tx',ANIOS.indexOf(2025)),s37,12),2)+' %']];
@@ -7981,7 +7972,7 @@ function econEscenario(){
   /* trayectorias */
   const W = anchoSvg(760), H = 336, ml = 48, top = 42, ih = 240, iw = W-ml-14, a0 = ESC_ANIO0, a1 = 2037;
   const hist = Object.keys(C.historia).map(Number).filter(a=>a>=a0 && C.historia_parcial.indexOf(a)<0);
-  const vals = hist.map(a=>C.historia[a]).concat(ANIOS.filter(a=>a>=2021).map(a=>S('tx',ANIOS.indexOf(a))), Object.values(V.bmax), Object.values(V.alto));
+  const vals = hist.map(a=>C.historia[a]).concat(ANIOS.filter(a=>a>=2021).map(a=>S('tx',ANIOS.indexOf(a))), Object.values(V.bmax));
   const ymx = Math.ceil(Math.max(...vals)/1e6/50)*50, ymn = Math.floor(Math.min(...vals)/1e6/50)*50;
   const X = a => ml + (a-a0)/(a1-a0)*iw, Y = v => top + (ymx - v/1e6)/(ymx-ymn)*ih;
   let s = txtS(0,14,'Transacciones anuales de la red, millones',{w:700,col:tok('--ink'),fs:11.5});
@@ -7996,15 +7987,14 @@ function econEscenario(){
   const est = {}; ANIOS.forEach((a,i)=>{ if(a>=2021) est[a] = S('tx',i); });
   const med = {}; hist.forEach(a=>{ med[a] = C.historia[a]; });
   const HE = hitosSvg(X, top, top+ih, a0, a1, 'real');
-  s += HE.fondo + pl(med, tok('--ink'), 2.4) + pl(est, tok('--ts'), 2.2, '7 4') + pl(V.alto, tok('--accent'), 1.3, '3 3', .8)
+  s += HE.fondo + pl(med, tok('--ink'), 2.4) + pl(est, tok('--ts'), 2.2, '7 4') 
      + pl(V.central, tok('--accent'), 2.8) + HE.frente;
   s += txtS(X(2037)-4,Y(s37)-7,'estudio '+nd(s37/1e6)+' M',{anc:'end',col:tok('--ts'),w:700})
      + txtS(X(2037)-4,Y(c37)+14,'V&R '+nd(c37/1e6)+' M',{anc:'end',col:tok('--accent'),w:700});
   svgW('esTray', W, H, s, 'Escenario V&R');
   document.getElementById('esLtray').innerHTML = chip(tok('--ink'),'medido') + '<span class="grp" style="gap:5px"><i style="background:'+tok('--ts')
-    + ';height:3px;width:16px"></i><span>estudio</span></span>' + chip(tok('--accent'),'V&R central, crecimiento propio 0 %')
-    + '<span class="grp"><span>Punteada fina: crecimiento propio +1 % al año, el techo que admite el modelo mensual. '
-    + 'Banda: escenario pesimista a optimista (PIB actualizado pesimista con el cierre 2026 de la media móvil; PIB optimista con el del modelo mensual con la obra recuperada).</span></span>' + HE.ley;
+    + ';height:3px;width:16px"></i><span>estudio</span></span>' + chip(tok('--accent'),'V&R central')
+    + '<span class="grp"><span>Banda: escenario pesimista a optimista (PIB actualizado pesimista con el cierre 2026 de la media móvil; PIB optimista con el del modelo mensual con la obra recuperada).</span></span>' + HE.ley;
 
   /* de dónde sale la diferencia de 2037, en puntos de logaritmo convertidos a millones */
   const i25 = ANIOS.indexOf(2025), i26 = ANIOS.indexOf(2026), ls = a => Math.log(S('tx',ANIOS.indexOf(a)));
@@ -8017,7 +8007,7 @@ function econEscenario(){
   const piezas = [
     ['Punto de partida 2025', ls(2025) - Math.log(C.historia['2025'])],
     ['Salto de 2026', (ls(2026)-ls(2025)) - Math.log(pr.valor/C.historia['2025'])],
-    ['Crecimiento propio', 11*Math.log(1+ELA.estudio.autonomo_pct/100) - 0],
+    ['Población del estudio', 11*Math.log(1+ELA.estudio.autonomo_pct/100) - 0],
     ['Elasticidad al PIB', dPib],
     ['Escenario de PIB', dEsc],
     ['Precio (efecto del estudio)', dPre],
@@ -8089,11 +8079,10 @@ function econEscenario(){
 
   /* tabla por año */
   const AA = [2025,2026,2028,2030,2034,2037];
-  document.getElementById('esTabla').innerHTML = '<thead><tr><th>Año</th><th>Estudio</th><th>V&R pesimista</th><th>V&R tendencial</th><th>V&R optimista</th><th>V&R propio +1 %</th><th>Tendencial contra estudio</th></tr></thead><tbody>'
+  document.getElementById('esTabla').innerHTML = '<thead><tr><th>Año</th><th>Estudio</th><th>V&R pesimista</th><th>V&R tendencial</th><th>V&R optimista</th><th>Tendencial contra estudio</th></tr></thead><tbody>'
     + AA.map(a=>{ const sv = S('tx',ANIOS.indexOf(a));
       return '<tr style="cursor:default"><td>'+a+(a===2025?' <span style="color:var(--ink-lo)">medido</span>':a===2026?' <span style="color:var(--ink-lo)">proyección medida</span>':'')
-        + '</td><td>'+nd(sv/1e6)+'</td><td>'+nd(V.bmin[a]/1e6)+'</td><td><b>'+nd(V.central[a]/1e6)+'</b></td><td>'+nd(V.bmax[a]/1e6)+'</td><td>'+nd(V.alto[a]/1e6)
-        + '</td><td>'+cPct((V.central[a]/sv-1)*100)+'</td></tr>'; }).join('') + '</tbody>';
+        + '</td><td>'+nd(sv/1e6)+'</td><td>'+nd(V.bmin[a]/1e6)+'</td><td><b>'+nd(V.central[a]/1e6)+'</b></td><td>'+nd(V.bmax[a]/1e6)+ '</td><td>'+cPct((V.central[a]/sv-1)*100)+'</td></tr>'; }).join('') + '</tbody>';
   const orden = piezas.slice().sort((p,q)=>Math.abs(q[1])-Math.abs(p[1]));
   document.getElementById('esNota').innerHTML =
     '<b>Con la misma red que el estudio y el PIB actualizado, la demanda llega a '+nd(c37/1e6)+' millones en 2037</b>, '
@@ -8101,8 +8090,7 @@ function econEscenario(){
     + orden.slice(0,3).map(p=>p[0].toLowerCase()+' ('+sgnE(p[1]/tot*gapM,1)+' M)').join(', ')+'. <b>Supuestos declarados:</b> '
     + 'la elasticidad es por modo —autos '+nd(ELA.modo.modos.autos.e,2)+', carga '+nd(ELA.modo.modos.carga.e,2)+', motos '+nd(ELA.modo.modos.motos.e,2)
     + ', estimadas sobre 2014–2026 con el método acordado con la revisión JV (equivale a '+nd(e,3)+' agregada)— y se aplica a los diecinueve pórticos; '
-    + 'el crecimiento propio central es cero, lo que '
-    + 'estima el modelo mensual para 2022–2026, con un techo de +1 % al año (hasta '+nd(V.alto[2037]/1e6)+' M en 2037); no hay restricción '
+    + 'el crecimiento propio no se considera, por acuerdo metodológico; no hay restricción '
     + 'de capacidad, igual que en el simulador; y el precio no entra, porque su elasticidad histórica no es distinta de cero. '
     + '<b>PIB:</b> desde 2027, el escenario base actualizado a septiembre de 2026 (IPoM de junio de 2026, FMI y Comité del PIB tendencial). '
     + '<b>Cierre 2026:</b> '+nd(C.proyeccion.porticos.RED.tx.valor/1e6)+' M, por cuota estacional, el método de menor error en la prueba retrospectiva. '
