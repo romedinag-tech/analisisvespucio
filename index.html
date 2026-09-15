@@ -6598,9 +6598,20 @@ function mcPinta(M, sim){
   const top = 24 + filas.length*11, ih = 100, H = top + ih + 18;
   let s = '<text x="' + ml + '" y="11" font-size="10" font-weight="700" fill="' + tok('--ink') + '">Tránsito 2037 en las '
     + nf.format(M.n) + ' corridas</text>';
-  cnt.forEach((c,i)=>{ const hh = c/mx*ih;
+  /* TRAMOS CENTRALES (RM, 15-09-2026): cada columna se pinta según el intervalo central de las corridas en que cae su centro —50 %
+     (percentiles 25–75), 75 % (12,5–87,5) y 90 % (5–95)—, simétricos desde la mediana, para ver en qué tramo queda cada marca */
+  const ho = Float64Array.from(h).sort(), qh = q => { const x = (ho.length-1)*q, j = Math.floor(x); return ho[j] + (ho[Math.min(j+1, ho.length-1)] - ho[j])*(x-j); };
+  const TR = [[.50, qh(.25), qh(.75), .95], [.75, qh(.125), qh(.875), .62], [.90, qh(.05), qh(.95), .36]];
+  const opTr = v => { const r = TR.find(z => v >= z[1] && v <= z[2]); return r ? r[3] : .14; };
+  cnt.forEach((c,i)=>{ const hh = c/mx*ih, vc = lo + (i+.5)/NB*(hi-lo), op = opTr(vc);
     s += '<rect x="' + (ml + i*iw/NB + .5).toFixed(1) + '" y="' + (top+ih-hh).toFixed(1) + '" width="' + (iw/NB - 1).toFixed(1)
-      + '" height="' + hh.toFixed(1) + '" fill="' + tok('--tbp') + '" opacity="' + (MC.sucio ? .3 : .55) + '"/>'; });
+      + '" height="' + hh.toFixed(1) + '" fill="' + (op < .2 ? tok('--ink-lo') : tok('--tbp')) + '" opacity="' + (MC.sucio ? op/2 : op).toFixed(2) + '"><title>'
+      + nd(lo/1e6 + i*(hi-lo)/NB/1e6) + '–' + nd(lo/1e6 + (i+1)*(hi-lo)/NB/1e6) + ' M: ' + nf.format(c) + ' corridas</title></rect>'; });
+  /* leyenda de los tramos en la línea del título, a la derecha */
+  let lx = W - 8;
+  TR.slice().reverse().concat([]).forEach(z=>{ const tx = nd(z[0]*100,0) + ' %: ' + nd(z[1]/1e6,0) + '–' + nd(z[2]/1e6,0) + ' M', w = tx.length*4.7 + 16;
+    lx -= w; s += '<rect x="' + lx.toFixed(1) + '" y="4" width="10" height="8" fill="' + tok('--tbp') + '" opacity="' + z[3] + '"/>'
+      + '<text x="' + (lx + 13).toFixed(1) + '" y="11" font-size="8.5" fill="' + tok('--ink') + '">' + tx + '</text>'; });
   MK.forEach(m=>{ const x = X(m.v), yl = 24 + m.f*11;
     s += '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + (yl+2) + '" y2="' + (top+ih) + '" stroke="' + m.c
       + '" stroke-width="1.6"' + (m.punt ? ' stroke-dasharray="3 2"' : '') + '/>'
