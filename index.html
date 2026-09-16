@@ -1727,9 +1727,10 @@ body.oyeAbierto{padding-bottom:86px}
 <section id="vElasticidad" hidden>
   <div class="card">
     <h2>Elasticidad al PIB adoptada en el escenario V&amp;R</h2>
-    <p class="desc">El escenario V&amp;R y el simulador proyectan cada concesión por categoría con tres elasticidades al PIB estimadas
-      por V&amp;R, y las asignan así: la de autos a los autos de AVN; la de carga a los camiones y buses de las dos concesiones; y la de
-      livianos a las motos de AVN y a autos y motos del túnel. Método: regresión log-log trimestral 2014 I – 2026 II sin el estallido ni la fase
+    <p class="desc">El escenario V&amp;R y el simulador proyectan las cuatro categorías (C1 autos y camionetas, C2 buses y camiones de dos ejes,
+      C3 camiones de más de dos ejes, C4 motos) de cada concesión. Para eso V&amp;R estima tres elasticidades al PIB sobre series de AVN —autos
+      (C1), carga (C2 y C3 juntas) y livianos (C1 y C4 juntos)— y las aplica así: la de autos a C1 de AVN; la de carga a C2 y C3 de las dos
+      concesiones; y la de livianos a C4 de AVN y a C1 y C4 del túnel. Método: regresión log-log trimestral 2014 I – 2026 II sin el estallido ni la fase
       aguda de la pandemia (2019 IV – 2021 IV), ficticias estacionales, un escalón por la entrada de Américo Vespucio Oriente desde
       2023 I y la serie de AVN corregida por la obra del enlace, con errores Newey-West. Las cifras las calcula V&amp;R con los datos
       de la concesionaria y el PIB del Banco Central. El intervalo de confianza de 95 % es el rango que recorre el Montecarlo.</p>
@@ -6528,9 +6529,10 @@ function simRefsMed(){
     + nd(refEstudio(SIM.epob.v).epib,2) + '</b> y la que reproduce lo medido en 2023–2025, <b>'
     + (em==null ? '—' : nd(em,2)) + '</b>: la realidad reciente anda en el '
     + (em==null ? '—' : nd(em/refEstudio(SIM.epob.v).epib*100,0)) + ' % de lo que supone el estudio. '
-    + 'Ojo: eso supone que la población empuja el 0,7 % del estudio. V&R usa ' + nd(ELA.modo.modos.autos.e,2)
-    + ' en autos de AVN, ' + nd(ELA.modo.modos.carga.e,2) + ' en la carga de las dos concesiones y ' + nd(ELA.modo.modos.motos.e,2)
-    + ' en motos de AVN y livianos del túnel (pestaña «Elasticidad al PIB»).';
+    + 'Ojo: eso supone que la población empuja el 0,7 % del estudio. V&R usa tres elasticidades estimadas sobre AVN y las aplica a las '
+    + 'cuatro categorías: ' + nd(ELA.modo.modos.autos.e,2) + ' (autos) a C1 de AVN, ' + nd(ELA.modo.modos.carga.e,2)
+    + ' (carga) a C2 y C3 de las dos concesiones y ' + nd(ELA.modo.modos.motos.e,2)
+    + ' (livianos) a C4 de AVN y a C1 y C4 del túnel (pestaña «Elasticidad al PIB»).';
   const u = document.getElementById('refTxt_salto');
   if(u && sm != null) u.innerHTML = 'Con las demás barras como están, lo medido en 2026 pide <b>'
     + (sm < 0 ? '−' : '') + nd(Math.abs(sm),0) + ' %</b>' + (sm < SIM.salto.min ? ' —más de lo que la barra admite—' : '')
@@ -6630,8 +6632,8 @@ function simPars(){
   const oj = ELA.cierre_2026_optimista.sin_julio;
   const TIP_ESC = {
     ten: '<b>Diadro ajustado.</b> Parte de ' + nd(ELA.v28.partida_2026.central_M) + ' M en 2026, con la senda media del PIB como tasa '
-      + 'equivalente 2027–2037, las elasticidades de referencia por concesión (AVN autos ' + nd(ELA.modo.modos.autos.e,2) + ', carga '
-      + nd(ELA.modo.modos.carga.e,2) + ', motos y livianos del túnel ' + nd(ELA.modo.modos.motos.e,2) + '), población y precio sin efecto '
+      + 'equivalente 2027–2037, las elasticidades de referencia por categoría (' + nd(ELA.modo.modos.autos.e,2) + ' en C1 de AVN, '
+      + nd(ELA.modo.modos.carga.e,2) + ' en C2 y C3 de ambas concesiones, ' + nd(ELA.modo.modos.motos.e,2) + ' en C4 de AVN y C1 y C4 del túnel), población y precio sin efecto '
       + 'y las vías competidoras con los descuentos que el estudio de Diadro produce en sus salidas, en fechas vigentes.',
     pes: '<b>V&R.</b> La proyección de la consultora: lo mismo que Diadro ajustado, pero con las vías competidoras en el punto medio de '
       + 'las tasas de efecto de V&R por proyecto y concesión (Ruta 68–78: AVN −5,2 a −3,0 %, túnel −0,8 a 0 %; Orbital Sur + AVO II: '
@@ -7379,7 +7381,7 @@ function concesionaria(){
   const impE = k => { const r = rs(k), m = r.mejor;
     return notaC(nd(m.e_pib,2), 'No la informa la fuente. Implícita por regresión V&R sobre su serie, con el PIB de Oxford y población 0,7 % supuestos: '
       + nd(m.e_pib,2)+' en la variante que mejor ajusta, con '+FECH[m.fechas]+'. Entre '+VARS+' va de '+nd(r.e_pib[0],2)+' a '+nd(r.e_pib[1],2)
-      + '. Es una elasticidad agregada de la red, no por modo.', true); };
+      + '. Es una elasticidad agregada de la red, no por categoría.', true); };
   const impV = k => { const r = rs(k), m = r.mejor, sg = Object.keys(m.distintos_de_cero), x = extremo(k);
     return notaC(cPct(m.total_pct), 'No lo informa la fuente. Implícito por regresión V&R sobre su serie, con el PIB de Oxford supuesto: '+cPct(m.total_pct)
       + ' en la variante que mejor ajusta, con '+FECH[m.fechas]+'; su error de ajuste es de '+nd(m.rmse_pp,2)+' puntos. '
@@ -7402,8 +7404,9 @@ function concesionaria(){
       d23: notaC(nd(DEC.g_pib_equivalente*100,2)+' %', 'Declarado: senda Oxford Economics «Nuevo PIB» del 6-oct-2023 (Tabla 6.11 del informe), de 2,77 % en 2026 '
         + 'a 1,61 % en 2037; tasa equivalente 2026–2037.')}],
     ['Elasticidad al PIB', 'supuesto', {
-      vyr: notaC(nd(EM.autos.e,2)+' · '+nd(EM.carga.e,2)+' · '+nd(EM.motos.e,2), 'Autos '+nd(EM.autos.e,2)+', carga '+nd(EM.carga.e,2)+' y livianos '
-        + nd(EM.motos.e,2)+', estimadas por V&R sobre 2014–2026 y asignadas por concesión y categoría. Intervalo de confianza de 95 %: '
+      vyr: notaC(nd(EM.autos.e,2)+' · '+nd(EM.carga.e,2)+' · '+nd(EM.motos.e,2), 'Tres elasticidades estimadas por V&R sobre series de AVN, 2014–2026: autos (C1) '
+        + nd(EM.autos.e,2)+', carga (C2 y C3) '+nd(EM.carga.e,2)+' y livianos (C1 y C4) '+nd(EM.motos.e,2)+'. Se aplican a las cuatro categorías: autos '
+        + 'a C1 de AVN; carga a C2 y C3 de ambas concesiones; livianos a C4 de AVN y a C1 y C4 del túnel. Intervalo de confianza de 95 %: '
         + nd(Math.min(EM.autos.lo, EM.carga.lo, EM.motos.lo),2)+' a '+nd(eHi,2)+'.'),
       d26: impE('diadro_2026'), c17: impE('concesionaria_17'),
       d23: notaC('1 · 1,0 a 1,15', 'Declaradas por el informe. La Figura 5.33 da livianos 1, C2 1,0037 y C3 1,15, con precio −0,2, para noche, sábado y domingo; '
@@ -8085,9 +8088,9 @@ function elModo(){
       + '</td><td>'+x.n+'</td><td>'+nd(x.lo,2)+' a '+nd(x.hi,2)+'</td><td>'+nd(peso*100,1)+' %</td><td>'+nd(S_[m].escalon_2022III,3)+'</td><td>'+nd(S_[m].sin_escalon,3)+'</td></tr>'; };
   document.getElementById('elModoTabla').innerHTML = '<thead><tr><th>Elasticidad</th><th>Estimada sobre</th><th>Se aplica a</th><th>Valor</th><th>Error estándar</th><th>t</th>'
     + '<th>Trimestres</th><th>IC 95 %</th><th>Peso en la red 2025</th><th>Escalón AVO en 2022 III</th><th>Sin escalón</th></tr></thead><tbody>'
-    + fila('autos','Autos','AVN, C1','autos y camionetas de AVN', G.AVN_autos)
-    + fila('carga','Carga','AVN, C2 + C3','buses y camiones de AVN y del túnel', G.AVN_carga + G.TSC_carga)
-    + fila('motos','Livianos','AVN, C1 + C4','motos de AVN; autos, camionetas y motos del túnel', G.AVN_motos + G.TSC_livianos) + '</tbody>';
+    + fila('autos','Autos','AVN, C1','C1 de AVN (autos y camionetas)', G.AVN_autos)
+    + fila('carga','Carga','AVN, C2 + C3','C2 y C3 de AVN y del túnel (buses y camiones)', G.AVN_carga + G.TSC_carga)
+    + fila('motos','Livianos','AVN, C1 + C4','C4 de AVN (motos); C1 y C4 del túnel (autos, camionetas y motos)', G.AVN_motos + G.TSC_livianos) + '</tbody>';
   document.getElementById('elModoNota').innerHTML = '<b>Dos salvedades declaradas.</b> La fecha del escalón de Américo Vespucio Oriente pesa: '
     + 'fechado en el trimestre de su inauguración (julio de 2022) la elasticidad de autos sube a '+nd(S_.autos.escalon_2022III,2)+', y sin escalón baja a '
     + nd(S_.autos.sin_escalon,2)+'; se adopta 2023 I. Y el túnel tiene elasticidad propia en esta especificación '
@@ -8618,9 +8621,9 @@ function econEscenario(){
     + nd(V28.partida_2026.central_M)+' M y punto medio de las tasas de efecto de las vías competidoras. <b>Sus cotas</b> ('+nd(V.inf[2037]/1e6)+' a '
     + nd(V.sup[2037]/1e6)+' M) salen sólo de mover ese efecto entre el mínimo y el máximo de las tasas. <b>La banda del Montecarlo</b> '
     + '('+nd(pc(10)[2037]/1e6)+' a '+nd(pc(90)[2037]/1e6)+' M) recorre las cuatro a la vez. '
-    + '<b>Elasticidades:</b> autos '+nd(ELA.modo.modos.autos.e,2)+', carga '+nd(ELA.modo.modos.carga.e,2)+' y livianos '
-    + nd(ELA.modo.modos.motos.e,2)+', estimadas por V&R sobre 2014–2026 y asignadas por concesión y categoría: los autos y motos del túnel '
-    + 'llevan la de livianos y no la de autos. Su intervalo al 95 % es el que recorre el Montecarlo. '
+    + '<b>Elasticidades:</b> tres, estimadas por V&R sobre series de AVN 2014–2026 —autos (C1) '+nd(ELA.modo.modos.autos.e,2)+', carga (C2 y C3) '
+    + nd(ELA.modo.modos.carga.e,2)+' y livianos (C1 y C4) '+nd(ELA.modo.modos.motos.e,2)+'— y aplicadas a las cuatro categorías de cada concesión: '
+    + 'autos a C1 de AVN; carga a C2 y C3 de ambas; livianos a C4 de AVN y a C1 y C4 del túnel. Su intervalo al 95 % es el que recorre el Montecarlo. '
     + '<b>Partida 2026:</b> el cierre sin julio; '+nd(V28.partida_2026.central_M)+' M es el punto medio entre la cuota estacional propia ('
     + nd(V28.partida_2026.rango_M[0])+' M) y la estimación con la variación de junio ('+nd(V28.partida_2026.rango_M[1])+' M). '
     + '<b>Producto:</b> las tres sendas actualizadas a septiembre de 2026 (IPoM de junio, FMI y Comité del PIB tendencial); la línea usa la '
@@ -9176,7 +9179,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 40;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 41;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
