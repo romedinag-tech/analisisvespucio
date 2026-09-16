@@ -1119,7 +1119,9 @@ tr.sel td{background:color-mix(in srgb,var(--accent) 16%,transparent)}
 .tabs.sub{padding:5px;margin-bottom:16px;background:var(--surface-alt);box-shadow:none}
 :root[data-theme="dark"] .tabs.sub{background-image:none;background:var(--surface-alt);
  box-shadow:none}
-.tabs.sub button{font-size:.86rem;padding:8px 14px;font-weight:600}
+.tabs.sub button{font-size:.86rem;padding:8px 14px;font-weight:600;flex-direction:column;gap:2px;white-space:normal;line-height:1.2;
+ text-wrap:balance;text-align:center}
+.tabs.sub button small{display:block;font-size:.72rem;line-height:1.2}
 .tabs.sub button.on{background:var(--accent);color:#fff;box-shadow:0 1px 5px rgba(14,35,56,.16)}
 :root[data-theme="dark"] .tabs.sub button.on{color:#120b22}
 .tabs button small{font-weight:500;opacity:.88;font-size:.78rem}
@@ -1306,9 +1308,9 @@ body.oyeAbierto{padding-bottom:86px}
   <button data-g="estudio">Proyecciones de demanda
     <small>(Fuente: Diadro Consulting, 2023 y 2026)</small></button>
   <button data-g="comparativo">Análisis entre la demanda y las proyecciones
-    <small>medido contra proyectado</small></button>
+    <small>(medido contra proyectado)</small></button>
   <button data-g="propio">Análisis econométricos
-    <small>elaboración V&amp;R</small></button>
+    <small>(elaboración V&amp;R)</small></button>
   <button data-g="concesionaria">Proyecciones de la concesionaria
     <small>(Fuente: Sociedad Concesionaria, 2026)</small></button>
 </nav>
@@ -1801,6 +1803,12 @@ body.oyeAbierto{padding-bottom:86px}
       <div class="t">Transacciones anuales de la red, AVN y túnel</div>
       <div id="coTray"></div>
       <div class="legend" id="coLtray"></div>
+    </div>
+    <div class="chartbox" style="margin-top:14px">
+      <div class="t">Qué supone cada proyección</div>
+      <div class="d">Las variables explicativas de cada una, en promedio para 2027–2037, para ver de dónde salen las diferencias.</div>
+      <div style="overflow-x:auto"><table class="mctab" id="coSupuestos"></table></div>
+      <div class="aviso" id="coSupNota" style="margin-top:8px"></div>
     </div>
     <div class="chartbox" style="margin-top:14px">
       <div class="t">Por pórtico: 2025 y 2037 según cada proyección (millones de transacciones)</div>
@@ -7267,6 +7275,55 @@ function concesionaria(){
     + (cruces.length ? '<div class="mcaviso" style="flex-basis:100%;color:var(--ink);line-height:1.5">' + cruces.join('<br>') + '</div>' : '');
   document.querySelectorAll('#coLtray [data-co]').forEach(b=>{ b.onclick = ()=>{ V[b.dataset.co] = !V[b.dataset.co]; concesionaria(); }; });
 
+  /* QUÉ SUPONE CADA PROYECCIÓN (RM, 16-09-2026). Lo declarado por cada fuente, lo medido sobre sus series y, en dos filas rotuladas
+     como cálculo V&R, qué elasticidad o qué PIB harían falta para llegar a su 2037 desde su propia partida con lo demás como en V&R.
+     Diadro 2026 y la concesionaria no entregaron PIB, elasticidades ni efecto de vías: «no informado», sin completar. */
+  const i26 = ANIOS.indexOf(2026), h25 = C.historia['2025']/1e6, EM = ELA.modo.modos, PEQ = V28.producto.equivalente_anual_pct;
+  let slp = 0; for(let a=2027; a<=2037; a++) slp += Math.log(1+ELA.pib_escenario.base[a]/100);
+  const sinRed = V28.series.sin_red, redV = Math.log(V28.series.central['2037']/sinRed['2037']);
+  const eV = Math.log(sinRed['2037']/sinRed['2026'])/slp;
+  const COLS = [
+    {k:'vyr', t:'V&R', p26:V28.partida_2026.central_M, p37:V28.series.central['2037']/1e6},
+    {k:'d26', t:'Diadro 2026', p26:m('diadro_2026', 2026), p37:m('diadro_2026', 2037)},
+    {k:'c17', t:'Concesionaria, 17 pórticos', p26:m('concesionaria_17', 2026), p37:m('concesionaria_17', 2037)},
+    {k:'d23', t:'Diadro 2023 <small>(referencia)</small>', p26:S('tx', i26)/1e6, p37:e37}];
+  const eReq = c => (Math.log(c.p37/c.p26) - redV)/slp;
+  const gReq = c => (Math.exp((Math.log(c.p37/c.p26) - redV)/(11*eV)) - 1)*100;
+  const NI = '<span style="color:var(--ink-lo)">no informado</span>';
+  const RE1 = refEstudio(1), RE0 = refEstudio(0);
+  const eHi = Math.max(EM.autos.hi, EM.carga.hi, EM.motos.hi);
+  const SUP = [
+    ['Partida 2026', 'millones de transacciones', c=>nd(c.p26)],
+    ['Contra lo medido en 2025', nd(h25)+' M', c=>cPct((c.p26/h25-1)*100)],
+    ['Tránsito 2037', 'millones de transacciones', c=>'<b>'+nd(c.p37)+'</b>'],
+    ['Crecimiento anual 2026–2037', 'medido sobre la serie', c=>cPct((Math.pow(c.p37/c.p26, 1/11)-1)*100)],
+    ['Crecimiento del PIB', 'supuesto, tasa anual equivalente', {
+      vyr: nd(PEQ.base,2)+' %<br><small>senda media 2027–2037; rango '+nd(PEQ.pesimista,2)+' a '+nd(PEQ.optimista,2)+' %</small>', d26: NI, c17: NI,
+      d23: nd(DEC.g_pib_equivalente*100,2)+' %<br><small>senda Oxford «Nuevo PIB», 2026–2037</small>'}],
+    ['Elasticidad al PIB por modo', 'supuesto', {
+      vyr: 'autos '+nd(EM.autos.e,2)+' · carga '+nd(EM.carga.e,2)+' · livianos '+nd(EM.motos.e,2)+'<br><small>intervalo de 95 %: '
+        +nd(Math.min(EM.autos.lo, EM.carga.lo, EM.motos.lo),2)+' a '+nd(eHi,2)+'</small>', d26: NI, c17: NI,
+      d23: 'camión simple 1,0 · articulado 1,1<br><small>declaradas; la agregada implícita en su proyección va de '+nd(RE1.epib,2)+' a '+nd(RE0.epib,2)+'</small>'}],
+    ['Efecto de las vías competidoras', 'sobre la red en 2037', {
+      vyr: cPct((Math.exp(redV)-1)*100)+'<br><small>punto medio de las tasas de V&R; cotas '+nd(V28.series.maximo['2037']/1e6)+' a '+nd(V28.series.minimo['2037']/1e6)+' M</small>',
+      d26: NI, c17: NI, d23: cPct((Math.exp(DEC.aportes_pob_1.red)-1)*100)+'<br><small>implícito en sus salidas</small>'}],
+    ['Elasticidad que haría falta', 'cálculo V&R: con el PIB y las vías de V&R', c=>'<b>'+nd(eReq(c),2)+'</b>'],
+    ['PIB anual que haría falta', 'cálculo V&R: con las elasticidades y las vías de V&R', c=>'<b>'+nd(gReq(c),2)+' %</b>']];
+  const celda = (f, c) => typeof f[2] === 'function' ? f[2](c) : f[2][c.k];
+  document.getElementById('coSupuestos').innerHTML = '<thead><tr><th>Variable</th>' + COLS.map(c=>'<th>'+c.t+'</th>').join('') + '</tr></thead><tbody>'
+    + SUP.map((f,i)=>'<tr style="cursor:default'+(i >= 7 ? ';background:color-mix(in srgb,var(--accent) 7%,transparent)' : '')+'"><td style="white-space:normal"><b>'+f[0]
+      +'</b><br><small style="color:var(--ink-lo)">'+f[1]+'</small></td>' + COLS.map(c=>'<td style="white-space:normal">'+celda(f, c)+'</td>').join('') + '</tr>').join('')
+    + '</tbody>';
+  const lee = c => { const e = eReq(c), g = gReq(c);
+    return '<b>'+c.t.replace(/ <small>.*$/, '')+'</b> parte '+cPct((c.p26/h25-1)*100)+' sobre lo medido en 2025 y, para llegar a '+nd(c.p37)
+      +' M, necesitaría una elasticidad de '+nd(e,2)+(e > eHi ? ', sobre el máximo del intervalo de 95 % ('+nd(eHi,2)+')' : ', dentro del intervalo de 95 %')
+      +', o un PIB de '+nd(g,2)+' % anual'+(g > PEQ.optimista ? ', sobre la senda alta ('+nd(PEQ.optimista,2)+' %)' : ', dentro de las sendas')+'.'; };
+  document.getElementById('coSupNota').innerHTML = '<b>Qué dice el cuadro.</b> ' + COLS.slice(1).map(lee).join(' ')
+    + ' <b>Qué no está.</b> Los dos modelos que entregó la concesionaria el 14-09-2026 traen tránsito por pórtico, tarifas y activaciones, '
+    + 'pero no el PIB, las elasticidades ni el efecto de las vías que usaron; las respuestas de Diadro a la auditoría sólo traen el PIB '
+    + 'histórico 2017–2022. Por eso esas celdas dicen «no informado» y no se completan con supuestos. <b>Las dos últimas filas son cálculo '
+    + 'de V&R</b>: qué haría falta, desde la partida de cada proyección, si el resto fuera como en V&R; no dicen qué supuso cada una.';
+
   /* tabla por pórtico: base 2025, y 2037 de cada proyección; la diferencia se mide contra el estudio 2026 */
   const ints = CP.interna_concesionaria, d26 = CP.diadro_2026;
   const orden = Object.keys(ints).sort((p,q)=>(+p.slice(1))-(+q.slice(1)));
@@ -8918,7 +8975,7 @@ function verGrupo(g){
   const sub = GRUPOS[g];
   const barra = document.getElementById('subTabs');
   barra.innerHTML = sub.map(x=>
-    '<button data-v="'+x.v+'">'+x.t+(x.s?'<small>'+x.s+'</small>':'')+'</button>').join('');
+    '<button data-v="'+x.v+'">'+x.t+(x.s?'<small>('+x.s+')</small>':'')+'</button>').join('');
   barra.hidden = sub.length < 2;          /* un solo item no necesita submenu */
   barra.querySelectorAll('button').forEach(b=>b.onclick=()=>verSeccion(b.dataset.v));
   verSeccion(sub[0].v);
@@ -8932,7 +8989,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 31;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 32;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
