@@ -967,6 +967,10 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line-2)
  border:1px solid var(--line-2);border-radius:var(--r-sm);box-shadow:0 8px 22px rgba(0,0,0,.16);padding:8px 10px;
  font-size:.74rem;font-weight:400;line-height:1.45;color:var(--mut);text-transform:none;letter-spacing:0}
 .tipw:hover .tip,.tipw:focus .tip,.tipw:focus-within .tip{display:block}
+.notaCel{border-bottom:1px dotted var(--ink-lo);cursor:help;outline:none}
+.notaCel:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
+#notaFlot{position:fixed;z-index:3000;max-width:min(380px,90vw);background:var(--surface);color:var(--ink);border:1px solid var(--line-2);
+ border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);padding:9px 11px;font-size:.8rem;line-height:1.45;pointer-events:none;font-weight:400}
 .sim-der .tipw .tip,.tipw.der .tip{left:auto;right:0}
 /* en teléfono el globo no cabe junto al rótulo: se abre como franja al pie de la pantalla */
 @media(max-width:760px){.tipw .tip,.sim-der .tipw .tip,.tipw.der .tip{position:fixed;left:10px;right:10px;top:auto;bottom:10px;width:auto}}
@@ -1807,7 +1811,8 @@ body.oyeAbierto{padding-bottom:86px}
     <div class="chartbox" style="margin-top:14px">
       <div class="t">Qué supone cada proyección</div>
       <div class="d">Las variables explicativas de cada una, en promedio para 2027–2037, para ver de dónde salen las diferencias. Clic en el
-        cuadro para ampliarlo y descargarlo como figura.</div>
+        cuadro para ampliarlo y descargarlo como figura. Pasa el mouse sobre una cifra subrayada para ver su detalle;
+        en cursiva, las que la fuente no informa y V&amp;R infiere de su serie.</div>
       <div style="overflow-x:auto"><table class="mctab" id="coSupuestos"></table></div>
       <div class="aviso" id="coSupNota" style="margin-top:8px"></div>
     </div>
@@ -1815,7 +1820,8 @@ body.oyeAbierto{padding-bottom:86px}
       <div class="t">De dónde salen las diferencias con V&amp;R</div>
       <div class="d">Cuánto de la diferencia de 2037 con la línea V&amp;R viene del punto de partida y cuánto del crecimiento, y dentro del
         crecimiento, de qué bloque. En millones de transacciones y en porcentaje de la diferencia; los bloques suman exacto. Clic en el cuadro
-        para ampliarlo y descargarlo como figura.</div>
+        para ampliarlo y descargarlo como figura. Pasa el mouse sobre una cifra subrayada para ver su detalle;
+        en cursiva, las que la fuente no informa y V&amp;R infiere de su serie.</div>
       <div style="overflow-x:auto"><table class="mctab" id="coDiferencias"></table></div>
       <div class="aviso" id="coDifNota" style="margin-top:8px"></div>
     </div>
@@ -7250,6 +7256,26 @@ function figTabla(o){
   svg.innerHTML = s;
   return svg;
 }
+/* GLOBO DE UNA CELDA (16-09-2026): la cifra lleva class="notaCel" y su aclaración en data-nota. Se muestra con el mouse o el foco y, en
+   pantallas táctiles, con un toque que no abre la lupa del cuadro. Fijo sobre la página para que la tabla no lo recorte. */
+function notaCeldas(raiz){
+  let f = document.getElementById('notaFlot');
+  if(!f){ f = document.createElement('div'); f.id = 'notaFlot'; f.hidden = true; f.setAttribute('role', 'tooltip'); document.body.appendChild(f);
+    window.addEventListener('scroll', ()=>{ f.hidden = true; }, {passive:true}); }
+  const muestra = el => { f.textContent = el.dataset.nota; f.hidden = false;
+    const r = el.getBoundingClientRect(), w = f.offsetWidth, h = f.offsetHeight;
+    const x = Math.min(window.innerWidth - w - 8, Math.max(8, r.left));
+    let y = r.bottom + 6; if(y + h > window.innerHeight - 8) y = r.top - h - 6;
+    f.style.left = x + 'px'; f.style.top = Math.max(8, y) + 'px'; };
+  const oculta = () => { f.hidden = true; };
+  raiz.querySelectorAll('.notaCel').forEach(el=>{
+    el.onmouseenter = () => muestra(el); el.onmouseleave = oculta; el.onfocus = () => muestra(el); el.onblur = oculta;
+    el.onclick = ev => { if(window.matchMedia('(hover: none)').matches){ ev.stopPropagation(); if(f.hidden) muestra(el); else oculta(); } }; });
+}
+const escNota = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+/* la cifra con su aclaración; inf = la infiere V&R (va en cursiva) */
+const notaC = (v, nota, inf) => '<span class="notaCel" tabindex="0" data-nota="'+escNota(nota)+'">'+(inf ? '<i>'+v+'</i>' : v)+'</span>';
+
 /* engancha una tabla de la página a la lupa, con clic y con teclado */
 function tablaALupa(tabla, arma, titulo){
   tabla.style.cursor = 'zoom-in'; tabla.title = 'Clic para ampliar y descargar como figura'; tabla.tabIndex = 0;
@@ -7345,41 +7371,59 @@ function concesionaria(){
   const eHi = Math.max(EM.autos.hi, EM.carga.hi, EM.motos.hi);
   /* lo implícito por regresión V&R con PIB Oxford, para las dos proyecciones que no declaran supuestos */
   const RV = ELA.vias_2026, rs = k => RV.series[k].resumen;
-  const FECH = {estudio:'años del estudio 2023', vigentes:'calendario vigente', serie:'años en que su serie se frena: 2029, 2030 y 2036'};
+  const FECH = {estudio:'los años del estudio 2023', vigentes:'el calendario vigente', serie:'los años en que su serie se frena (2029, 2030 y 2036)'};
+  const VARS = 'las seis variantes probadas (tres calendarios de entrada de las vías, con y sin control de precio)';
+  /* la variante más alejada de la mejor: explica el extremo del rango */
+  const extremo = k => { const r = rs(k), E = RV.series[k].especificaciones;
+    return Object.values(E).reduce((a, b) => Math.abs(b.efecto_total_pct - r.mejor.total_pct) > Math.abs(a.efecto_total_pct - r.mejor.total_pct) ? b : a); };
   const impE = k => { const r = rs(k), m = r.mejor;
-    return NI + '<br><small>implícita por regresión V&R, con PIB Oxford: '+nd(m.e_pib,2)+' en la variante de mejor ajuste; '
-      + nd(r.e_pib[0],2)+' a '+nd(r.e_pib[1],2)+' entre las '+r.n_variantes+'</small>'; };
-  const impV = k => { const r = rs(k), m = r.mejor, sg = Object.keys(m.distintos_de_cero);
-    return NI + '<br><small>implícito por regresión V&R, con PIB Oxford: '+cPct(m.total_pct)+' en la variante de mejor ajuste ('+FECH[m.fechas]
-      + '); '+cPct(r.total_pct[0])+' a '+cPct(r.total_pct[1])+' entre las '+r.n_variantes+'. '
-      + (sg.length === 3 ? 'Los tres proyectos se distinguen de cero' : sg.length ? 'Sólo '+sg.map(a=>RV.nombres[a]).join(' y ')+' se distingue de cero'
-        : 'Ningún proyecto se distingue de cero')+'</small>'; };
+    return notaC(nd(m.e_pib,2), 'No la informa la fuente. Implícita por regresión V&R sobre su serie, con el PIB de Oxford y población 0,7 % supuestos: '
+      + nd(m.e_pib,2)+' en la variante que mejor ajusta, con '+FECH[m.fechas]+'. Entre '+VARS+' va de '+nd(r.e_pib[0],2)+' a '+nd(r.e_pib[1],2)
+      + '. Es una elasticidad agregada de la red, no por modo.', true); };
+  const impV = k => { const r = rs(k), m = r.mejor, sg = Object.keys(m.distintos_de_cero), x = extremo(k);
+    return notaC(cPct(m.total_pct), 'No lo informa la fuente. Implícito por regresión V&R sobre su serie, con el PIB de Oxford supuesto: '+cPct(m.total_pct)
+      + ' en la variante que mejor ajusta, con '+FECH[m.fechas]+'; su error de ajuste es de '+nd(m.rmse_pp,2)+' puntos. '
+      + (sg.length === 3 ? 'Los tres proyectos se distinguen de cero. ' : sg.length ? 'Sólo '+sg.map(a=>RV.nombres[a]).join(' y ')+' se distingue de cero. '
+        : 'Ningún proyecto se distingue de cero. ')
+      + 'Entre '+VARS+' va de '+cPct(r.total_pct[0])+' a '+cPct(r.total_pct[1])+'; el '+cPct(x.efecto_total_pct)+' sale de la variante con '
+      + FECH[x.fechas]+(x.con_precio ? ' y control de precio' : ' sin control de precio')+', que ajusta peor (error '+nd(x.rmse_pp,2)+' puntos).', true); };
+  const REF = notaC('—', 'Es la referencia de esta fila: el cálculo pregunta qué necesitaría cada proyección si lo demás fuera como en V&R.');
+  const NIP = notaC('no informado', 'La fuente no lo declara. Para inferir su elasticidad y sus vías, V&R supone la senda de Oxford que usó Diadro 2023, '
+    + nd(DEC.g_pib_equivalente*100,2)+' % anual equivalente.');
   const SUP = [
     ['Partida 2026', 'millones de transacciones', c=>nd(c.p26)],
     ['Contra lo medido en 2025', nd(h25)+' M', c=>cPct((c.p26/h25-1)*100)],
     ['Tránsito 2037', 'millones de transacciones', c=>'<b>'+nd(c.p37)+'</b>'],
     ['Crecimiento anual 2026–2037', 'medido sobre la serie', c=>cPct((Math.pow(c.p37/c.p26, 1/11)-1)*100)],
     ['Crecimiento del PIB', 'supuesto, tasa anual equivalente', {
-      vyr: nd(PEQ.base,2)+' %<br><small>senda media 2027–2037; rango '+nd(PEQ.pesimista,2)+' a '+nd(PEQ.optimista,2)+' %</small>', d26: NI, c17: NI,
-      d23: nd(DEC.g_pib_equivalente*100,2)+' %<br><small>senda Oxford «Nuevo PIB», 2026–2037</small>'}],
-    ['Elasticidad al PIB por modo', 'supuesto', {
-      vyr: 'autos '+nd(EM.autos.e,2)+' · carga '+nd(EM.carga.e,2)+' · livianos '+nd(EM.motos.e,2)+'<br><small>intervalo de 95 %: '
-        +nd(Math.min(EM.autos.lo, EM.carga.lo, EM.motos.lo),2)+' a '+nd(eHi,2)+'</small>', d26: impE('diadro_2026'), c17: impE('concesionaria_17'),
-      d23: 'noche, sábado y domingo: livianos 1 · C2 1,0037 · C3 1,15 · precio −0,2<br><small>Figura 5.33 del informe; el texto (§6.11) dice '
-        +'1,0 y 1,10 para pesados. En las horas del día laboral que asigna, el crecimiento sale de sus matrices, sin elasticidad explícita; '
-        +'la agregada implícita en su proyección va de '+nd(RE1.epib,2)+' a '+nd(RE0.epib,2)+'</small>'}],
+      vyr: notaC(nd(PEQ.base,2)+' %', 'Senda media actualizada a septiembre de 2026, como tasa equivalente 2027–2037. El Montecarlo recorre de la senda baja, '
+        + nd(PEQ.pesimista,2)+' %, a la alta, '+nd(PEQ.optimista,2)+' %.'),
+      d26: NIP, c17: NIP,
+      d23: notaC(nd(DEC.g_pib_equivalente*100,2)+' %', 'Declarado: senda Oxford Economics «Nuevo PIB» del 6-oct-2023 (Tabla 6.11 del informe), de 2,77 % en 2026 '
+        + 'a 1,61 % en 2037; tasa equivalente 2026–2037.')}],
+    ['Elasticidad al PIB', 'supuesto', {
+      vyr: notaC(nd(EM.autos.e,2)+' · '+nd(EM.carga.e,2)+' · '+nd(EM.motos.e,2), 'Autos '+nd(EM.autos.e,2)+', carga '+nd(EM.carga.e,2)+' y livianos '
+        + nd(EM.motos.e,2)+', estimadas por V&R sobre 2014–2026 y asignadas por concesión y categoría. Intervalo de confianza de 95 %: '
+        + nd(Math.min(EM.autos.lo, EM.carga.lo, EM.motos.lo),2)+' a '+nd(eHi,2)+'.'),
+      d26: impE('diadro_2026'), c17: impE('concesionaria_17'),
+      d23: notaC('1 · 1,0 a 1,15', 'Declaradas por el informe. La Figura 5.33 da livianos 1, C2 1,0037 y C3 1,15, con precio −0,2, para noche, sábado y domingo; '
+        + 'el texto (§6.11) dice 1,0 y 1,10 para camiones. En las horas del día laboral que el modelo asigna, el crecimiento sale de sus matrices, sin '
+        + 'elasticidad explícita. La agregada implícita en su proyección va de '+nd(RE1.epib,2)+' a '+nd(RE0.epib,2)+'.')}],
     ['Efecto de las vías competidoras', 'sobre la red en 2037', {
-      vyr: cPct((Math.exp(redV)-1)*100)+'<br><small>punto medio de las tasas de V&R; cotas '+nd(V28.series.maximo['2037']/1e6)+' a '+nd(V28.series.minimo['2037']/1e6)+' M</small>',
+      vyr: notaC(cPct((Math.exp(redV)-1)*100), 'Punto medio de las tasas de efecto de V&R por proyecto y concesión. Con el mínimo y el máximo de esas tasas, '
+        + 'la línea V&R va de '+nd(V28.series.maximo['2037']/1e6)+' a '+nd(V28.series.minimo['2037']/1e6)+' M en 2037.'),
       d26: impV('diadro_2026'), c17: impV('concesionaria_17'),
-      d23: cPct((Math.exp(DEC.aportes_pob_1.red)-1)*100)+'<br><small>implícito en sus salidas, misma regresión V&R con su PIB</small>'}],
-    ['Elasticidad que haría falta', 'cálculo V&R: con el PIB y las vías de V&R', c=>c.k === 'vyr' ? REFV : '<b>'+nd(eReq(c),2)+'</b>'],
-    ['PIB anual que haría falta', 'cálculo V&R: con las elasticidades y las vías de V&R', c=>c.k === 'vyr' ? REFV : '<b>'+nd(gReq(c),2)+' %</b>'],
+      d23: notaC(cPct((Math.exp(DEC.aportes_pob_1.red)-1)*100), 'El informe no lo declara como supuesto: sus simulaciones de red usan la demanda de 2022 y, '
+        + 'dice, no se trasladan a la proyección (§5.67). Es el efecto implícito en sus salidas, leído con la misma regresión V&R y su PIB declarado.', true)}],
+    ['Elasticidad que haría falta', 'cálculo V&R: con el PIB y las vías de V&R', c=>c.k === 'vyr' ? REF : '<b>'+nd(eReq(c),2)+'</b>'],
+    ['PIB anual que haría falta', 'cálculo V&R: con las elasticidades y las vías de V&R', c=>c.k === 'vyr' ? REF : '<b>'+nd(gReq(c),2)+' %</b>'],
     ['V&R con los supuestos de cada una', 'cálculo V&R: su PIB, elasticidad y población, con la partida y las vías de V&R', c=>{
-      if(c.k === 'vyr') return REFV;
+      if(c.k === 'vyr') return REF;
       const vs = ELA.diferencias_vyr.proyecciones[{d26:'diadro_2026', c17:'concesionaria_17', d23:'diadro_2023'}[c.k]].vyr_con_supuestos;
-      return '<b>'+nd(vs.M_2037_con_economia)+' M</b> · '+sgnE(vs.pct_vs_proyeccion, 1)+' % contra su 2037<br><small>PIB Oxford, elasticidad '
-        + nd(vs.e_pib, 2)+' y población 0,7 %'+(c.k === 'd23' ? ' (PIB declarado; elasticidad implícita)' : ' (implícitos)')+'; tomando también sus vías: '
-        + nd(vs.M_2037_con_economia_y_vias)+' M ('+sgnE(vs.pct_vs_proyeccion_con_vias, 1)+' %)</small>'; }]];
+      return notaC('<b>'+nd(vs.M_2037_con_economia)+' M</b> · '+sgnE(vs.pct_vs_proyeccion, 1)+' %', 'La línea V&R —partida '+nd(V28.partida_2026.central_M)
+        + ' M y sus vías— con el PIB de Oxford, elasticidad '+nd(vs.e_pib, 2)+' y población 0,7 %'
+        + (c.k === 'd23' ? ' (PIB declarado; elasticidad implícita)' : ' (implícitos en su serie)')+'. El porcentaje es contra su cifra de 2037. Tomando también '
+        + 'sus vías: '+nd(vs.M_2037_con_economia_y_vias)+' M ('+sgnE(vs.pct_vs_proyeccion_con_vias, 1)+' %).'); }]];
   const celda = (f, c) => typeof f[2] === 'function' ? f[2](c) : f[2][c.k];
   document.getElementById('coSupuestos').innerHTML = '<thead><tr><th>Variable</th>' + COLS.map(c=>'<th>'+c.t+'</th>').join('') + '</tr></thead><tbody>'
     + SUP.map((f,i)=>'<tr style="cursor:default'+(i >= 7 ? ';background:color-mix(in srgb,var(--accent) 7%,transparent)' : '')+'"><td style="white-space:normal"><b>'+f[0]
@@ -7421,16 +7465,20 @@ function concesionaria(){
   const DCOL = [['diadro_2023', 'Diadro 2023'], ['diadro_2026', 'Diadro 2026'], ['concesionaria_17', 'Concesionaria, 17 pórticos']];
   const pctS = v => (Math.round(v) < 0 ? '−' : '') + nd(Math.abs(v), 0) + ' %';
   const sm = (d, ks, q) => ks.reduce((x, k) => x + d[q][k], 0);
-  const cel = (d, ks, extra) => '<b>'+sgnE(sm(d, ks, 'piezas_M'), 1)+' M</b> · '+pctS(sm(d, ks, 'piezas_pct_brecha'))+(extra ? '<br><small>'+extra+'</small>' : '');
+  const cel = (d, ks, extra) => { const v = '<b>'+sgnE(sm(d, ks, 'piezas_M'), 1)+' M</b> · '+pctS(sm(d, ks, 'piezas_pct_brecha'));
+    return extra ? notaC(v, extra, d.hipotesis && extra.indexOf('Medido') < 0) : v; };
   const ECO = ['elasticidad', 'escenario_pib', 'poblacion'], VIA = ['vias'], PRE = ['precio', 'ajuste'], CREC = ECO.concat(VIA, PRE);
   const DIF = [
     ['Diferencia con V&R en 2037', 'es el 100 % de cada columna', d => '<b>'+sgnE(d.brecha_M, 1)+' M</b> · '+sgnE(d.brecha_pct, 1)+' % sobre V&R'],
     ['Punto de partida 2026', 'medido sobre cada serie; con el crecimiento suma 100 %', d => cel(d, ['partida_2026'])],
     ['Crecimiento 2026–2037', 'medido sobre cada serie; es la suma de las tres filas de abajo', d => cel(d, CREC)],
     ['· Economía y población', 'elasticidad al PIB, escenario de PIB y población, juntas: la regresión no las separa',
-      d => cel(d, ECO, d.hipotesis ? 'con PIB Oxford y población 0,7 % supuestos' : 'con su PIB Oxford declarado')],
+      d => cel(d, ECO, 'Elasticidad al PIB, escenario de PIB y población, juntas: la regresión no las separa, porque la población crece igual todos los años. '
+        + (d.hipotesis ? 'Con el PIB de Oxford y población 0,7 % supuestos, que la fuente no informa.' : 'Con su PIB Oxford declarado.'))],
     ['· Vías competidoras', 'su efecto menos el de V&R', d => cel(d, VIA, d.vias_M_rango_variantes
-      ? 'entre '+sgnE(d.vias_M_rango_variantes[0], 1)+' y '+sgnE(d.vias_M_rango_variantes[1], 1)+' M según calendario y precio' : 'su regresión, efectos claros')],
+      ? 'Variante de regresión que mejor ajusta su serie. Entre las seis variantes probadas va de '+sgnE(d.vias_M_rango_variantes[0], 1)+' a '
+        + sgnE(d.vias_M_rango_variantes[1], 1)+' M; los extremos salen de variantes que ajustan peor.'
+      : 'Misma regresión V&R sobre su proyección, con su PIB declarado; los efectos son claros.')],
     ['· Precio y lo no explicado', 'efecto del precio y residuo de la regresión', d => cel(d, PRE)]];
   const tDif = document.getElementById('coDiferencias');
   tDif.innerHTML = '<thead><tr><th>Pieza</th>' + DCOL.map(c=>'<th>'+c[1]+'</th>').join('') + '</tr></thead><tbody>'
@@ -7459,6 +7507,7 @@ function concesionaria(){
     sub:'Diferencia de 2037 con la línea V&R, en millones de transacciones de la red AVN + túnel y en porcentaje de la diferencia.',
     cab:['Pieza'].concat(DCOL.map(c=>c[1])), filas:DIF.map(f=>['<b>'+f[0]+'</b><br>'+f[1]].concat(DCOL.map(c=>f[2](DP[c[0]])))),
     somb:[0], nota:notaDif}), 'De dónde salen las diferencias con V&R');
+  notaCeldas(document.getElementById('vConcesionaria'));
 
   /* tabla por pórtico: base 2025, y 2037 de cada proyección; la diferencia se mide contra el estudio 2026 */
   const ints = CP.interna_concesionaria, d26 = CP.diadro_2026;
@@ -9126,7 +9175,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 38;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 39;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
