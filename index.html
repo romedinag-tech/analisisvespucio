@@ -1146,6 +1146,11 @@ tr.sel td{background:color-mix(in srgb,var(--accent) 16%,transparent)}
 #grupoTabs button small{display:block;font-size:.72rem;line-height:1.2}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:1080px){.grid2{grid-template-columns:1fr}}
+.avisoVersion{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:9999;display:flex;gap:10px;
+  align-items:center;background:var(--ink);color:#fff;padding:10px 14px;border-radius:10px;font-size:.84rem;
+  box-shadow:0 6px 24px rgba(0,0,0,.28);max-width:min(92vw,620px)}
+.avisoVersion button{background:#fff;color:var(--ink);border:0;border-radius:7px;padding:6px 11px;font:inherit;
+  font-weight:700;cursor:pointer}
 .bo-obj{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
 .bo-campo{display:flex;flex-direction:column;gap:5px}
 .bo-campo[hidden]{display:none}  /* el display:flex de arriba gana al hidden del navegador si no se dice */
@@ -8760,6 +8765,23 @@ document.querySelectorAll('#grupoTabs button').forEach(b=>
   b.onclick = ()=>verGrupo(b.dataset.g));
 
 boOye();
+/* ── ¿el navegador está mostrando una versión vieja? ──────────────────────────
+   El tablero es un archivo único de 16 MB y el sitio lo sirve con caché de diez minutos: un navegador que ya lo tiene guardado
+   puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
+   número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
+   recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
+const VERSION_TABLERO = 26;   /* lo reemplaza publica_sitio.py */
+if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
+  fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
+    if(!v || !(v.version > VERSION_TABLERO)) return;
+    const d = document.createElement('div');
+    d.className = 'avisoVersion';
+    d.innerHTML = '<span>Estás viendo la versión ' + VERSION_TABLERO + ' guardada por tu navegador. Publicada: la '
+      + v.version + '.</span> <button type="button">Cargar la versión ' + v.version + '</button>';
+    d.querySelector('button').onclick = () => { location.replace(location.pathname + '?v=' + v.version); };
+    document.body.appendChild(d);
+  }).catch(()=>{});
+}
 ponBase('propia');
 sincronizaCortes();
 vacia();
