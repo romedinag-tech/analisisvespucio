@@ -1146,6 +1146,18 @@ tr.sel td{background:color-mix(in srgb,var(--accent) 16%,transparent)}
 #grupoTabs button small{display:block;font-size:.72rem;line-height:1.2}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:1080px){.grid2{grid-template-columns:1fr}}
+.bo-obj{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
+.bo-campo{display:flex;flex-direction:column;gap:5px}
+.bo-campo[hidden]{display:none}  /* el display:flex de arriba gana al hidden del navegador si no se dice */
+.bo-campo select,.bo-campo input[type=number]{padding:7px 9px;border:1px solid var(--line);border-radius:7px;
+  background:var(--surface);color:var(--ink);font:inherit;font-size:.84rem;min-width:190px}
+.bo-acc{flex-direction:row;gap:8px;flex-wrap:wrap}
+.bo-tabla td,.bo-tabla th{vertical-align:middle}
+.bo-tabla input[type=range]{width:96px;vertical-align:middle}
+.bowv{display:inline-block;min-width:1.2em;margin-left:6px;font-variant-numeric:tabular-nums;color:var(--mut)}
+.bomov{display:inline-block;padding:2px 7px;border-radius:999px;font-weight:700;font-size:.78rem;
+  background:color-mix(in srgb, var(--accent) calc(12% + var(--f)*34%), transparent);color:var(--ink)}
+.aviso.ok{border-left-color:var(--ser-c)}
 .chartbox{background:var(--surface-alt);border:1px solid var(--line);
  border-radius:var(--r-sm);padding:12px 14px}
 /* overflow HIDDEN, no visible: la elasticidad del dia laboral se dispara
@@ -1526,6 +1538,73 @@ body.oyeAbierto{padding-bottom:86px}
     <div class="dectxt" id="vFP"></div>
     <div style="overflow-x:auto"><table id="vFPtab"></table></div>
     <div class="aviso" id="vFPnota"></div>
+  </div>
+</section>
+
+<section id="vObjetivo" hidden>
+  <div class="card">
+    <h2>Buscar objetivo</h2>
+    <p class="desc">La pregunta inversa del simulador. En vez de mover barras hasta acertar, se fija la cifra de 2037 a la que
+      se quiere llegar —la del estudio de Diadro, la de la concesionaria o una escrita a mano— y la pantalla busca qué
+      combinación de supuestos la alcanza. <b>La respuesta no es única:</b> hay infinitas combinaciones que dan el mismo 2037,
+      y lo que elige una de ellas son los pesos que se le den a cada variable.</p>
+
+    <div class="bo-obj">
+      <div class="bo-campo">
+        <span class="seglab">Qué se fija</span>
+        <div class="seg" id="boMagSeg" role="group" aria-label="Magnitud del objetivo">
+          <button data-v="tx" class="on">Transacciones 2037</button>
+          <button data-v="ing">Ingresos 2037</button>
+        </div>
+      </div>
+      <div class="bo-campo">
+        <span class="seglab">Referencia</span>
+        <select id="boRef" aria-label="Referencia del objetivo"></select>
+      </div>
+      <div class="bo-campo" id="boOtroCaja" hidden>
+        <span class="seglab" id="boOtroRot">Valor, en millones</span>
+        <input type="number" id="boOtro" step="0.1" placeholder="por ejemplo 450" aria-label="Valor del objetivo en millones">
+      </div>
+      <div class="bo-campo bo-acc">
+        <button class="btnrst" id="boBuscar">Buscar la combinación</button>
+        <button class="btnrst" id="boReset">Pesos a 1</button>
+        <button class="btnrst" id="boLlevar" title="Copia los valores hallados a las barras del simulador">Llevar al simulador</button>
+      </div>
+    </div>
+    <div class="aviso" id="boEstado" style="margin-top:10px"></div>
+
+    <div class="chartbox" style="margin-top:14px">
+      <div class="t">Qué tendría que mover cada variable</div>
+      <div class="d">El peso dice cuánto participa cada variable en el ajuste: en 0 queda fija, y mientras más alto, más
+        carga asume del movimiento total. Las variables que no mueven la cifra se quedan donde están aunque tengan peso: es
+        lo que pasa con el <b>atraso</b> de una vía competidora, porque su efecto es un salto de nivel permanente y
+        posponerlo cambia la trayectoria intermedia pero no el valor de 2037, salvo que el atraso lo empuje fuera del
+        horizonte.</div>
+      <div style="overflow-x:auto"><table class="mctab bo-tabla" id="boTabla"></table></div>
+    </div>
+
+    <div id="boRes" style="margin-top:14px"></div>
+    <div class="chartbox" style="margin-top:14px">
+      <div class="t">La trayectoria que resulta</div>
+      <div id="boG1"></div>
+      <div class="legend" id="boL1"></div>
+    </div>
+
+    <div class="expl" style="margin-top:14px">
+      <h3>Cómo se lee este resultado</h3>
+      <p>El buscador no dice qué va a pasar ni qué es probable: dice <b>qué tendría que ser cierto</b> para que la proyección
+        llegue a una cifra dada. Por eso su uso natural es al revés de como suena: se fija la cifra de otro —el estudio de
+        Diadro de 2023, la estimación interna de la concesionaria— y se mira si los supuestos que hacen falta para
+        alcanzarla son defendibles. Cuando la combinación exige un producto que ninguna proyección macroeconómica sostiene,
+        o elasticidades fuera del intervalo de confianza estimado, eso mismo es el resultado.</p>
+      <p>Los pesos reparten el esfuerzo. Con todos en 1, cada variable se mueve la misma proporción de su margen; subiendo el
+        de una y bajando el de las demás se obtiene la combinación que carga sobre esa variable. Conviene probar dos o tres
+        repartos distintos: si todos exigen supuestos implausibles, la conclusión no depende del reparto.</p>
+      <p>Dos precisiones sobre los proyectos competidores. El <b>atraso</b> mueve la entrada de cada uno en años, y uno
+        atrasado más allá del horizonte simplemente no alcanza a entrar. El <b>efecto en demanda</b> se expresa como
+        porcentaje del que Diadro 2023 le atribuye: 0 % es un proyecto que no le quita tránsito a la autopista y 200 % uno
+        que le quita el doble; mueve a la vez AVN y el túnel, en la proporción que cada concesión tiene en la red.</p>
+    </div>
   </div>
 </section>
 
@@ -6110,7 +6189,7 @@ Object.keys(ELA.efectos_red_estudio).forEach(a=>{
   Object.keys(P).forEach(c=>{ if(+c.slice(1) < 100) av += P[c].tx[i]; else tu += P[c].tx[i]; });
   RED_W[a] = {AVN: av/(av+tu), tunel: tu/(av+tu)};
 });
-function simEventos(R, val){
+function simEventos(R, val, atr){
   const EV0 = Object.assign({}, SIMX.evPob1 ? refEstudio(1).ev : R.ev);
   Object.keys(RED_W).forEach(a=>{
     const w = RED_W[a], e0 = ELA.efectos_red_estudio[a], k = EVS.filter(x=>SIM[x].ev === a);
@@ -6118,7 +6197,14 @@ function simEventos(R, val){
     const f = (x, y) => Math.log(w.AVN*(1+x/100) + w.tunel*(1+y/100));
     EV0[a] = (EV0[a] || 0) * f(val[kA], val[kT]) / f(e0.AVN, e0.tunel);
   });
-  return SIMX.fechas === 'vigentes' ? evFechas(EV0) : EV0;
+  /* el atraso mueve cada proyecto en años DESPUÉS de repartir sus fechas, que es donde el proyecto todavía se distingue; un
+     proyecto atrasado más allá del horizonte simplemente no alcanza a entrar, que es lo que corresponde */
+  const rep = SIMX.fechas === 'vigentes' ? ELA.escenario_rm.reparto : null, out = {};
+  Object.keys(EV0).forEach(a0=>{
+    const k = (atr && atr[a0]) || 0, r = (rep && rep[a0]) || {[a0]: 1};
+    Object.keys(r).forEach(a1=>{ const a = +a1 + k; out[a] = (out[a] || 0) + EV0[a0]*r[a1]; });
+  });
+  return out;
 }
 
 /* ── MONTECARLO ──────────────────────────────────────────────────────────────
@@ -6190,11 +6276,11 @@ function calibraSim(){
   SIM.epib.v = R.epib;  SIM.epib.ref = R.epib;
   const EM = ELA.modo.modos, icE = m => nd(EM[m].e,2) + ' (IC 95 %: ' + nd(EM[m].lo,2) + ' a ' + nd(EM[m].hi,2) + ')';
   ['ecar','emot'].forEach(k=>{ SIM[k].v = R.epib;  SIM[k].ref = R.epib; });
-  SIM.epib.ay = 'Cuánto crece el tránsito de <b>autos (C1)</b> por cada 1 % de PIB. La marca «estudio» es la elasticidad agregada '
+  SIM.epib.ay = 'Cuánto crece el tránsito de <b>autos (C1)</b> por cada 1 % de PIB. La marca «Diadro 2023» es la elasticidad agregada '
     + '<b>inferida</b> por regresión sobre su proyección, la misma en los tres modos. El escenario V&R usa ' + icE('autos')
     + ', estimada 2014–2026 con el método acordado con la revisión JV. <span id="refTxt_epib"></span>';
   SIM.ecar.ay = 'Cuánto crece el tránsito de <b>carga (C2 + C3)</b> por cada 1 % de PIB, estimada junta porque por separado se mueven en '
-    + 'sentidos opuestos. El escenario V&R usa ' + icE('carga') + '. La marca «estudio» es su elasticidad agregada.';
+    + 'sentidos opuestos. El escenario V&R usa ' + icE('carga') + '. La marca «Diadro 2023» es su elasticidad agregada.';
   SIM.ecar.ay += '';
   SIM.emot.ay = 'Cuánto crece el tránsito de <b>motos (C4)</b> por cada 1 % de PIB. Toma la de livianos de AVN (C1 + C4) por la brevedad de '
     + 'su serie: ' + icE('motos') + '. El túnel usa las mismas elasticidades por modo.';
@@ -6216,7 +6302,7 @@ function calibraSim(){
   EVS.forEach(k=>{ const x = SIM[k], e0 = ELA.efectos_red_estudio[x.ev][x.conc];
     x.v = e0;  x.ref = e0;
     x.ay = 'Cuánto cambia la demanda ' + (x.conc === 'AVN' ? 'de AVN' : 'del túnel') + ' cuando entra '
-      + DEC.nombres_eventos[x.ev] + ' (' + x.ev + ' en el estudio). La marca «estudio» es el efecto implícito en sus salidas: '
+      + DEC.nombres_eventos[x.ev] + ' (' + x.ev + ' en el estudio). La marca «Diadro 2023» es el efecto implícito en sus salidas: '
       + cPct(e0) + '. En 0 % el proyecto no le quita ni le da tránsito.'; });
 
   SIM.salto.v = 100;  SIM.salto.ref = 100;
@@ -6234,23 +6320,24 @@ calibraSim();
 /* La trayectoria año a año, con el aporte acumulado de cada bloque. El ajuste de
    la regresion —lo que ella no reproduce en 2027-2037, medio punto— entra fijo y
    repartido por igual: sin el, los valores de partida no calzarian con el estudio. */
-function simSerie(){
-  const R = refEstudio(SIM.epob.v), base = C.historia['2025'], out = {2025: base};
+function simSerie(vv0, atr){
+  const vv = vv0 || valSIM();
+  const R = refEstudio(vv.epob), base = C.historia['2025'], out = {2025: base};
   const aS = ANIOS.filter(a=>a>2025), nAj = aS.length - 1;
-  const lPob = SIM.epob.v*Math.log(1+SIM.gpob.v/100), lgP = Math.log(1+SIM.gpib.v/100), vv = valSIM();
-  const lPr = -SIM.epre.v*Math.log(1+SIM.gtar.v/100);
+  const lPob = vv.epob*Math.log(1+vv.gpob/100), lgP = Math.log(1+vv.gpib/100);
+  const lPr = -vv.epre*Math.log(1+vv.gtar/100);
   const ap = {bloque:0, salto:0, precio:0, red:0, ajuste:0, propio:0};
   let sh = MEZ0;
   /* el escenario V&R toma los descuentos con elasticidad 1 a la población (los de su pestaña), aunque ponga esa elasticidad en 0:
      los descuentos describen al estudio, cuya población sí crece. Cada uno se corrige por las seis barras de proyecto. */
-  const val = {}; EVS.forEach(k=>{ val[k] = SIM[k].v; });
-  const EV = simEventos(R, val);
+  const val = {}; EVS.forEach(k=>{ val[k] = vv[k]; });
+  const EV = simEventos(R, val, atr);
   let l = Math.log(base);
   aS.forEach(a=>{
     const pm = pibModo(sh, vv, lgP), lPp = pm.d + lPob;  sh = pm.sh;
     let d = lPp + lPr;
     ap.bloque += lPp;  ap.precio += lPr;
-    if(a === 2026){ const s = R.salto*SIM.salto.v/100; d += s; ap.salto += s; }
+    if(a === 2026){ const s = R.salto*vv.salto/100; d += s; ap.salto += s; }
     else { const r = SIMX.ajuste ? R.resto/nAj : 0; d += r; ap.ajuste += r;
     }
     if(EV[a] !== undefined){ const e = EV[a]; d += e; ap.red += e; }
@@ -6395,7 +6482,7 @@ function simPars(){
   const par = k => { const x = SIM[k];
       const marca = x.ref !== undefined ? '<div class="parref' + (x.refMed !== undefined ? ' doble' : '') + '">'
           + '<i id="rf_' + k + '" style="left:' + posRiel(k,x.ref) + '"></i><em id="rfe_' + k + '" style="left:'
-          + posRiel(k,x.ref) + '">estudio</em>'
+          + posRiel(k,x.ref) + '">Diadro 2023</em>'
           + (x.refMed !== undefined ? '<i class="med" id="rfm_' + k + '"></i><em class="med" id="rfme_' + k + '"></em>' : '')
           + '</div>' : '';
       const rango = x.mc ? `<div class="mcrail"><span class="mcband" id="mcb_${k}"></span><i class="mcmoda" id="mcm_${k}" title="valor puntual: moda del sorteo triangular"></i>
@@ -6418,7 +6505,7 @@ function simPars(){
 
   document.getElementById('simIzq').innerHTML = caja(G[2],
     '<label class="simsel">Fechas <select id="simFechas" aria-label="Fechas de las vías competidoras">'
-    + '<option value="estudio">del estudio (2027, 2030, 2034)</option>'
+    + '<option value="estudio">de Diadro 2023 (2027, 2030, 2034)</option>'
     + '<option value="vigentes">vigentes (2028–29, 2030, 2034–35)</option></select></label>');
   /* LA COLUMNA DERECHA VA DE MAYOR A MENOR IMPACTO (RM, 14-09-2026): se ordena por el aporte medio de cada pieza en el estudio,
      en valor absoluto. PIB y población ya no van en un marco común porque el orden los separa; su advertencia viaja en una nota
@@ -6446,14 +6533,14 @@ function simPars(){
     + 'uniforme da el mismo peso a todo el rango. En modo Montecarlo cada barra muestra su rango y la casilla del rótulo decide si se sortea. El salto de 2026 se sortea con los demás valores en su punto: su rango es un rango de '
     + 'nivel 2026. Semilla fija: la misma configuración da siempre el mismo resultado; «Otra semilla» comprueba que no depende del azar.';
   const leeTip = 'Cada cuadro es una pieza de la proyección. La cifra de la esquina es lo que aporta en el estudio entre 2025 y '
-    + DEC.fin + ', en puntos de logaritmo. Pasa el mouse sobre una barra para ver qué mide; la marca «estudio» bajo ella es el valor que '
+    + DEC.fin + ', en puntos de logaritmo. Pasa el mouse sobre una barra para ver qué mide; la marca «Diadro 2023» bajo ella es el valor que '
     + 'usa o implica la consultora.';
   /* cada control explica lo que hace al pasar el mouse (pedido de RM, 14-09-2026) */
   const tb = (ctrl, txt, cls) => '<span class="tipb' + (cls ? ' ' + cls : '') + '">' + ctrl + '<span class="tip" role="tooltip">' + txt + '</span></span>';
   const oj = ELA.cierre_2026_optimista.sin_julio;
   const TIP_ESC = {
-    est: '<b>Estudio.</b> Todas las barras en su marca «estudio» y los rangos del sorteo por defecto. La curva naranja crece exactamente '
-      + 'como el estudio Diadro 2023 (caso «Nuevo PIB»), pero partiendo de lo medido en 2025: es el punto de partida para ver qué mueve cada barra.',
+    est: '<b>Diadro 2023.</b> Todas las barras en su marca «Diadro 2023» y los rangos del sorteo por defecto. La curva naranja crece exactamente '
+      + 'como el estudio de Diadro de 2023 (caso «Nuevo PIB»), pero partiendo de lo medido en 2025: es el punto de partida para ver qué mueve cada barra.',
     ten: '<b>V&R central.</b> La línea central de la consultora: PIB base actualizado (tasa equivalente 2027–2037), elasticidad por modo '
       + '(autos ' + nd(ELA.modo.modos.autos.e,2) + ', carga ' + nd(ELA.modo.modos.carga.e,2) + ', motos ' + nd(ELA.modo.modos.motos.e,2)
       + '), población y precio sin efecto, vías competidoras con los descuentos del estudio de Diadro en fechas vigentes, sin el ajuste de la '
@@ -6478,7 +6565,7 @@ function simPars(){
       + 'resultado no depende del azar; si se mueven mucho, sube el número de corridas.'};
   document.getElementById('simBar').innerHTML =
     '<div class="sbrow">' + tip('Escenario', escTip)
-    + tb('<button class="btnrst" id="simRst">Estudio</button>', TIP_ESC.est) + tb('<button class="btnrst" id="simVyr">V&R central</button>', TIP_ESC.ten)
+    + tb('<button class="btnrst" id="simRst">Diadro 2023</button>', TIP_ESC.est) + tb('<button class="btnrst" id="simVyr">V&R central</button>', TIP_ESC.ten)
     + tb('<button class="btnrst" id="simVyrO">V&R optimista</button>', TIP_ESC.opt) + tb('<button class="btnrst" id="simVyrP">V&R pesimista</button>', TIP_ESC.pes)
     + '<span class="sbsp"></span>' + tip('Lectura', leeTip, 'der') + '</div>'
     + '<div class="sbrow">' + tip('Cálculo', calcTip)
@@ -6577,8 +6664,8 @@ function mcPinta(M, sim){
   if(!M){ box.innerHTML = ''; return; }
   const i37 = ANIOS.indexOf(2037), e37 = S('tx', i37), BR = ELA.escenario_rm.bandas;
   const t37 = BR.tendencial['2037'], VC = SIMX.curvas, REF = [
-    VC.est23 && ['estudio 2023', e37, tok('--ts')], ['V&R central', t37, tok('--accent')], ['V&R pesimista', BR.pesimista['2037'], tok('--ink-lo')],
-    ['V&R optimista', vrOptimista37(), tok('--ser-c')], VC.d26 && ['estudio 2026', ELA.curvas_externas.diadro_2026.M['2037']*1e6, tok('--ser-b')],
+    VC.est23 && ['Diadro 2023', e37, tok('--ts')], ['V&R central', t37, tok('--accent')], ['V&R pesimista', BR.pesimista['2037'], tok('--ink-lo')],
+    ['V&R optimista', vrOptimista37(), tok('--ser-c')], VC.d26 && ['Diadro 2026', ELA.curvas_externas.diadro_2026.M['2037']*1e6, tok('--ser-b')],
     VC.conc && ['concesionaria', ELA.curvas_externas.concesionaria_17.M['2037']*1e6, tok('--ser-a')], ['puntual', sim[2037], tok('--tbp')]].filter(Boolean);
   const h = M.h37; let lo = Infinity, hi = -Infinity;
   for(let i=0; i<h.length; i++){ if(h[i] < lo) lo = h[i]; if(h[i] > hi) hi = h[i]; }
@@ -6627,7 +6714,7 @@ function mcPinta(M, sim){
     + '<td>' + nd((a === 2030 ? M.alc30 : M.alc37)*100, 1) + ' %</td></tr>';
   box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Histograma del Montecarlo">' + s + '</svg>'
     + '<div style="overflow-x:auto"><table class="mctab"><thead><tr><th>M</th><th>P10</th><th>P25</th><th>Mediana</th><th>P75</th><th>P90</th>'
-    + '<th title="Porcentaje de corridas que alcanza la proyección del estudio">≥ estudio</th></tr></thead>'
+    + '<th title="Porcentaje de corridas que alcanza la proyección de Diadro 2023">≥ Diadro 2023</th></tr></thead>'
     + '<tbody>' + fila(2030) + fila(2037) + '</tbody></table></div>'
     + (M.pob ? '<div class="mcaviso">Estás sorteando PIB y población a la vez: como su reparto no se puede medir, la banda sale más ancha de lo que el dato justifica.</div>' : '');
 }
@@ -6648,9 +6735,9 @@ function simPinta(){
 
   const K = [
     ['Tus valores', cPct(g*100), 'anual 2025–2037', 'var(--tbp)'],
-    ['El estudio', cPct(gmod*100), 'anual 2025–2037', 'var(--ts)'],
+    ['Diadro 2023', cPct(gmod*100), 'anual 2025–2037', 'var(--ts)'],
     ['Observada', cPct(obs8), 'anual 2017–2025', 'var(--ink)'],
-    [M ? '2037, mediana MC' : 'Tránsito 2037', nd((M ? PM(2037,2) : sim[2037])/1e6)+' M', (M ? 'puntual ' + nd(sim[2037]/1e6) + ' M; ' : '') + 'estudio ' + nd(S('tx',i37)/1e6) + ' M', 'var(--ink)']];
+    [M ? '2037, mediana MC' : 'Tránsito 2037', nd((M ? PM(2037,2) : sim[2037])/1e6)+' M', (M ? 'puntual ' + nd(sim[2037]/1e6) + ' M; ' : '') + 'Diadro 2023 ' + nd(S('tx',i37)/1e6) + ' M', 'var(--ink)']];
   document.getElementById('simKpis').innerHTML = K.map(k=>
     '<div class="kpi"><div class="label">' + k[0] + '</div>'
     + '<div class="v" style="color:' + k[3] + '">' + k[1] + '</div>'
@@ -6762,7 +6849,7 @@ function simPinta(){
     '<svg viewBox="0 0 ' + g2.w + ' ' + g2.h + '" role="img" aria-label="Aportes">' + s2 + '</svg>';
   document.getElementById('simL2').innerHTML =
     '<span class="grp" style="gap:5px"><i style="background:' + tok('--ink')
-    + ';height:2px;width:16px"></i><span>Lo que pone el estudio</span></span>'
+    + ';height:2px;width:16px"></i><span>Lo que pone Diadro 2023</span></span>'
     + '<span class="grp"><span>Puntos de logaritmo acumulados: suman exactamente. El total '
     + 'incluye ' + sgn(ap.ajuste*100,1) + ' de ajuste de la regresión'
     + (Math.abs(ap.propio) > 1e-9 ? ', y la barra de PIB y población suma ' + sgn(ap.propio*100,1) + ' de crecimiento propio' : '') + '.</span></span>';
@@ -8302,6 +8389,245 @@ setTimeout(oyeBotones, 0);
    que se proyectó, luego la diferencia y al final lo que elaboramos nosotros.
    `medido` va primero también en este objeto para que quien lea el código
    encuentre el mismo orden que ve en pantalla. */
+/* ═════════════════════════════════════════════════ BUSCAR OBJETIVO ═══
+   La pregunta inversa del simulador: en vez de «si muevo esto, ¿dónde llego?», «¿qué tendría que pasar para llegar a esta
+   cifra?». Importa decir de entrada que el problema tiene infinitas soluciones —cada combinación de PIB, elasticidades,
+   atrasos y efectos que dé el mismo 2037 es una respuesta válida—, y que el peso de cada variable es lo que elige una.
+
+   CÓMO SE BUSCA. Los pesos definen una dirección: cada variable se mueve una fracción de su margen proporcional a su peso,
+   en el sentido que acerca al objetivo. Sobre esa dirección se recorre un escalar con bisección. Es un método simple y
+   auditable, y su resultado se lee como «cada variable se movió esta proporción de lo que podía moverse». Si al agotar los
+   rangos no se alcanza la cifra, se declara hasta dónde se llegó: no se devuelve un resultado que no existe. */
+const BO_PROY = [['2027','Ruta 68–Ruta 78'], ['2030','Orbital Sur + AVO II'], ['2034','Orbital Norponiente']];
+const BO_VARS = [
+  {k:'gpib', rot:'Crecimiento del PIB', uni:' %', dec:2, min:()=>SIM.gpib.min, max:()=>SIM.gpib.max, base:()=>SIM.gpib.v,
+   ay:'Tasa anual real, constante equivalente 2026–2037.'},
+  {k:'epib', rot:'Elasticidad al PIB · autos', uni:'', dec:3, min:()=>0, max:()=>2, base:()=>SIM.epib.v,
+   ay:'Cuánto crece el tránsito de autos por cada 1 % de producto.'},
+  {k:'ecar', rot:'Elasticidad al PIB · carga', uni:'', dec:3, min:()=>0, max:()=>2, base:()=>SIM.ecar.v, ay:'Categorías C2 y C3 juntas.'},
+  {k:'emot', rot:'Elasticidad al PIB · motos', uni:'', dec:3, min:()=>0, max:()=>2, base:()=>SIM.emot.v, ay:'Categoría C4.'}
+].concat(BO_PROY.map(([a,nom])=>({k:'at'+a, rot:'Atraso · '+nom, uni:' años', dec:0, ent:true, min:()=>0, max:()=>10, base:()=>0,
+   ay:'Años que se posterga la entrada de '+nom+'. Un proyecto atrasado más allá de '+ANIOS[ANIOS.length-1]+' no alcanza a entrar.'})))
+ .concat(BO_PROY.map(([a,nom])=>({k:'ef'+a, rot:'Efecto en demanda · '+nom, uni:' %', dec:0, min:()=>0, max:()=>200, base:()=>100,
+   ay:'El efecto de '+nom+' sobre la demanda, como porcentaje del que Diadro 2023 le atribuye: 0 % es un proyecto que no quita tránsito y '
+     + '200 % uno que quita el doble. Mueve a la vez AVN y el túnel.'})));
+const BO = {mag:'tx', ref:'est23', otro:null, w:{}, res:null};
+BO_VARS.forEach(v=>{ BO.w[v.k] = 1; });
+
+/* las referencias disponibles para fijar el objetivo; sólo Diadro 2023 publica ingresos, y por eso las demás se declaran sin ese dato */
+function boRefs(){
+  const i37 = ANIOS.indexOf(2037), CX = ELA.curvas_externas;
+  return [
+    {k:'est23', rot:'Diadro 2023 (estudio auditado)', tx:S('tx',i37), ing:S('ing',i37)},
+    {k:'d26',   rot:'Diadro 2026 (actualización)',    tx:CX.diadro_2026.M['2037']*1e6, ing:null},
+    {k:'c17',   rot:'Concesionaria, 17 pórticos',     tx:CX.concesionaria_17.M['2037']*1e6, ing:null},
+    {k:'c20',   rot:'Concesionaria, con pórticos 18–20', tx:CX.concesionaria_20.M['2037']*1e6, ing:null},
+    {k:'otro',  rot:'Otro valor', tx:null, ing:null}];
+}
+/* tarifa media por transacción del año de arranque, tomada de la proyección auditada: el simulador proyecta transacciones, y el
+   ingreso se arma con ella y con el alza real del precio medio que la propia barra del simulador fija */
+const boTar0 = () => { const i = ANIOS.indexOf(2025); return S('ing',i)/S('tx',i); };
+function boMag(serie, vv){
+  if(BO.mag === 'tx') return serie[2037];
+  return serie[2037]*boTar0()*Math.pow(1+vv.gtar/100, 2037-2025);
+}
+/* la proyección trae el ingreso en millones de pesos de 2022 (así lo entrega el modelo; el tablero lo lleva a UF sólo cuando lo
+   compara con lo que registra la concesionaria). Acá se comparan dos proyecciones, de modo que se queda en pesos de 2022 y se
+   muestra en miles de millones, que es la escala en que la cifra se lee sin contar ceros. */
+const boUni = () => BO.mag === 'tx' ? ' M' : ' mil M$ de 2022';
+const boEsc = v => BO.mag === 'tx' ? v/1e6 : v/1e3;
+
+/* evalúa la proyección con un juego de valores del buscador */
+function boEval(x){
+  const vv = valSIM();
+  ['gpib','epib','ecar','emot'].forEach(k=>{ vv[k] = x[k]; });
+  const atr = {};
+  BO_PROY.forEach(([a])=>{
+    atr[a] = Math.round(x['at'+a]);
+    EVS.filter(k=>SIM[k].ev === a).forEach(k=>{ vv[k] = SIM[k].ref*x['ef'+a]/100; });
+  });
+  const s = simSerie(vv, atr).serie;
+  return {serie: s, val: boMag(s, vv), vv, atr};
+}
+const boBase = () => { const x = {}; BO_VARS.forEach(v=>{ x[v.k] = v.base(); }); return x; };
+
+/* dirección de movimiento: cada variable continua se mueve una fracción de su margen proporcional a su peso, hacia donde acerca
+   al objetivo, y sobre esa dirección se recorre un escalar con bisección. Las variables enteras —los atrasos— quedan fuera de la
+   bisección porque su efecto es escalonado: se resuelven antes, en una fase propia. */
+function boDireccion(T, fijos){
+  const x0 = boBase(); Object.keys(fijos || {}).forEach(k=>{ x0[k] = fijos[k]; });
+  const f0 = boEval(x0).val, sube = T > f0;
+  const cont = BO_VARS.filter(v=>!v.ent && BO.w[v.k] > 0);
+  const wmax = Math.max(0, ...cont.map(v=>BO.w[v.k]));
+  const paso = {}; BO_VARS.forEach(v=>{ paso[v.k] = 0; });
+  cont.forEach(v=>{
+    const w = BO.w[v.k]/wmax, h = (v.max()-v.min())/200;
+    const xp = Object.assign({}, x0); xp[v.k] = Math.min(v.max(), x0[v.k]+h);
+    const d = boEval(xp).val - f0;
+    if(Math.abs(d) < 1e-9) return;
+    paso[v.k] = w*(((d > 0) === sube) ? (v.max()-x0[v.k]) : -(x0[v.k]-v.min()));
+  });
+  const en = u => { const x = {}; BO_VARS.forEach(v=>{ x[v.k] = x0[v.k] + u*paso[v.k]; }); return x; };
+  const f1 = boEval(en(1)).val;
+  if((sube && f1 < T) || (!sube && f1 > T)) return {ok:false, f0, f1, x:en(1), sube, en};
+  let lo = 0, hi = 1;
+  for(let i=0; i<70; i++){ const m = (lo+hi)/2; if((boEval(en(m)).val < T) === sube) lo = m; else hi = m; }
+  const u = (lo+hi)/2;
+  return {ok:true, f0, u, x:en(u), sube, en};
+}
+function boBusca(T){
+  if(!BO_VARS.some(v=>BO.w[v.k] > 0)) return {ok:false, motivo:'Todas las variables tienen peso cero: no hay nada que mover.', f0:boEval(boBase()).val, T};
+  /* fase 1 · sólo las variables continuas, con los proyectos en su fecha */
+  let fijos = {}, r = boDireccion(T, fijos);
+  /* fase 2 · si no alcanza, se atrasan proyectos de a uno, el de mayor peso primero y sólo hasta donde haga falta */
+  if(!r.ok){
+    const ent = BO_VARS.filter(v=>v.ent && BO.w[v.k] > 0).sort((p,q)=>BO.w[q.k]-BO.w[p.k]);
+    for(let i=0; i<ent.length && !r.ok; i++){
+      const v = ent[i];
+      for(let k=1; k<=v.max() && !r.ok; k++){
+        const pr = Object.assign({}, fijos); pr[v.k] = k;
+        const rp = boDireccion(T, pr);
+        if(rp.ok || Math.abs(rp.f1 - T) < Math.abs(r.f1 - T)){ fijos = pr; r = rp; }
+        if(rp.ok) break;
+      }
+    }
+  }
+  const x = r.x;
+  if(!r.ok) return {ok:false, motivo:'Con los rangos y los pesos actuales no se llega.', f0:r.f0, f1:r.f1, T, x, sube:r.sube};
+  /* PODA. La dirección mueve todas las variables a la vez y alguna puede quedar en un valor que no cambia la cifra; devolverla a su
+     punto de partida cuando eso ocurre deja en la tabla el conjunto mínimo que sostiene el resultado, y no un movimiento decorativo. */
+  const base = boBase(), tol = Math.abs(T)*1e-4;
+  BO_VARS.forEach(v=>{
+    if(Math.abs(x[v.k] - base[v.k]) < 1e-12) return;
+    const y = Object.assign({}, x); y[v.k] = base[v.k];
+    if(Math.abs(boEval(y).val - T) <= tol) x[v.k] = base[v.k];
+  });
+  const rr = boEval(x);
+  return {ok:true, f0:r.f0, T, u:r.u, x, val:rr.val, serie:rr.serie, sube:r.sube,
+          atrasos: BO_VARS.filter(v=>v.ent && Math.abs(x[v.k]-base[v.k]) > 1e-12).length};
+}
+
+/* ── la pantalla ─────────────────────────────────────────────────────────── */
+function boPintaObjetivo(){
+  const R_ = boRefs(), r = R_.find(z=>z.k === BO.ref);
+  const sinIng = BO.mag === 'ing' && r && r.k !== 'otro' && r.ing == null;
+  document.getElementById('boRef').innerHTML = R_.map(z=>{
+    const no = BO.mag === 'ing' && z.k !== 'otro' && z.ing == null;
+    return '<option value="'+z.k+'"'+(z.k===BO.ref?' selected':'')+(no?' disabled':'')+'>'+z.rot+(no?' — sin ingresos publicados':'')+'</option>';
+  }).join('');
+  const libre = document.getElementById('boOtroCaja');
+  libre.hidden = BO.ref !== 'otro';
+  document.getElementById('boOtroRot').textContent = BO.mag === 'tx'
+    ? 'Valor, en millones de transacciones' : 'Valor, en miles de millones de pesos de 2022';
+  const T = boObjetivo(), f0 = boEval(boBase()).val;
+  document.getElementById('boEstado').innerHTML = T == null
+    ? '<b>Falta el objetivo.</b> ' + (sinIng ? 'Esa referencia entregó transacciones y no ingresos. Elige otra o escribe un valor.'
+        : 'Escribe la cifra de 2037 a la que quieres llegar.')
+    : '<b>Objetivo:</b> ' + nd(boEsc(T)) + boUni() + ' en 2037 · <b>punto de partida:</b> ' + nd(boEsc(f0)) + boUni()
+      + ' · <b>falta cubrir</b> ' + (T>f0?'+':'−') + nd(Math.abs(boEsc(T-f0))) + boUni()
+      + ' (' + (T>f0?'+':'−') + nd(Math.abs(T/f0-1)*100,1) + ' %)';
+}
+function boObjetivo(){
+  if(BO.ref === 'otro') return BO.otro != null && isFinite(BO.otro) ? BO.otro*(BO.mag === 'tx' ? 1e6 : 1e3) : null;
+  const r = boRefs().find(z=>z.k === BO.ref);
+  if(!r) return null;
+  return BO.mag === 'tx' ? r.tx : r.ing;
+}
+function boPintaVars(){
+  const x = BO.res && BO.res.x, base = boBase();
+  document.getElementById('boTabla').innerHTML =
+    '<thead><tr><th>Variable</th><th>Partida</th><th>Peso</th><th>Rango</th><th>Valor hallado</th><th>Movimiento</th></tr></thead><tbody>'
+    + BO_VARS.map(v=>{
+      const b = base[v.k], hay = x && isFinite(x[v.k]);
+      const val = hay ? (v.ent ? Math.round(x[v.k]) : x[v.k]) : null;
+      const mov = hay ? val - b : 0;
+      const margen = Math.max(v.max()-b, b-v.min()) || 1;
+      return '<tr title="'+v.ay.replace(/"/g,'&quot;')+'"><td>'+v.rot+'</td>'
+        + '<td>'+nd(b,v.dec)+v.uni+'</td>'
+        + '<td><input type="range" class="bow" data-k="'+v.k+'" min="0" max="5" step="1" value="'+BO.w[v.k]+'" '
+        + 'aria-label="Peso de '+v.rot+'"><span class="bowv" id="bow_'+v.k+'">'+BO.w[v.k]+'</span></td>'
+        + '<td>'+nd(v.min(),v.dec)+' a '+nd(v.max(),v.dec)+v.uni+'</td>'
+        + '<td>'+(hay ? '<b>'+nd(val,v.dec)+v.uni+'</b>' : '—')+'</td>'
+        + '<td>'+(hay && Math.abs(mov)>1e-9 ? '<span class="bomov" style="--f:'+Math.min(1,Math.abs(mov)/margen)+'">'
+            + (mov>0?'+':'−')+nd(Math.abs(mov),v.dec)+v.uni+'</span>' : '—')+'</td></tr>';
+    }).join('') + '</tbody>';
+  document.querySelectorAll('#boTabla .bow').forEach(s=>{
+    s.oninput = () => { BO.w[s.dataset.k] = +s.value; document.getElementById('bow_'+s.dataset.k).textContent = s.value; };
+  });
+}
+function boPintaResultado(){
+  const caja = document.getElementById('boRes'), g = document.getElementById('boG1'), res = BO.res;
+  if(!res){ caja.innerHTML = '<p class="desc">Fija el objetivo, ajusta los pesos y pulsa «Buscar la combinación».</p>'; g.innerHTML = ''; return; }
+  if(!res.ok){
+    caja.innerHTML = '<div class="aviso"><b>No se alcanza.</b> ' + res.motivo
+      + ' Con las variables en el extremo de su rango la proyección llega a <b>' + nd(boEsc(res.f1 != null ? res.f1 : res.f0)) + boUni()
+      + '</b> y el objetivo es ' + nd(boEsc(res.T)) + boUni() + '. Sube el peso de las variables que más mueven la cifra, o revisa si el '
+      + 'objetivo es alcanzable con supuestos defendibles: que no se alcance también es un resultado.</div>';
+    g.innerHTML = ''; document.getElementById('boL1').innerHTML = ''; return;
+  }
+  const base0 = boBase(), mov = BO_VARS.filter(v=>Math.abs(res.x[v.k] - base0[v.k]) > 1e-9);
+  const atr = mov.filter(v=>v.ent);
+  caja.innerHTML = '<div class="aviso ok"><b>Se alcanza.</b> La proyección de 2037 llega a <b>' + nd(boEsc(res.val)) + boUni()
+    + '</b> moviendo ' + mov.length + ' de las ' + BO_VARS.length + ' variables'
+    + (atr.length ? ', y para eso hace falta atrasar ' + (atr.length === 1 ? 'un proyecto' : atr.length + ' proyectos')
+        + ' lo suficiente para que no alcance a entrar antes de 2037' : '')
+    + '. <b>Esta combinación no es la única:</b> cualquier otra que dé el mismo 2037 es igual de válida, y lo que elige ésta son los '
+    + 'pesos de la columna del medio.</div>'
+    + (atr.length ? '<div class="aviso" style="margin-top:8px">El simulador no tiene perilla de atraso: si llevas esta combinación a '
+        + 'sus barras reproducirá el producto, las elasticidades y los efectos, pero no la postergación de '
+        + (atr.length === 1 ? 'ese proyecto' : 'esos proyectos') + ', y por eso llegará algo más abajo que ' + nd(boEsc(res.val)) + boUni()
+        + '.</div>' : '');
+  const W = 720, H = 240, mt = 14, mb = 26, ml = 46, mr = 64, iw = W-ml-mr, ih = H-mt-mb;
+  const aa = ANIOS.filter(a=>a>=2025), base = simSerie().serie, T = boObjetivo();
+  const vals = aa.map(a=>[base[a], res.serie[a]]).flat().concat([T && BO.mag==='tx' ? T : 0]).filter(v=>v>0);
+  const y0 = Math.min(...vals)*0.96, y1 = Math.max(...vals)*1.04;
+  const X = a => ml + (a-aa[0])/(aa[aa.length-1]-aa[0])*iw, Y = v => mt + ih - (v-y0)/(y1-y0)*ih;
+  const ruta = (s,col,w,dash) => '<path d="' + aa.map((a,i)=>(i?'L':'M')+X(a).toFixed(1)+','+Y(s[a]).toFixed(1)).join(' ')
+    + '" fill="none" stroke="'+col+'" stroke-width="'+w+'"'+(dash?' stroke-dasharray="'+dash+'"':'')+'/>';
+  let s = '';
+  for(let k=0; k<=4; k++){ const v = y0+(y1-y0)*k/4, y = Y(v);
+    s += lin(ml, y, ml+iw, y, tok('--line'), 1) + txtS(ml-6, y+3, nd(v/1e6,0), {anc:'end', fs:9, col:tok('--mut')}); }
+  aa.filter(a=>a%3===1||a===aa[aa.length-1]).forEach(a=>{ s += txtS(X(a), mt+ih+16, a, {anc:'middle', fs:9, col:tok('--mut')}); });
+  s += ruta(base, tok('--mut'), 1.6, '4 3') + ruta(res.serie, tok('--accent'), 2.4);
+  s += txtS(X(2037)+6, Y(res.serie[2037])+3, nd(res.serie[2037]/1e6), {fs:10, w:700, col:tok('--accent')});
+  s += txtS(X(2037)+6, Y(base[2037])+3, nd(base[2037]/1e6), {fs:10, col:tok('--mut')});
+  if(T && BO.mag === 'tx'){ s += lin(ml, Y(T), ml+iw, Y(T), tok('--ts'), 1.4, '6 3')
+    + txtS(ml+4, Y(T)-5, 'objetivo ' + nd(T/1e6) + ' M', {fs:9.5, w:700, col:tok('--ts')}); }
+  svgW('boG1', W, H, s, 'Trayectoria que alcanza el objetivo');
+  document.getElementById('boL1').innerHTML =
+    '<span class="grp"><i style="background:'+tok('--accent')+'"></i><span>combinación hallada</span></span>'
+    + '<span class="grp"><i style="background:'+tok('--mut')+'"></i><span>punto de partida del simulador</span></span>'
+    + '<span class="grp"><span>Transacciones de la red. '
+    + (BO.mag === 'ing' ? 'El ingreso se arma con ellas, con la tarifa media de ' + nd(boTar0()*1e6,0)
+        + ' pesos de 2022 por transacción que la proyección tiene en 2025 y con el alza real del precio medio del simulador.' : '')
+    + '</span></span>';
+}
+function econObjetivo(){ boPintaObjetivo(); boPintaVars(); boPintaResultado(); }
+/* controles */
+function boOye(){
+  const sel = document.getElementById('boRef'), otro = document.getElementById('boOtro');
+  if(sel) sel.onchange = () => { BO.ref = sel.value; BO.res = null; econObjetivo(); };
+  if(otro) otro.oninput = () => { BO.otro = otro.value === '' ? null : +otro.value; BO.res = null; boPintaObjetivo(); boPintaResultado(); };
+  seg('boMagSeg', v => { BO.mag = v; BO.res = null;
+    if(v === 'ing'){ const r = boRefs().find(z=>z.k === BO.ref); if(r && r.k !== 'otro' && r.ing == null) BO.ref = 'est23'; }
+    econObjetivo(); });
+  const b = document.getElementById('boBuscar');
+  if(b) b.onclick = () => { const T = boObjetivo();
+    if(T == null){ BO.res = null; boPintaResultado(); return; }
+    BO.res = boBusca(T); boPintaVars(); boPintaResultado(); };
+  const rp = document.getElementById('boReset');
+  if(rp) rp.onclick = () => { BO_VARS.forEach(v=>{ BO.w[v.k] = 1; }); BO.res = null; econObjetivo(); };
+  const ll = document.getElementById('boLlevar');
+  if(ll) ll.onclick = () => {
+    if(!BO.res || !BO.res.ok) return;
+    const x = BO.res.x;
+    ['gpib','epib','ecar','emot'].forEach(k=>{ SIM[k].v = x[k]; });
+    BO_PROY.forEach(([a])=>{ EVS.filter(k=>SIM[k].ev === a).forEach(k=>{ SIM[k].v = SIM[k].ref*x['ef'+a]/100; }); });
+    Object.keys(SIM).forEach(k=>{ const n = document.getElementById('pr_'+k); if(n) n.value = SIM[k].v; });
+    verGrupo('propio'); verSeccion('propio'); propio();
+  };
+}
+
 const GRUPOS = {
   concesionaria: [
     {v:'concesionaria', t:'Proyecciones de la concesionaria', s:'estimación interna y estudio 2026'}],
@@ -8317,6 +8643,7 @@ const GRUPOS = {
     {v:'calendario',  t:'Calendario de obras', s:'el del estudio contra el vigente'}],
   propio: [
     {v:'propio',      t:'Simulador de demanda', s:'qué tendría que pasar'},
+    {v:'objetivo',    t:'Buscar objetivo', s:'qué combinación llega a una cifra dada'},
     {v:'elasticidad', t:'Elasticidad al PIB', s:'veinte años de tránsito medido'},
     {v:'curvas',      t:'Curva flujo–velocidad', s:'recalibrada contra la del estudio'},
     {v:'escenario',   t:'Escenario V&R', s:'demanda 2026–2037'}],
@@ -8324,7 +8651,8 @@ const GRUPOS = {
 const SEC = {general:'vGeneral', tendencial:'vTendencial',
              medido:'vMedido', medidoDia:'vMedidoDia',
              comparativo:'vComparativo', velocidades:'vVelocidades', calendario:'vCalendario', propio:'vPropio',
-             elasticidad:'vElasticidad', curvas:'vCurvas', escenario:'vEscenario', concesionaria:'vConcesionaria'};
+             elasticidad:'vElasticidad', curvas:'vCurvas', escenario:'vEscenario', concesionaria:'vConcesionaria',
+             objetivo:'vObjetivo'};
 let grupo = 'medido', seccion = 'medido';
 
 let _tLienzo = null;
@@ -8363,6 +8691,7 @@ function verSeccion(v){
   if(v==='elasticidad') econElast();
   if(v==='curvas') econCurvas();
   if(v==='escenario') econEscenario();
+  if(v==='objetivo') econObjetivo();
   if(v==='concesionaria') concesionaria();
   /* la vista recién pintada puede cambiar el ancho de la página (aparece o se va la
      barra de desplazamiento): los conectores se vuelven a medir al final */
@@ -8430,6 +8759,7 @@ function verGrupo(g){
 document.querySelectorAll('#grupoTabs button').forEach(b=>
   b.onclick = ()=>verGrupo(b.dataset.g));
 
+boOye();
 ponBase('propia');
 sincronizaCortes();
 vacia();
