@@ -1572,7 +1572,7 @@ body.oyeAbierto{padding-bottom:86px}
       </div>
       <div class="bo-campo bo-acc">
         <button class="btnrst" id="boBuscar">Buscar la combinación</button>
-        <button class="btnrst" id="boReset">Pesos a 1</button>
+        <button class="btnrst" id="boReset">Pesos por defecto</button>
         <button class="btnrst" id="boLlevar" title="Copia los valores hallados a las barras del simulador">Llevar al simulador</button>
       </div>
     </div>
@@ -1580,11 +1580,10 @@ body.oyeAbierto{padding-bottom:86px}
 
     <div class="chartbox" style="margin-top:14px">
       <div class="t">Qué tendría que mover cada variable</div>
-      <div class="d">El peso dice cuánto participa cada variable en el ajuste: en 0 queda fija, y mientras más alto, más
-        carga asume del movimiento total. Las variables que no mueven la cifra se quedan donde están aunque tengan peso: es
-        lo que pasa con el <b>atraso</b> de una vía competidora, porque su efecto es un salto de nivel permanente y
-        posponerlo cambia la trayectoria intermedia pero no el valor de 2037, salvo que el atraso lo empuje fuera del
-        horizonte.</div>
+      <div class="d">El peso es el <b>porcentaje del ajuste</b> que asume cada variable, y la columna suma siempre 100: al mover
+        uno, los demás se reajustan en proporción. Con 100 en el producto y 0 en el resto, se pregunta qué crecimiento
+        económico haría falta si todo lo explicara la economía; con todo el peso en las vías, qué efecto de los proyectos. Una
+        variable que no mueve la cifra se queda donde está aunque tenga peso.</div>
       <div style="overflow-x:auto"><table class="mctab bo-tabla" id="boTabla"></table></div>
     </div>
 
@@ -1602,13 +1601,15 @@ body.oyeAbierto{padding-bottom:86px}
         Diadro de 2023, la estimación interna de la concesionaria— y se mira si los supuestos que hacen falta para
         alcanzarla son defendibles. Cuando la combinación exige un producto que ninguna proyección macroeconómica sostiene,
         o elasticidades fuera del intervalo de confianza estimado, eso mismo es el resultado.</p>
-      <p>Los pesos reparten el esfuerzo. Con todos en 1, cada variable se mueve la misma proporción de su margen; subiendo el
-        de una y bajando el de las demás se obtiene la combinación que carga sobre esa variable. Conviene probar dos o tres
-        repartos distintos: si todos exigen supuestos implausibles, la conclusión no depende del reparto.</p>
-      <p>Dos precisiones sobre los proyectos competidores. El <b>atraso</b> mueve la entrada de cada uno en años, y uno
-        atrasado más allá del horizonte simplemente no alcanza a entrar. El <b>efecto en demanda</b> se expresa como
-        porcentaje del que Diadro 2023 le atribuye: 0 % es un proyecto que no le quita tránsito a la autopista y 200 % uno
-        que le quita el doble; mueve a la vez AVN y el túnel, en la proporción que cada concesión tiene en la red.</p>
+      <p>Los pesos reparten el esfuerzo. Por defecto cada tipo de variable —producto, elasticidades, salto de 2026 y vías
+        competidoras— asume un cuarto. Llevar el peso entero a una sola responde una pregunta extrema pero útil: cuánto tendría
+        que moverse esa variable, sola, para llegar a la cifra. Conviene probar dos o tres repartos: si todos exigen supuestos
+        implausibles, la conclusión no depende del reparto; y si alguno no llega, eso también es un resultado.</p>
+      <p>Sólo entran las variables que tienen efecto medido. Los <b>atrasos de los proyectos</b> se retiraron porque no están
+        medidos: moverlos sería proponer un supuesto sin respaldo. El <b>efecto en demanda</b> de cada vía se expresa como
+        porcentaje del que Diadro 2023 le atribuye —0 % es un proyecto que no le quita tránsito a la autopista y 200 % uno que
+        le quita el doble— y mueve a la vez AVN y el túnel. El <b>salto de 2026</b>, como porcentaje del que proyecta el
+        estudio: 100 % es el suyo y 0 %, un 2026 sin salto.</p>
     </div>
   </div>
 </section>
@@ -6662,6 +6663,8 @@ function simPars(){
   document.getElementById('simVyrP').onclick = ()=>{ cargaVyr('base', ELA.v28.partida_2026.central_M*1e6);
     EVS.forEach(k=>{ const r = ELA.cristian_rangos[k]; SIM[k].mc = [Math.min(r[0],r[1]), Math.max(r[0],r[1])]; SIM[k].mcOn = true;
       fija(k, (r[0]+r[1])/2); });
+    /* el esquema acordado sortea uniforme: sin esto, el cuadro de probabilidades no reproduce el del esquema */
+    MC.dist = 'uni'; const ds = document.getElementById('mcDist'); if(ds) ds.value = 'uni';
     simRefs(); bandas(); sucio(); simPinta(); };
 
   /* ── cálculo puntual o Montecarlo ── */
@@ -6687,10 +6690,10 @@ function mcPinta(M, sim){
   est.textContent = !MC.res ? 'sin correr' : (MC.sucio ? 'cambiaste valores: vuelve a correr'
     : nf.format(MC.res.n) + ' corridas · ' + (MC.res.dist === 'uni' ? 'uniforme' : 'triangular') + ' · ' + nd(MC.res.ms,0) + ' ms');
   if(!M){ box.innerHTML = ''; return; }
-  const i37 = ANIOS.indexOf(2037), e37 = S('tx', i37), BR = ELA.escenario_rm.bandas;
-  const t37 = BR.tendencial['2037'], VC = SIMX.curvas, REF = [
-    VC.est23 && ['Diadro 2023', e37, tok('--ts')], ['V&R central', t37, tok('--accent')], ['V&R pesimista', BR.pesimista['2037'], tok('--ink-lo')],
-    ['V&R optimista', vrOptimista37(), tok('--ser-c')], VC.d26 && ['Diadro 2026', ELA.curvas_externas.diadro_2026.M['2037']*1e6, tok('--ser-b')],
+  const i37 = ANIOS.indexOf(2037), e37 = S('tx', i37), V28 = ELA.v28;
+  const t37 = V28.series.central['2037'], VC = SIMX.curvas, REF = [
+    VC.est23 && ['Diadro 2023', e37, tok('--ts')], ['V&R central', t37, tok('--accent')], ['cota inferior V&R', V28.series.maximo['2037'], tok('--ink-lo')],
+    ['cota superior V&R', V28.series.minimo['2037'], tok('--ser-c')], VC.d26 && ['Diadro 2026', ELA.curvas_externas.diadro_2026.M['2037']*1e6, tok('--ser-b')],
     VC.conc && ['concesionaria', ELA.curvas_externas.concesionaria_17.M['2037']*1e6, tok('--ser-a')], ['puntual', sim[2037], tok('--tbp')]].filter(Boolean);
   const h = M.h37; let lo = Infinity, hi = -Infinity;
   for(let i=0; i<h.length; i++){ if(h[i] < lo) lo = h[i]; if(h[i] > hi) hi = h[i]; }
@@ -6741,7 +6744,46 @@ function mcPinta(M, sim){
     + '<div style="overflow-x:auto"><table class="mctab"><thead><tr><th>M</th><th>P10</th><th>P25</th><th>Mediana</th><th>P75</th><th>P90</th>'
     + '<th title="Porcentaje de corridas que alcanza la proyección de Diadro 2023">≥ Diadro 2023</th></tr></thead>'
     + '<tbody>' + fila(2030) + fila(2037) + '</tbody></table></div>'
+    + mcCuadros(M)
     + (M.pob ? '<div class="mcaviso">Estás sorteando PIB y población a la vez: como su reparto no se puede medir, la banda sale más ancha de lo que el dato justifica.</div>' : '');
+}
+
+/* los dos cuadros bajo el histograma: probabilidad de alcanzar cada proyección y punto de partida de cada trayectoria */
+function mcCuadros(M){
+  const i26 = ANIOS.indexOf(2026), i37 = ANIOS.indexOf(2037), i25 = ANIOS.indexOf(2025), CX = ELA.curvas_externas, V28 = ELA.v28;
+  const prob = v => { let c = 0; for(let i=0; i<M.h37.length; i++) if(M.h37[i] >= v) c++; return c/M.h37.length; };
+  const PR = V28.montecarlo.probabilidad_alcanzar_2037;
+  const pct = p => p < 0.0005 ? 'menos de 0,1 %' : nd(p*100,1) + ' %';
+  const refs = [['Estudio Diadro 2023', S('tx',i37), 'estudio Diadro 2023'],
+                ['Concesionaria, 17 pórticos', CX.concesionaria_17.M['2037']*1e6, 'concesionaria, 17 pórticos'],
+                ['Concesionaria, con pórticos 18–20', CX.concesionaria_20.M['2037']*1e6, 'concesionaria, con 18–20'],
+                ['Diadro 2026 (consultora española)', CX.diadro_2026.M['2037']*1e6, 'estudio Diadro 2026']];
+  const t1 = '<div class="t" style="margin-top:14px">Con qué probabilidad se alcanza cada proyección en 2037</div>'
+    + '<div style="overflow-x:auto"><table class="mctab"><thead><tr><th>Proyección</th><th>2037</th>'
+    + '<th title="Fracción de las corridas en pantalla que llegan a esa cifra; depende de las barras que hayas movido">Corrida en pantalla</th>'
+    + '<th title="El esquema V&R acordado el 16-09-2026: cuatro dimensiones con rango, 20.000 corridas, semilla fija">Esquema V&R acordado</th></tr></thead><tbody>'
+    + refs.map(r=>'<tr><td>' + r[0] + '</td><td>' + nd(r[1]/1e6) + ' M</td><td><b>' + pct(prob(r[1])) + '</b></td><td>'
+      + (PR[r[2]] !== undefined ? pct(PR[r[2]]) : '—') + '</td></tr>').join('') + '</tbody></table></div>'
+    + '<div class="mcaviso" style="color:var(--ink-lo)">La primera columna cambia con las barras que muevas; la segunda es fija y es la estimación de la consultora. '
+    + 'Con el botón «V&R central» y distribución uniforme las dos coinciden salvo el ruido del sorteo; con la triangular la banda se '
+    + 'estrecha y las probabilidades bajan.</div>';
+  /* de dónde arranca cada trayectoria y a qué ritmo crece hasta 2037 */
+  const tray = [['Medido', C.historia['2025'], null, null],
+                ['Estudio Diadro 2023', S('tx',i25), S('tx',i26), S('tx',i37)],
+                ['Diadro 2026 (consultora española)', CX.diadro_2026.M['2025']*1e6, CX.diadro_2026.M['2026']*1e6, CX.diadro_2026.M['2037']*1e6],
+                ['Concesionaria, 17 pórticos', CX.concesionaria_17.M['2025']*1e6, CX.concesionaria_17.M['2026']*1e6, CX.concesionaria_17.M['2037']*1e6],
+                ['Concesionaria, con pórticos 18–20', CX.concesionaria_20.M['2025']*1e6, CX.concesionaria_20.M['2026']*1e6, CX.concesionaria_20.M['2037']*1e6],
+                ['V&R central', C.historia['2025'], V28.partida_2026.central_M*1e6, V28.series.central['2037']]];
+  const caa = (a,b) => a && b ? cPct((Math.pow(b/a, 1/11)-1)*100) : '—';
+  const t2 = '<div class="t" style="margin-top:14px">Punto de partida de cada trayectoria</div>'
+    + '<div style="overflow-x:auto"><table class="mctab"><thead><tr><th>Trayectoria</th><th>2025</th><th>Partida 2026</th>'
+    + '<th>Contra el medido de 2025</th><th>2037</th><th>Crecimiento anual 2026–2037</th></tr></thead><tbody>'
+    + tray.map(r=>'<tr><td>' + r[0] + '</td><td>' + nd(r[1]/1e6) + '</td><td><b>' + (r[2] ? nd(r[2]/1e6) : '—') + '</b></td><td>'
+      + (r[2] ? cPct((r[2]/C.historia['2025']-1)*100) : '—') + '</td><td>' + (r[3] ? nd(r[3]/1e6) : '—') + '</td><td>' + caa(r[2], r[3])
+      + '</td></tr>').join('') + '</tbody></table></div>'
+    + '<div class="mcaviso" style="color:var(--ink-lo)">Millones de transacciones de la red AVN + túnel. La distancia entre proyecciones en 2037 tiene dos partes que '
+    + 'este cuadro separa: la que ya existe en el punto de partida y la que agrega el ritmo de crecimiento.</div>';
+  return t1 + t2;
 }
 
 function simPinta(){
@@ -7122,9 +7164,15 @@ function propio(){ simPars(); simPinta(); decPinta(); simTabla(); simMetodo(); }
    «Modelo de Ingresos - con TLR» toma el estudio 2026 de Diadro; «… +3 PÓRTICOS» toma la estimación interna de la concesionaria y
    agrega los pórticos 18, 19 y 20 desde 2027. TLR = Túnel Lo Ruiz. La versión con pórticos nuevos NO es comparable con las demás:
    suma tránsito en puntos de cobro que hoy no existen. Aquí se ve; en el simulador sólo entra la de 17 pórticos. */
-const COX = {curvas:{med:true, vyr:true, e23:true, d26:true, c17:true, c20:true}};
+const COX = {curvas:{med:true, vyr:true, e23:true, d26:true, c17:true, c20:true, cot:false, mc:false}};
 function concesionaria(){
-  const CP = ELA.concesionaria.por_portico, CX = ELA.curvas_externas, BR = ELA.escenario_rm.bandas;
+  const CP = ELA.concesionaria.por_portico, CX = ELA.curvas_externas, V28 = ELA.v28;
+  /* línea V&R del esquema acordado, desde el medido de 2025; sus cotas por efecto de proyectos y la banda P10–P90 del Montecarlo */
+  const serM = o => Object.keys(o).map(Number).sort((p,q)=>p-q).map(a=>[a, o[a]/1e6]);
+  const vrPts = [[2025, C.historia['2025']/1e6]].concat(serM(V28.series.central));
+  const BANDAS = [
+    {k:'cot', t:'Cotas de la línea V&R (efecto de proyectos)', col:tok('--accent'), op:.22, lo:V28.series.maximo, hi:V28.series.minimo},
+    {k:'mc', t:'Banda Montecarlo P10–P90 (cuatro dimensiones)', col:tok('--ink-lo'), op:.14, lo:V28.montecarlo.percentiles['10'], hi:V28.montecarlo.percentiles['90']}];
   const i37 = ANIOS.indexOf(2037), e37 = S('tx', i37)/1e6;
   const m = (k, a) => CX[k].M[String(a)];
   const K = [
@@ -7132,20 +7180,21 @@ function concesionaria(){
     ['Con pórticos 18–20', nd(m('concesionaria_20', 2037))+' M', '2037; los tres nuevos suman '+nd(m('concesionaria_20', 2037)-m('concesionaria_17', 2037))+' M'],
     ['Estudio Diadro 2026', nd(m('diadro_2026', 2037))+' M', '2037, actualización del estudio'],
     ['Estudio Diadro 2023', nd(e37)+' M', '2037, caso Nuevo PIB'],
-    ['V&R tendencial', nd(BR.tendencial['2037']/1e6)+' M', '2037, escenario V&R']];
+    ['V&R central', nd(V28.series.central['2037']/1e6)+' M', '2037; cotas '+nd(V28.series.maximo['2037']/1e6)+' a '+nd(V28.series.minimo['2037']/1e6)+' M']];
   document.getElementById('coKpis').innerHTML = K.map(k=>'<div class="kpi"><div class="label">'+k[0]+'</div><div class="v">'+k[1]
     +'</div><div class="s">'+k[2]+'</div></div>').join('');
 
   const V = COX.curvas;
   const SER = [
     {k:'med', t:'Medido', col:tok('--ink'), w:2.4, dash:'', pts:Object.keys(C.historia).map(Number).filter(a=>a>=2015 && (C.historia_parcial||[]).indexOf(a)<0).sort((p,q)=>p-q).map(a=>[a, C.historia[a]/1e6])},
-    {k:'vyr', t:'V&R tendencial', col:tok('--tbp'), w:2.6, dash:'', pts:Object.keys(BR.tendencial).map(Number).sort((p,q)=>p-q).map(a=>[a, BR.tendencial[a]/1e6])},
+    {k:'vyr', t:'V&R central', col:tok('--tbp'), w:2.6, dash:'', pts:vrPts},
     {k:'e23', t:'Estudio Diadro 2023 (Nuevo PIB)', col:tok('--ts'), w:2, dash:'6 4', pts:ANIOS.filter(a=>a>=2021).map(a=>[a, S('tx', ANIOS.indexOf(a))/1e6])},
     {k:'d26', t:'Estudio Diadro 2026 (actualización)', col:tok('--ser-b'), w:2, dash:'8 3 2 3', pts:Object.keys(CX.diadro_2026.M).map(Number).sort((p,q)=>p-q).map(a=>[a, m('diadro_2026', a)])},
     {k:'c17', t:'Concesionaria, estimación interna (17 pórticos)', col:tok('--ser-a'), w:2.4, dash:'1.5 2.5', pts:Object.keys(CX.concesionaria_17.M).map(Number).sort((p,q)=>p-q).map(a=>[a, m('concesionaria_17', a)])},
     {k:'c20', t:'Concesionaria con pórticos 18–20 (no comparable)', col:tok('--ser-c'), w:2, dash:'5 2 1 2', pts:Object.keys(CX.concesionaria_20.M).map(Number).sort((p,q)=>p-q).map(a=>[a, m('concesionaria_20', a)])}];
   const vis = SER.filter(x=>V[x.k]);
-  const todos = vis.flatMap(x=>x.pts.map(p=>p[1]));
+  const bVis = BANDAS.filter(b=>V[b.k]);
+  const todos = vis.flatMap(x=>x.pts.map(p=>p[1])).concat(bVis.flatMap(b=>Object.values(b.lo).concat(Object.values(b.hi)).map(v=>v/1e6)));
   const my = Math.ceil(Math.max(...(todos.length ? todos : [500]))/50)*50, yp = Math.max(0, Math.floor((Math.min(...(todos.length ? todos : [200])) - 20)/50)*50);
   const g = ejes(760, 300, 44, 22, 34), fx = [2015, 2037], fy = [yp, my, v=>Math.round(v)];
   const X = a => g.ml + (a-fx[0])/(fx[1]-fx[0])*g.iw;
@@ -7153,6 +7202,12 @@ function concesionaria(){
   let sv = '<svg viewBox="0 0 '+g.w+' '+g.h+'" role="img" aria-label="Proyecciones de la concesionaria">'
     + '<rect x="'+X(2015)+'" y="'+g.mt+'" width="'+(X(2025)-X(2015))+'" height="'+g.ih+'" fill="'+tok('--ink-lo')+'" opacity=".07"/>'
     + HS.fondo + marco(g, [2015,2019,2023,2027,2031,2035,2037], [yp, Math.round((yp+my)/2), my], fx, fy);
+  /* las sombras van debajo de las líneas: la más ancha primero */
+  const Yv = v => g.ih - (v-fy[0])/(fy[1]-fy[0])*g.ih + g.mt;
+  bVis.slice().reverse().forEach(b=>{ const aa = Object.keys(b.lo).map(Number).sort((p,q)=>p-q);
+    sv += '<polygon points="' + aa.map(a=>X(a).toFixed(1)+','+Yv(b.hi[a]/1e6).toFixed(1)).join(' ') + ' '
+      + aa.slice().reverse().map(a=>X(a).toFixed(1)+','+Yv(b.lo[a]/1e6).toFixed(1)).join(' ') + '" fill="'+b.col+'" fill-opacity="'+b.op
+      + '" stroke="'+b.col+'" stroke-opacity="'+(b.op+.2).toFixed(2)+'" stroke-width=".8"><title>'+b.t+'</title></polygon>'; });
   vis.forEach(x=>{ const l = linea(g, x.pts, fx, fy, x.col, x.w); sv += x.dash ? l.replace('/>', ' stroke-dasharray="'+x.dash+'"/>') : l; });
   const y37 = (x) => { const p = x.pts[x.pts.length-1]; return g.ih - (p[1]-fy[0])/(fy[1]-fy[0])*g.ih + g.mt; };
   sv += HS.frente + '</svg>';
@@ -7160,8 +7215,20 @@ function concesionaria(){
   const conm = x => '<button type="button" class="leyb'+(V[x.k]?'':' off')+'" data-co="'+x.k+'" aria-pressed="'+(V[x.k]?'true':'false')
     + '"><svg width="22" height="8" aria-hidden="true"><line x1="1" y1="4" x2="21" y2="4" stroke="'+x.col+'" stroke-width="2.4" stroke-dasharray="'+x.dash+'"/></svg>'
     + x.t + (x.pts.length ? ' · '+nd(x.pts[x.pts.length-1][1])+' M' : '') + '</button>';
+  const conmB = b => '<button type="button" class="leyb'+(V[b.k]?'':' off')+'" data-co="'+b.k+'" aria-pressed="'+(V[b.k]?'true':'false')
+    + '"><svg width="22" height="10" aria-hidden="true"><rect x="1" y="1" width="20" height="8" fill="'+b.col+'" fill-opacity="'+(b.op+.1)+'" stroke="'+b.col+'" stroke-width=".8"/></svg>'
+    + b.t + ' · ' + nd(b.lo['2037']/1e6) + '–' + nd(b.hi['2037']/1e6) + ' M</button>';
+  /* qué curvas visibles tocan cada sombra, y en qué años: la respuesta con el número, no a ojo */
+  const tramos = aa => { const r = []; aa.forEach(a=>{ const u = r[r.length-1]; if(u && a === u[1]+1) u[1] = a; else r.push([a,a]); });
+    return r.map(z=>z[0] === z[1] ? z[0] : z[0]+'–'+z[1]).join(', '); };
+  const cruces = bVis.map(b=>{ const toca = SER.filter(x=>V[x.k] && ['e23','d26','c17','c20'].indexOf(x.k) >= 0).map(x=>{
+      const aa = x.pts.filter(q=>b.lo[String(q[0])] != null && q[1] >= b.lo[String(q[0])]/1e6 - 1e-9 && q[1] <= b.hi[String(q[0])]/1e6 + 1e-9).map(q=>q[0]);
+      return aa.length ? x.t + ' en ' + tramos(aa) : null; }).filter(Boolean);
+    return '<b>' + b.t + ':</b> ' + (toca.length ? 'la tocan ' + toca.join('; ') : 'ninguna de las otras proyecciones visibles la toca entre 2026 y 2037'); });
   document.getElementById('coLtray').innerHTML = '<span class="ttl">Series</span>' + SER.map(conm).join('')
-    + '<span class="tipw der" tabindex="0">Hitos del gráfico <span class="tipi">?</span><span class="tip" role="tooltip">'+HS.ley+'</span></span>';
+    + '<span class="ttl">Sombras</span>' + BANDAS.map(conmB).join('')
+    + '<span class="tipw der" tabindex="0">Hitos del gráfico <span class="tipi">?</span><span class="tip" role="tooltip">'+HS.ley+'</span></span>'
+    + (cruces.length ? '<div class="mcaviso" style="flex-basis:100%;color:var(--ink);line-height:1.5">' + cruces.join('<br>') + '</div>' : '');
   document.querySelectorAll('#coLtray [data-co]').forEach(b=>{ b.onclick = ()=>{ V[b.dataset.co] = !V[b.dataset.co]; concesionaria(); }; });
 
   /* tabla por pórtico: base 2025, y 2037 de cada proyección; la diferencia se mide contra el estudio 2026 */
@@ -7183,7 +7250,9 @@ function concesionaria(){
   document.getElementById('coTipSeries').innerHTML = '<b>Estimación interna de la concesionaria:</b> archivo «Modelo de Ingresos - con TLR +3 PÓRTICOS», '
     + 'con el interruptor «tráfico modelado» en 1 (toma la estimación interna) y umbrales de activación propios. <b>Estudio Diadro 2026:</b> '
     + 'archivo «Modelo de Ingresos - con TLR», con el interruptor en 0 (toma el estudio 2026 de Diadro). TLR es el Túnel Lo Ruiz, que ambos '
-    + 'incluyen. <b>Estudio Diadro 2023:</b> el auditado en este tablero, caso Nuevo PIB. <b>V&R tendencial:</b> pestaña «Escenario V&R».';
+    + 'incluyen. <b>Estudio Diadro 2023:</b> el auditado en este tablero, caso Nuevo PIB. <b>V&R central:</b> la línea de la consultora, pestaña '
+    + '«Escenario V&R». Sus <b>cotas</b> salen sólo de mover el efecto de los proyectos competidores entre su mínimo y su máximo; la <b>banda del '
+    + 'Montecarlo</b> mueve a la vez producto, elasticidad, punto de partida y proyectos, y va del percentil 10 al 90.';
   document.getElementById('coNota').innerHTML = '<b>Qué se puede comparar.</b> La estimación interna con 17 pórticos, el estudio 2026, el estudio 2023 '
     + 'y el escenario V&R cuentan los mismos puntos de cobro. La versión con los pórticos 18, 19 y 20 suma tránsito en puntos que hoy no '
     + 'existen y no se compara con las demás; los archivos no indican dónde se ubican. <b>A verificar:</b> la estimación interna de los '
@@ -8455,7 +8524,8 @@ setTimeout(oyeBotones, 0);
 /* ═════════════════════════════════════════════════ BUSCAR OBJETIVO ═══
    La pregunta inversa del simulador: en vez de «si muevo esto, ¿dónde llego?», «¿qué tendría que pasar para llegar a esta
    cifra?». Importa decir de entrada que el problema tiene infinitas soluciones —cada combinación de PIB, elasticidades,
-   atrasos y efectos que dé el mismo 2037 es una respuesta válida—, y que el peso de cada variable es lo que elige una.
+   salto de 2026 y efectos de las vías que dé el mismo 2037 es una respuesta válida—, y que el peso de cada variable es lo que elige
+   una. Los pesos son porcentajes que suman 100 (RM, 16-09-2026).
 
    CÓMO SE BUSCA. Los pesos definen una dirección: cada variable se mueve una fracción de su margen proporcional a su peso,
    en el sentido que acerca al objetivo. Sobre esa dirección se recorre un escalar con bisección. Es un método simple y
@@ -8468,14 +8538,29 @@ const BO_VARS = [
   {k:'epib', rot:'Elasticidad al PIB · autos', uni:'', dec:3, min:()=>0, max:()=>2, base:()=>SIM.epib.v,
    ay:'Cuánto crece el tránsito de autos por cada 1 % de producto.'},
   {k:'ecar', rot:'Elasticidad al PIB · carga', uni:'', dec:3, min:()=>0, max:()=>2, base:()=>SIM.ecar.v, ay:'Categorías C2 y C3 juntas.'},
-  {k:'emot', rot:'Elasticidad al PIB · motos', uni:'', dec:3, min:()=>0, max:()=>2, base:()=>SIM.emot.v, ay:'Categoría C4.'}
-].concat(BO_PROY.map(([a,nom])=>({k:'at'+a, rot:'Atraso · '+nom, uni:' años', dec:0, ent:true, min:()=>0, max:()=>10, base:()=>0,
-   ay:'Años que se posterga la entrada de '+nom+'. Un proyecto atrasado más allá de '+ANIOS[ANIOS.length-1]+' no alcanza a entrar.'})))
- .concat(BO_PROY.map(([a,nom])=>({k:'ef'+a, rot:'Efecto en demanda · '+nom, uni:' %', dec:0, min:()=>0, max:()=>200, base:()=>100,
+  {k:'emot', rot:'Elasticidad al PIB · motos', uni:'', dec:3, min:()=>0, max:()=>2, base:()=>SIM.emot.v, ay:'Categoría C4.'},
+  {k:'salto', rot:'Salto de 2026', uni:' %', dec:0, min:()=>SIM.salto.min, max:()=>SIM.salto.max, base:()=>SIM.salto.v,
+   ay:'El salto de tránsito que el estudio proyecta para 2026, como porcentaje del suyo: 100 % es el del estudio y 0 % un 2026 sin salto.'}
+].concat(BO_PROY.map(([a,nom])=>({k:'ef'+a, rot:'Efecto en demanda · '+nom, uni:' %', dec:0, min:()=>0, max:()=>200, base:()=>100,
    ay:'El efecto de '+nom+' sobre la demanda, como porcentaje del que Diadro 2023 le atribuye: 0 % es un proyecto que no quita tránsito y '
      + '200 % uno que quita el doble. Mueve a la vez AVN y el túnel.'})));
 const BO = {mag:'tx', ref:'est23', otro:null, w:{}, res:null};
-BO_VARS.forEach(v=>{ BO.w[v.k] = 1; });
+/* pesos por defecto: un cuarto para cada tipo de variable —producto, elasticidades, salto de 2026 y vías—, repartido dentro de cada
+   tipo; la columna suma exactamente 100 */
+const BO_W0 = {gpib:25, epib:9, ecar:8, emot:8, salto:25, ef2027:9, ef2030:8, ef2034:8};
+Object.assign(BO.w, BO_W0);
+/* al mover un peso, los demás se reescalan en proporción a su valor para que la columna siga sumando 100 */
+function boReparte(k, v){
+  v = Math.max(0, Math.min(100, v));
+  const otros = BO_VARS.map(x=>x.k).filter(j=>j !== k), so = otros.reduce((s,j)=>s+BO.w[j], 0), resto = 100 - v;
+  BO.w[k] = v;
+  if(so > 0) otros.forEach(j=>{ BO.w[j] = BO.w[j]*resto/so; });
+  else otros.forEach(j=>{ BO.w[j] = resto/otros.length; });
+  /* redondeo a un decimal sin que la suma se aleje de 100: el residuo va a la variable de mayor peso */
+  BO_VARS.forEach(x=>{ BO.w[x.k] = Math.round(BO.w[x.k]*10)/10; });
+  const suma = BO_VARS.reduce((s,x)=>s+BO.w[x.k], 0), dif = Math.round((100 - suma)*10)/10;
+  if(dif !== 0){ const top = BO_VARS.map(x=>x.k).reduce((a,b)=>BO.w[a] >= BO.w[b] ? a : b); BO.w[top] = Math.round((BO.w[top]+dif)*10)/10; }
+}
 
 /* las referencias disponibles para fijar el objetivo; sólo Diadro 2023 publica ingresos, y por eso las demás se declaran sin ese dato */
 function boRefs(){
@@ -8503,19 +8588,15 @@ const boEsc = v => BO.mag === 'tx' ? v/1e6 : v/1e3;
 /* evalúa la proyección con un juego de valores del buscador */
 function boEval(x){
   const vv = valSIM();
-  ['gpib','epib','ecar','emot'].forEach(k=>{ vv[k] = x[k]; });
-  const atr = {};
-  BO_PROY.forEach(([a])=>{
-    atr[a] = Math.round(x['at'+a]);
-    EVS.filter(k=>SIM[k].ev === a).forEach(k=>{ vv[k] = SIM[k].ref*x['ef'+a]/100; });
-  });
-  const s = simSerie(vv, atr).serie;
-  return {serie: s, val: boMag(s, vv), vv, atr};
+  ['gpib','epib','ecar','emot','salto'].forEach(k=>{ vv[k] = x[k]; });
+  BO_PROY.forEach(([a])=>{ EVS.filter(k=>SIM[k].ev === a).forEach(k=>{ vv[k] = SIM[k].ref*x['ef'+a]/100; }); });
+  const s = simSerie(vv).serie;
+  return {serie: s, val: boMag(s, vv), vv};
 }
 const boBase = () => { const x = {}; BO_VARS.forEach(v=>{ x[v.k] = v.base(); }); return x; };
 
 /* dirección de movimiento: cada variable continua se mueve una fracción de su margen proporcional a su peso, hacia donde acerca
-   al objetivo, y sobre esa dirección se recorre un escalar con bisección. Las variables enteras —los atrasos— quedan fuera de la
+   al objetivo, y sobre esa dirección se recorre un escalar con bisección. Las variables enteras, si las hubiera, quedan fuera de la
    bisección porque su efecto es escalonado: se resuelven antes, en una fase propia. */
 function boDireccion(T, fijos){
   const x0 = boBase(); Object.keys(fijos || {}).forEach(k=>{ x0[k] = fijos[k]; });
@@ -8540,34 +8621,18 @@ function boDireccion(T, fijos){
 }
 function boBusca(T){
   if(!BO_VARS.some(v=>BO.w[v.k] > 0)) return {ok:false, motivo:'Todas las variables tienen peso cero: no hay nada que mover.', f0:boEval(boBase()).val, T};
-  /* fase 1 · sólo las variables continuas, con los proyectos en su fecha */
-  let fijos = {}, r = boDireccion(T, fijos);
-  /* fase 2 · si no alcanza, se atrasan proyectos de a uno, el de mayor peso primero y sólo hasta donde haga falta */
-  if(!r.ok){
-    const ent = BO_VARS.filter(v=>v.ent && BO.w[v.k] > 0).sort((p,q)=>BO.w[q.k]-BO.w[p.k]);
-    for(let i=0; i<ent.length && !r.ok; i++){
-      const v = ent[i];
-      for(let k=1; k<=v.max() && !r.ok; k++){
-        const pr = Object.assign({}, fijos); pr[v.k] = k;
-        const rp = boDireccion(T, pr);
-        if(rp.ok || Math.abs(rp.f1 - T) < Math.abs(r.f1 - T)){ fijos = pr; r = rp; }
-        if(rp.ok) break;
-      }
-    }
-  }
-  const x = r.x;
-  if(!r.ok) return {ok:false, motivo:'Con los rangos y los pesos actuales no se llega.', f0:r.f0, f1:r.f1, T, x, sube:r.sube};
-  /* PODA. La dirección mueve todas las variables a la vez y alguna puede quedar en un valor que no cambia la cifra; devolverla a su
-     punto de partida cuando eso ocurre deja en la tabla el conjunto mínimo que sostiene el resultado, y no un movimiento decorativo. */
-  const base = boBase(), tol = Math.abs(T)*1e-4;
+  const r = boDireccion(T, {});
+  if(!r.ok) return {ok:false, motivo:'Con los rangos y los pesos actuales no se llega.', f0:r.f0, f1:r.f1, T, x:r.x, sube:r.sube};
+  /* PODA: una variable cuyo movimiento no cambia la cifra se devuelve a su punto de partida, para que la tabla declare el conjunto mínimo
+     que sostiene el resultado */
+  const x = r.x, base = boBase(), tol = Math.abs(T)*1e-4;
   BO_VARS.forEach(v=>{
     if(Math.abs(x[v.k] - base[v.k]) < 1e-12) return;
     const y = Object.assign({}, x); y[v.k] = base[v.k];
     if(Math.abs(boEval(y).val - T) <= tol) x[v.k] = base[v.k];
   });
   const rr = boEval(x);
-  return {ok:true, f0:r.f0, T, u:r.u, x, val:rr.val, serie:rr.serie, sube:r.sube,
-          atrasos: BO_VARS.filter(v=>v.ent && Math.abs(x[v.k]-base[v.k]) > 1e-12).length};
+  return {ok:true, f0:r.f0, T, u:r.u, x, val:rr.val, serie:rr.serie, sube:r.sube};
 }
 
 /* ── la pantalla ─────────────────────────────────────────────────────────── */
@@ -8607,15 +8672,19 @@ function boPintaVars(){
       const margen = Math.max(v.max()-b, b-v.min()) || 1;
       return '<tr title="'+v.ay.replace(/"/g,'&quot;')+'"><td>'+v.rot+'</td>'
         + '<td>'+nd(b,v.dec)+v.uni+'</td>'
-        + '<td><input type="range" class="bow" data-k="'+v.k+'" min="0" max="5" step="1" value="'+BO.w[v.k]+'" '
-        + 'aria-label="Peso de '+v.rot+'"><span class="bowv" id="bow_'+v.k+'">'+BO.w[v.k]+'</span></td>'
+        + '<td><input type="range" class="bow" data-k="'+v.k+'" min="0" max="100" step="1" value="'+BO.w[v.k]+'" '
+        + 'aria-label="Peso de '+v.rot+', en porcentaje"><span class="bowv" id="bow_'+v.k+'">'+nd(BO.w[v.k],1)+' %</span></td>'
         + '<td>'+nd(v.min(),v.dec)+' a '+nd(v.max(),v.dec)+v.uni+'</td>'
         + '<td>'+(hay ? '<b>'+nd(val,v.dec)+v.uni+'</b>' : '—')+'</td>'
         + '<td>'+(hay && Math.abs(mov)>1e-9 ? '<span class="bomov" style="--f:'+Math.min(1,Math.abs(mov)/margen)+'">'
             + (mov>0?'+':'−')+nd(Math.abs(mov),v.dec)+v.uni+'</span>' : '—')+'</td></tr>';
-    }).join('') + '</tbody>';
+    }).join('') + '<tr class="bosuma"><td colspan="2"><b>Suma de los pesos</b></td><td><b id="boSuma">'
+    + nd(BO_VARS.reduce((s,v)=>s+BO.w[v.k],0),1)+' %</b></td><td colspan="3"></td></tr></tbody>';
   document.querySelectorAll('#boTabla .bow').forEach(s=>{
-    s.oninput = () => { BO.w[s.dataset.k] = +s.value; document.getElementById('bow_'+s.dataset.k).textContent = s.value; };
+    s.oninput = () => { boReparte(s.dataset.k, +s.value);
+      BO_VARS.forEach(v=>{ const e = document.getElementById('bow_'+v.k), sl = document.querySelector('#boTabla .bow[data-k="'+v.k+'"]');
+        if(e) e.textContent = nd(BO.w[v.k],1)+' %'; if(sl && sl !== s) sl.value = BO.w[v.k]; });
+      const su = document.getElementById('boSuma'); if(su) su.textContent = nd(BO_VARS.reduce((q,v)=>q+BO.w[v.k],0),1)+' %'; };
   });
 }
 function boPintaResultado(){
@@ -8629,17 +8698,9 @@ function boPintaResultado(){
     g.innerHTML = ''; document.getElementById('boL1').innerHTML = ''; return;
   }
   const base0 = boBase(), mov = BO_VARS.filter(v=>Math.abs(res.x[v.k] - base0[v.k]) > 1e-9);
-  const atr = mov.filter(v=>v.ent);
   caja.innerHTML = '<div class="aviso ok"><b>Se alcanza.</b> La proyección de 2037 llega a <b>' + nd(boEsc(res.val)) + boUni()
-    + '</b> moviendo ' + mov.length + ' de las ' + BO_VARS.length + ' variables'
-    + (atr.length ? ', y para eso hace falta atrasar ' + (atr.length === 1 ? 'un proyecto' : atr.length + ' proyectos')
-        + ' lo suficiente para que no alcance a entrar antes de 2037' : '')
-    + '. <b>Esta combinación no es la única:</b> cualquier otra que dé el mismo 2037 es igual de válida, y lo que elige ésta son los '
-    + 'pesos de la columna del medio.</div>'
-    + (atr.length ? '<div class="aviso" style="margin-top:8px">El simulador no tiene perilla de atraso: si llevas esta combinación a '
-        + 'sus barras reproducirá el producto, las elasticidades y los efectos, pero no la postergación de '
-        + (atr.length === 1 ? 'ese proyecto' : 'esos proyectos') + ', y por eso llegará algo más abajo que ' + nd(boEsc(res.val)) + boUni()
-        + '.</div>' : '');
+    + '</b> moviendo ' + mov.length + ' de las ' + BO_VARS.length + ' variables. <b>Esta combinación no es la única:</b> cualquier otra '
+    + 'que dé el mismo 2037 es igual de válida, y lo que elige ésta son los pesos de la columna del medio.</div>';
   const W = 720, H = 240, mt = 14, mb = 26, ml = 46, mr = 64, iw = W-ml-mr, ih = H-mt-mb;
   const aa = ANIOS.filter(a=>a>=2025), base = simSerie().serie, T = boObjetivo();
   const vals = aa.map(a=>[base[a], res.serie[a]]).flat().concat([T && BO.mag==='tx' ? T : 0]).filter(v=>v>0);
@@ -8679,12 +8740,12 @@ function boOye(){
     if(T == null){ BO.res = null; boPintaResultado(); return; }
     BO.res = boBusca(T); boPintaVars(); boPintaResultado(); };
   const rp = document.getElementById('boReset');
-  if(rp) rp.onclick = () => { BO_VARS.forEach(v=>{ BO.w[v.k] = 1; }); BO.res = null; econObjetivo(); };
+  if(rp) rp.onclick = () => { Object.assign(BO.w, BO_W0); BO.res = null; econObjetivo(); };
   const ll = document.getElementById('boLlevar');
   if(ll) ll.onclick = () => {
     if(!BO.res || !BO.res.ok) return;
     const x = BO.res.x;
-    ['gpib','epib','ecar','emot'].forEach(k=>{ SIM[k].v = x[k]; });
+    ['gpib','epib','ecar','emot','salto'].forEach(k=>{ SIM[k].v = x[k]; });
     BO_PROY.forEach(([a])=>{ EVS.filter(k=>SIM[k].ev === a).forEach(k=>{ SIM[k].v = SIM[k].ref*x['ef'+a]/100; }); });
     Object.keys(SIM).forEach(k=>{ const n = document.getElementById('pr_'+k); if(n) n.value = SIM[k].v; });
     verGrupo('propio'); verSeccion('propio'); propio();
@@ -8828,7 +8889,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 28;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 29;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
