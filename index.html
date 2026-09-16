@@ -1806,7 +1806,8 @@ body.oyeAbierto{padding-bottom:86px}
     </div>
     <div class="chartbox" style="margin-top:14px">
       <div class="t">Qué supone cada proyección</div>
-      <div class="d">Las variables explicativas de cada una, en promedio para 2027–2037, para ver de dónde salen las diferencias.</div>
+      <div class="d">Las variables explicativas de cada una, en promedio para 2027–2037, para ver de dónde salen las diferencias. Clic en el
+        cuadro para ampliarlo y descargarlo como figura.</div>
       <div style="overflow-x:auto"><table class="mctab" id="coSupuestos"></table></div>
       <div class="aviso" id="coSupNota" style="margin-top:8px"></div>
     </div>
@@ -7290,6 +7291,7 @@ function concesionaria(){
   const eReq = c => (Math.log(c.p37/c.p26) - redV)/slp;
   const gReq = c => (Math.exp((Math.log(c.p37/c.p26) - redV)/(11*eV)) - 1)*100;
   const NI = '<span style="color:var(--ink-lo)">no informado</span>';
+  const REFV = '<span style="color:var(--ink-lo)">—</span><br><small>es la referencia de esta fila</small>';
   const RE1 = refEstudio(1), RE0 = refEstudio(0);
   const eHi = Math.max(EM.autos.hi, EM.carga.hi, EM.motos.hi);
   /* lo implícito por regresión V&R con PIB Oxford, para las dos proyecciones que no declaran supuestos */
@@ -7317,13 +7319,55 @@ function concesionaria(){
       vyr: cPct((Math.exp(redV)-1)*100)+'<br><small>punto medio de las tasas de V&R; cotas '+nd(V28.series.maximo['2037']/1e6)+' a '+nd(V28.series.minimo['2037']/1e6)+' M</small>',
       d26: impV('diadro_2026'), c17: impV('concesionaria_17'),
       d23: cPct((Math.exp(DEC.aportes_pob_1.red)-1)*100)+'<br><small>implícito en sus salidas, misma regresión V&R con su PIB</small>'}],
-    ['Elasticidad que haría falta', 'cálculo V&R: con el PIB y las vías de V&R', c=>'<b>'+nd(eReq(c),2)+'</b>'],
-    ['PIB anual que haría falta', 'cálculo V&R: con las elasticidades y las vías de V&R', c=>'<b>'+nd(gReq(c),2)+' %</b>']];
+    ['Elasticidad que haría falta', 'cálculo V&R: con el PIB y las vías de V&R', c=>c.k === 'vyr' ? REFV : '<b>'+nd(eReq(c),2)+'</b>'],
+    ['PIB anual que haría falta', 'cálculo V&R: con las elasticidades y las vías de V&R', c=>c.k === 'vyr' ? REFV : '<b>'+nd(gReq(c),2)+' %</b>']];
   const celda = (f, c) => typeof f[2] === 'function' ? f[2](c) : f[2][c.k];
   document.getElementById('coSupuestos').innerHTML = '<thead><tr><th>Variable</th>' + COLS.map(c=>'<th>'+c.t+'</th>').join('') + '</tr></thead><tbody>'
     + SUP.map((f,i)=>'<tr style="cursor:default'+(i >= 7 ? ';background:color-mix(in srgb,var(--accent) 7%,transparent)' : '')+'"><td style="white-space:normal"><b>'+f[0]
       +'</b><br><small style="color:var(--ink-lo)">'+f[1]+'</small></td>' + COLS.map(c=>'<td style="white-space:normal">'+celda(f, c)+'</td>').join('') + '</tr>').join('')
     + '</tbody>';
+  /* LA FIGURA: el mismo cuadro en SVG, para la lupa y la descarga */
+  const tabla = document.getElementById('coSupuestos');
+  tabla.style.cursor = 'zoom-in'; tabla.title = 'Clic para ampliar y descargar como figura'; tabla.tabIndex = 0;
+  const figura = () => {
+    const plano = h => { const d = document.createElement('div'); d.innerHTML = h; return d.textContent.replace(/\s+/g, ' ').trim(); };
+    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const corta = (s, n) => { const o = []; let l = ''; s.split(' ').forEach(w=>{ if(l && (l + ' ' + w).length > n){ o.push(l); l = w; } else l = (l ? l + ' ' : '') + w; }); if(l) o.push(l); return o; };
+    /* cada celda: la línea principal y la aclaración chica, cada una partida a su ancho */
+    const partes = (h, anc) => { const [pri, ...resto] = String(h).split('<br>');
+      return {a: corta(plano(pri), Math.floor(anc/6.1)), b: resto.length ? corta(plano(resto.join(' ')), Math.floor(anc/5.2)) : []}; };
+    const W = 1180, cV = 230, cC = (W - 24 - cV)/COLS.length, x0 = 12, LA = 15, LB = 12.5, PAD = 9;
+    const INK = tok('--ink'), LO = tok('--ink-lo'), LIN = tok('--line-2'), ACC = tok('--accent');
+    let y = 26, s = '<text x="'+x0+'" y="'+y+'" font-size="17" font-weight="700" fill="'+INK+'">Qué supone cada proyección</text>';
+    y += 20; s += '<text x="'+x0+'" y="'+y+'" font-size="12" fill="'+LO+'">Variables explicativas de cada una, en promedio para 2027–2037. Millones de transacciones de la red AVN + túnel.</text>';
+    y += 18;
+    const fila = (celdas, fondo, cab) => {
+      const cs = celdas.map((h, j) => partes(h, (j ? cC : cV) - 2*PAD));
+      const alto = Math.max(...cs.map(c => c.a.length*LA + c.b.length*LB)) + 2*PAD;
+      let o = fondo ? '<rect x="'+x0+'" y="'+y+'" width="'+(W-24)+'" height="'+alto+'" fill="'+fondo+'" fill-opacity=".1"/>' : '';
+      cs.forEach((c, j) => { const cx = x0 + (j ? cV + (j-1)*cC : 0) + PAD; let yy = y + PAD + 11;
+        c.a.forEach(l=>{ o += '<text x="'+cx+'" y="'+yy+'" font-size="'+(cab ? 11.5 : 12)+'" font-weight="'+(cab || j === 0 ? 700 : 400)+'" fill="'+INK+'">'+esc(l)+'</text>'; yy += LA; });
+        c.b.forEach(l=>{ o += '<text x="'+cx+'" y="'+yy+'" font-size="10" fill="'+LO+'">'+esc(l)+'</text>'; yy += LB; }); });
+      o += '<line x1="'+x0+'" x2="'+(W-12)+'" y1="'+(y+alto)+'" y2="'+(y+alto)+'" stroke="'+LIN+'" stroke-width="'+(cab ? 1.6 : .8)+'"/>';
+      y += alto; return o; };
+    s += fila(['Variable'].concat(COLS.map(c=>c.t)), null, true);
+    SUP.forEach((f, i) => { s += fila(['<b>'+f[0]+'</b><br>'+f[1]].concat(COLS.map(c=>celda(f, c))),
+      i >= 7 ? ACC : null, false); });
+    y += 16;
+    const nota = 'Fuentes: entrega de la concesionaria del 14-09-2026 (modelos de ingresos), informe Diadro 2023 y escenario V&R. «No informado»: '
+      + 'la fuente no lo declara. «Implícito por regresión»: cálculo V&R sobre la serie de cada proyección, suponiendo el PIB de Oxford que usó '
+      + 'Diadro 2023; rango entre cuatro variantes. Las dos filas sombreadas son cálculo V&R: qué haría falta, desde la partida de cada '
+      + 'proyección, si lo demás fuera como en V&R.';
+    corta(nota, 190).forEach(l=>{ s += '<text x="'+x0+'" y="'+y+'" font-size="10.5" fill="'+LO+'">'+esc(l)+'</text>'; y += 14; });
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 '+W+' '+Math.ceil(y + 6));
+    svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'Qué supone cada proyección');
+    svg.innerHTML = s;
+    return svg; };
+  const abre = () => lupaAbre(figura(), 'Qué supone cada proyección');
+  tabla.onclick = abre;
+  tabla.onkeydown = ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); abre(); } };
+
   const lee = c => { const e = eReq(c), g = gReq(c);
     return '<b>'+c.t.replace(/ <small>.*$/, '')+'</b> parte '+cPct((c.p26/h25-1)*100)+' sobre lo medido en 2025 y, para llegar a '+nd(c.p37)
       +' M, necesitaría una elasticidad de '+nd(e,2)+(e > eHi ? ', sobre el máximo del intervalo de 95 % ('+nd(eHi,2)+')' : ', dentro del intervalo de 95 %')
@@ -9004,7 +9048,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 33;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 34;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
