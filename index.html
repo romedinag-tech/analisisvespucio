@@ -6560,10 +6560,13 @@ function mcPinta(M, sim){
   const MK = [];
   REF.slice().sort((a,b)=>a[1]-b[1]).forEach(r=>{ const u = MK[MK.length-1];
     if(u && Math.abs(X(r[1]) - X(u.v)) < 2) u.t += ' = ' + r[0]; else MK.push({t:r[0], v:r[1], c:r[2], punt:r[0] === 'puntual'}); });
+  /* cada rótulo baja de fila hasta que su caja no toca la de ninguno ya puesto en esa fila: se comparan los anchos reales de los dos,
+     no un margen fijo, que dejaba montados «cota superior V&R» y «Diadro 2026» (reparo D4 de RM, corregido el 22-09-2026) */
   const filas = [];
   MK.forEach(m=>{ const x = X(m.v), w = m.t.length*4.8 + 6; let f = 0;
-    while(filas[f] && filas[f].some(q=>Math.abs(q - x) < (w + 40)/2)) f++;
-    (filas[f] = filas[f] || []).push(x); m.f = f; m.x = Math.min(ml + iw - w/2, Math.max(ml + w/2, x)); });
+    const cx = Math.min(ml + iw - w/2, Math.max(ml + w/2, x));
+    while(filas[f] && filas[f].some(q=>Math.abs(q.x - cx) < (q.w + w)/2 + 8)) f++;
+    (filas[f] = filas[f] || []).push({x: cx, w}); m.f = f; m.x = cx; });
   const top = 24 + filas.length*11, ih = 100, H = top + ih + 18;
   /* el túnel se lee en décimas: su 2037 anda en 25 M y la banda en tres */
   const dM = ag === 'TSC' ? 1 : 0;
@@ -8777,7 +8780,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 43;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 44;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
