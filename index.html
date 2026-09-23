@@ -2447,9 +2447,13 @@ function calles(mapa, chk, ref){
 const _calC = {}, _calM = {}, _calG = {};
 const BASES = {
   claro: ()=>L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_'
-    +(esOscuro()?'Dark':'Light')+'_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}),
-  calles: ()=>L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}),
-  satelite: ()=>L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}),
+    +(esOscuro()?'Dark':'Light')+'_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:19, maxNativeZoom:16}),
+  /* calles: CARTO Voyager. tile.openstreetmap.org bloquea el uso desde un sitio publicado (su política de teselas), y el
+     mapa quedaba con «acceso bloqueado» (RM, 23-09-2026). La gris de Esri no tiene teselas sobre el zoom 16: sin
+     maxNativeZoom mostraba «Map data not yet available» al acercarse; con él, estira la tesela 16. */
+  calles: ()=>L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    {maxZoom:19, maxNativeZoom:19, subdomains:'abcd'}),
+  satelite: ()=>L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19, maxNativeZoom:18}),
 };
 let baseActual = null;
 function ponBase(k){
@@ -8981,7 +8985,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 45;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 46;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
