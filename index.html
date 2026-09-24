@@ -780,6 +780,8 @@ h2 .flex{flex:1}
  line-height:1.15;margin:5px 0 2px}
 .kpi .s{color:var(--mut);font-size:.78rem;line-height:1.35}
 .maprow{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:10px}
+.maprow.concRow[hidden]{display:none}
+.concF{font-size:.78rem;color:var(--mut)}
 .seglab{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;
  color:var(--ink-lo)}
 .seg{display:inline-flex;border:1px solid var(--line-2);border-radius:22px;overflow:hidden}
@@ -1338,6 +1340,7 @@ body.oyeAbierto{padding-bottom:86px}
 
 <section id="vGeneral">
   <div class="maprow estVer"></div>
+  <div class="maprow concRow" hidden><span class="seglab">Concesión</span><span class="seg concSel" role="group" aria-label="Concesión"></span><span class="concF">Cada concesión es la suma de sus propios pórticos en la planilla del estudio.</span></div>
   <div class="kpis" id="kpis"></div>
 
   <div class="card" id="cardMapa">
@@ -1345,7 +1348,7 @@ body.oyeAbierto{padding-bottom:86px}
       <button class="hdr-btn" id="btnFull" style="border-color:var(--line-2);
         background:var(--surface);color:var(--mut)" title="Pantalla completa">⛶</button></h2>
     <p class="desc">El grosor de cada calzada es proporcional a la medida elegida y se
-      <b>interpola entre pórticos consecutivos</b>: el dato existe en diecinueve puntos, y
+      <b>interpola entre pórticos consecutivos</b>: el dato existe en <span id="gNpor">diecinueve</span> puntos, y
       dibujar escalones donde no hay medición sugeriría saltos que el dato no respalda.
       Cuando el tránsito cambia entre dos pórticos vecinos, la explicación está en los
       <b>enlaces</b> de entrada y salida: enciende esa capa para ver por dónde se va el flujo.</p>
@@ -1421,7 +1424,7 @@ body.oyeAbierto{padding-bottom:86px}
 
   <div class="card">
     <h2>Pórticos del estudio, ordenados por la medida</h2>
-    <p class="desc">Las diecinueve unidades de cobro: diecisiete de Américo Vespucio Norte y
+    <p class="desc" id="tablaDesc">Las diecinueve unidades de cobro: diecisiete de Américo Vespucio Norte y
       dos del Túnel San Cristóbal. Elige una fila para ver su perfil de día.</p>
     <table id="tabla"></table>
   </div>
@@ -1429,6 +1432,7 @@ body.oyeAbierto{padding-bottom:86px}
 
 <section id="vTendencial" hidden>
   <div class="maprow estVer"></div>
+  <div class="maprow concRow" hidden><span class="seglab">Concesión</span><span class="seg concSel" role="group" aria-label="Concesión"></span><span class="concF">Cada concesión es la suma de sus propios pórticos en la planilla del estudio.</span></div>
   <div class="card">
     <h2>Qué mueve la proyección del estudio</h2>
     <p class="desc">El modelo hace crecer la demanda con tres variables declaradas:
@@ -1913,6 +1917,7 @@ body.oyeAbierto{padding-bottom:86px}
       que hacer —lo que el estudio proyectó, lo que el terreno registró y la diferencia—,
       y mezclarlas impide saber cuál depende del modelo auditado y cuál se sostiene sola.
       Todo lo de esta sección se sostiene solo con las planillas del cliente.</p>
+    <div class="maprow concRow" hidden><span class="seglab">Concesión</span><span class="seg concSel" role="group" aria-label="Concesión"></span><span class="concF">Cada concesión, con sus propios pórticos de las planillas de la concesionaria.</span></div>
     <div class="kpis" id="medKpis"></div>
     <div class="maprow">
       <span class="seglab">Ámbito</span>
@@ -2028,6 +2033,7 @@ body.oyeAbierto{padding-bottom:86px}
     <h2>La forma del día</h2>
     <p class="desc">Cómo se reparte el tránsito medido a lo largo de la jornada, por
       tipo de día. Es el perfil observado, sin proyección encima.</p>
+    <div class="maprow concRow" hidden><span class="seglab">Concesión</span><span class="seg concSel" role="group" aria-label="Concesión"></span><span class="concF">Cada concesión, con sus propios pórticos de las planillas de la concesionaria.</span></div>
     <div class="maprow">
       <span class="seglab">Ámbito</span>
       <select id="medPor" aria-label="Pórtico o red completa"></select>
@@ -2283,6 +2289,38 @@ const EST = {
            fuente:'«Modelo de Ingresos - con TLR.xlsm», entregado por la concesionaria el 14-09-2026, hoja «Txs Estudio 2026» (tráfico de Diadro) con sus activaciones e ingresos. 2025 es el año medido.',
            anios:D26.anios, porticos:D26.porticos, pibS:D26.pib, dias:D26.dias, supuestos:D26.supuestos}};
 let estVer = '2023', estSel = '2023';
+/* AVN Y TÚNEL POR SEPARADO (pedido del mandante, 23-09-2026). Las cuatro vistas de «Análisis demanda observada» y de
+   «Proyecciones de demanda» comparten UN estado de concesión: elegir el túnel en una abre las otras en el túnel. Cada vista pinta
+   su propio selector (clase concSel) ligado a este estado; el simulador (boAgrSeg) y el estudio V&R 2022 (e22Amb) conservan los
+   suyos. CONC_OBS trae lo observado de cada concesión, calculado con las mismas funciones del comparativo
+   (observado_por_concesion.py): nada se reparte por proporción. Lo del estudio de Diadro sale de sumar sus propios pórticos. Si
+   CONC_OBS no viene —el tablero de la red, que se bifurca de éste y lee otro comparativo—, el selector no aparece y todo queda en
+   el conjunto, como antes. */
+const CONC_OBS = {"AVN":{"nombre":"Américo Vespucio Norte","porticos":["P1","P2","P3","P4","P5","P6","P7","P8","P9","P10","P11","P12","P13","P14","P15","P16","P17"],"parciales":[2026],"serie":{"tx":{"2006":130481321,"2007":146135555,"2008":158018091,"2009":159024488,"2010":157331697,"2011":186747504,"2012":203885171,"2013":219118737,"2014":249183061,"2015":275074425,"2016":287389038,"2017":296707636,"2018":299365400,"2019":300260639,"2020":230282526,"2021":288474486,"2022":304840143,"2023":289857895,"2024":296526357,"2025":308079015,"2026":178813469},"uf":{"2008":1296927,"2009":1412985,"2010":1418084,"2011":1738454,"2012":1986586,"2013":2243627,"2014":2363700,"2015":2645905,"2016":2923513,"2017":3205633,"2018":3428231,"2019":3532681,"2020":2735531,"2021":3296041,"2022":3509402,"2023":3278739,"2024":3465718,"2025":3727494,"2026":2214295}},"estacional":{"indice":{"2006":[88.5,94.0,105.1,97.7,98.9,94.0,93.2,98.6,100.0,106.4,110.8,112.8],"2007":[91.1,88.0,100.8,97.8,98.2,98.3,93.6,101.8,96.8,108.6,110.6,114.1],"2008":[98.0,92.8,98.1,105.5,97.4,98.3,99.4,98.1,98.8,103.6,102.0,108.1],"2009":[96.0,90.4,100.1,99.5,94.6,95.9,97.5,99.2,100.5,105.3,108.4,112.6],"2010":[102.5,95.0,78.3,92.7,93.4,95.4,97.5,98.6,98.1,108.8,116.7,122.9],"2011":[93.0,88.6,98.4,96.0,98.4,97.6,97.2,101.2,104.1,102.8,109.4,113.1],"2012":[96.3,90.8,101.9,97.2,97.5,99.7,96.6,103.2,94.2,106.5,107.3,108.6],"2013":[96.7,90.9,97.1,102.9,98.3,98.3,100.3,101.2,94.3,106.7,104.9,108.4],"2014":[89.1,83.8,90.3,90.5,102.1,100.7,102.6,103.4,102.8,110.8,110.0,114.0],"2015":[94.7,91.6,100.3,100.7,96.1,98.6,97.3,98.8,101.2,104.5,107.4,108.7],"2016":[94.7,92.7,99.2,100.8,99.4,97.5,97.6,101.3,102.4,99.9,106.4,108.1],"2017":[95.0,91.7,102.5,94.6,99.7,98.5,98.8,102.1,99.8,103.0,108.2,106.2],"2018":[100.4,95.1,99.7,101.3,99.1,100.6,96.0,101.7,93.2,104.2,104.4,104.4],"2019":[99.3,93.8,103.2,102.2,99.9,98.8,99.8,102.9,96.7,97.4,98.3,107.8],"2020":[130.3,124.2,107.6,75.7,66.2,63.9,73.3,88.2,103.8,116.7,126.6,123.6],"2021":[90.5,96.7,95.4,78.0,89.6,90.5,101.3,107.8,109.3,109.6,113.8,117.6],"2022":[96.7,92.3,102.0,100.1,100.3,96.0,97.0,102.5,100.6,101.0,104.6,106.9],"2023":[100.8,95.8,104.5,99.6,102.3,97.7,98.5,99.6,96.2,98.4,103.5,103.1],"2024":[96.9,92.0,98.1,102.0,95.9,93.0,99.2,100.1,97.3,106.6,108.3,110.8],"2025":[98.6,94.3,99.9,100.8,96.8,96.5,101.1,99.6,100.3,103.5,103.6,104.9]},"patron":[95.0,91.7,99.7,100.8,99.4,98.6,98.8,101.7,99.8,104.2,106.4,108.1],"desvio":{"2006":3.54,"2007":2.99,"2008":1.92,"2009":1.97,"2010":7.11,"2011":2.41,"2012":2.02,"2013":1.7,"2014":5.23,"2015":1.01,"2016":0.95,"2017":1.22,"2018":2.23,"2019":2.7,"2020":21.66,"2021":7.9,"2022":1.53,"2023":3.29,"2024":2.13,"2025":1.89},"ref":[2013,2014,2015,2016,2017,2018,2019],"indice_lv":{"2006":[88.1,88.7,95.6,104.0,98.4,90.6,97.5,93.7,106.5,106.0,106.8,124.1],"2007":[86.9,83.4,96.1,99.3,98.1,99.8,93.5,97.1,109.2,103.5,107.0,126.0],"2008":[93.8,87.0,98.3,102.3,102.5,100.2,95.1,103.2,100.6,99.1,109.3,108.4],"2009":[96.1,85.9,95.7,96.4,104.6,92.9,93.2,104.3,102.3,105.4,110.3,112.8],"2010":[107.6,90.1,71.4,89.7,103.1,92.3,97.5,98.6,99.6,114.2,112.9,122.9],"2011":[97.3,83.7,89.6,97.3,103.0,94.2,101.7,96.3,105.4,107.6,105.6,118.4],"2012":[96.0,84.7,97.0,98.5,97.2,101.1,96.4,98.2,106.1,101.4,103.6,119.7],"2013":[92.4,86.3,97.2,99.6,98.4,105.2,95.8,101.3,101.0,102.0,106.7,114.0],"2014":[85.1,79.4,90.3,87.6,107.1,102.3,97.9,108.6,104.4,105.7,117.6,113.9],"2015":[94.8,87.0,95.9,97.6,106.4,95.5,93.1,103.9,103.0,104.6,109.3,108.9],"2016":[99.2,86.6,90.4,102.2,104.2,94.1,102.3,96.5,103.8,104.7,102.8,113.3],"2017":[94.6,86.6,93.2,100.7,99.3,95.0,103.3,97.1,106.3,102.6,104.3,116.9],"2018":[95.8,90.2,95.2,103.0,99.1,102.2,96.1,97.1,105.2,99.5,101.0,115.4],"2019":[94.9,89.1,103.3,99.0,99.9,105.7,95.3,103.0,103.6,93.0,100.0,113.3],"2020":[125.0,122.6,103.2,73.7,73.6,62.1,70.3,93.0,106.0,117.2,129.2,124.2],"2021":[95.1,91.8,87.2,75.5,99.2,87.7,101.4,107.9,111.1,115.2,110.3,117.7],"2022":[101.2,87.3,92.8,101.4,105.0,92.7,101.6,97.5,101.9,105.7,100.9,111.9],"2023":[100.5,90.5,95.0,106.1,97.3,98.9,98.1,94.7,102.6,102.9,99.8,113.5],"2024":[92.6,86.2,103.1,94.3,96.0,99.6,94.8,100.2,110.0,101.9,110.2,110.9],"2025":[94.7,90.0,100.5,98.1,102.3,98.6,97.1,105.2,102.5,99.4,105.9,105.5]},"patron_lv":[94.8,86.6,95.2,99.6,99.9,102.2,96.1,101.3,103.8,102.6,104.3,113.9],"desvio_lv":{"2006":4.53,"2007":3.7,"2008":2.67,"2009":3.11,"2010":8.39,"2011":3.96,"2012":1.95,"2013":1.29,"2014":5.61,"2015":2.9,"2016":3.3,"2017":2.35,"2018":1.86,"2019":2.66,"2020":21.06,"2021":7.87,"2022":3.79,"2023":3.11,"2024":3.39,"2025":2.98},"exacto":{"2006":false,"2007":false,"2008":false,"2009":false,"2010":false,"2011":false,"2012":false,"2013":false,"2014":false,"2015":false,"2016":false,"2017":false,"2018":false,"2019":false,"2020":false,"2021":false,"2022":false,"2023":true,"2024":true,"2025":true}},"factor_temporada":{"2006":1.0176,"2007":1.0208,"2008":1.0092,"2009":1.0136,"2010":1.0024,"2011":1.0185,"2012":1.0129,"2013":1.0124,"2014":1.0271,"2015":1.0137,"2016":1.0126,"2017":1.0133,"2018":1.0046,"2019":1.0069,"2020":0.9455,"2021":1.0128,"2022":1.011,"2023":1.0033,"2024":1.0111,"2025":1.0071},"proyeccion":{"backtest":{"3":{"cuota":{"mae":2.22,"peor":3.89,"sesgo":1.43,"n":9},"movil":{"mae":2.73,"peor":5.44,"sesgo":-1.67,"n":9},"interanual":{"mae":2.69,"peor":8.95,"sesgo":1.81,"n":9}},"4":{"cuota":{"mae":1.83,"peor":3.56,"sesgo":1.36,"n":9},"movil":{"mae":2.21,"peor":4.31,"sesgo":-1.16,"n":9},"interanual":{"mae":3.3,"peor":9.55,"sesgo":2.43,"n":9}},"5":{"cuota":{"mae":1.65,"peor":2.89,"sesgo":0.95,"n":9},"movil":{"mae":1.92,"peor":4.04,"sesgo":-0.89,"n":9},"interanual":{"mae":3.01,"peor":9.32,"sesgo":2.04,"n":9}},"6":{"cuota":{"mae":1.47,"peor":2.67,"sesgo":0.63,"n":9},"movil":{"mae":1.84,"peor":3.77,"sesgo":-0.63,"n":9},"interanual":{"mae":2.73,"peor":8.79,"sesgo":1.78,"n":9}},"7":{"cuota":{"mae":1.18,"peor":2.21,"sesgo":0.51,"n":9},"movil":{"mae":1.62,"peor":3.47,"sesgo":-0.43,"n":9},"interanual":{"mae":2.19,"peor":6.69,"sesgo":1.44,"n":9}},"8":{"cuota":{"mae":0.99,"peor":2.16,"sesgo":0.36,"n":9},"movil":{"mae":1.36,"peor":2.77,"sesgo":-0.28,"n":9},"interanual":{"mae":1.72,"peor":4.98,"sesgo":1.1,"n":9}},"9":{"cuota":{"mae":0.8,"peor":2.02,"sesgo":0.32,"n":9},"movil":{"mae":1.02,"peor":2.24,"sesgo":-0.19,"n":9},"interanual":{"mae":1.37,"peor":3.36,"sesgo":0.78,"n":9}},"10":{"cuota":{"mae":0.44,"peor":1.05,"sesgo":0.17,"n":9},"movil":{"mae":0.69,"peor":1.38,"sesgo":-0.12,"n":9},"interanual":{"mae":0.74,"peor":2.06,"sesgo":0.46,"n":9}},"11":{"cuota":{"mae":0.24,"peor":0.43,"sesgo":0.1,"n":9},"movil":{"mae":0.38,"peor":0.83,"sesgo":-0.08,"n":9},"interanual":{"mae":0.42,"peor":1.01,"sesgo":0.2,"n":9}}},"anio":2026,"meses":7,"hist":[2023,2024,2025],"cuota":0.5714,"mae":1.18,"peor":2.21,"movil":[[2023,1,4.56],[2023,2,4.4],[2023,3,3.1],[2023,4,0.41],[2023,5,-1.17],[2023,6,-2.26],[2023,7,-2.64],[2023,8,-3.33],[2023,9,-3.85],[2023,10,-4.25],[2023,11,-4.51],[2023,12,-4.91],[2024,1,-5.01],[2024,2,-4.82],[2024,3,-4.97],[2024,4,-4.2],[2024,5,-4.32],[2024,6,-4.29],[2024,7,-3.79],[2024,8,-2.94],[2024,9,-1.95],[2024,10,-0.44],[2024,11,0.66],[2024,12,2.3],[2025,1,2.98],[2025,2,3.1],[2025,3,4.01],[2025,4,3.89],[2025,5,4.72],[2025,6,5.61],[2025,7,5.9],[2025,8,6.0],[2025,9,6.33],[2025,10,5.51],[2025,11,4.89],[2025,12,3.9],[2026,1,3.28],[2026,2,3.36],[2026,3,3.3],[2026,4,3.16],[2026,5,2.81],[2026,6,2.58],[2026,7,1.77]],"porticos":{"RED":{"tx":{"valor":312946590,"lo":306030470,"hi":319862710,"var":1.58},"uf":{"valor":3856521,"lo":3771292,"hi":3941750,"var":3.46}}},"peor_anio":2024,"peor_err":-2.21},"categoria":{"2006":{"C1":111376864,"C2":15739008,"C3":3365449,"C4":0},"2007":{"C1":125780143,"C2":16515394,"C3":3840018,"C4":0},"2008":{"C1":136904849,"C2":16442346,"C3":4670896,"C4":0},"2009":{"C1":140230520,"C2":14433138,"C3":4360830,"C4":0},"2010":{"C1":137638551,"C2":14990833,"C3":4702313,"C4":0},"2011":{"C1":162421003,"C2":18549839,"C3":5776662,"C4":0},"2012":{"C1":174694217,"C2":20017947,"C3":6589058,"C4":2583949},"2013":{"C1":187050303,"C2":21326420,"C3":7656375,"C4":3085639},"2014":{"C1":212368289,"C2":23604662,"C3":9581682,"C4":3628428},"2015":{"C1":235265599,"C2":24973161,"C3":10625407,"C4":4210258},"2016":{"C1":246115614,"C2":25209372,"C3":11022880,"C4":5041172},"2017":{"C1":254809279,"C2":24798924,"C3":12130567,"C4":4968866},"2018":{"C1":256568560,"C2":24861905,"C3":12776468,"C4":5158467},"2019":{"C1":257620933,"C2":24743889,"C3":12502275,"C4":5393542},"2020":{"C1":190283319,"C2":21610142,"C3":13440556,"C4":4948509},"2021":{"C1":242283214,"C2":24377576,"C3":16045154,"C4":5768542},"2022":{"C1":258545332,"C2":23119730,"C3":16637283,"C4":6537798},"2023":{"C1":248482812,"C2":21199181,"C3":14246254,"C4":5929648},"2024":{"C1":255713779,"C2":22287177,"C3":13265494,"C4":5259907},"2025":{"C1":264319547,"C2":23658229,"C3":14216173,"C4":5885066},"2026":{"C1":152554799,"C2":14913529,"C3":7751094,"C4":3594047}},"tarifa":{"bloques":{"2023":{"TBFP":709,"TBP":86,"TS":21},"2024":{"TBFP":713,"TBP":77,"TS":26},"2025":{"TBFP":692,"TBP":96,"TS":28},"2026":{"TBFP":687,"TBP":99,"TS":30}},"total_bloques":816},"perfil":{"LV":{"2023":[1343102,1053375,828805,668741,562565,529214,529151,581088,636567,833698,1078524,1737998,2961732,4934549,6978531,7974980,8090233,7842514,7053242,6795921,6408743,6342614,6222138,6268172,6217355,6300446,6368158,6356230,6308264,6400906,6374139,6496502,6711577,7075050,7700637,7929763,7760507,7190863,6282811,5393387,4693336,4177273,3706139,3382154,3073523,2586609,2140283,1780094],"2024":[1330998,1045738,840565,673864,572169,525159,526717,571001,628316,843476,1096635,1769605,3015548,4992625,7197649,8302725,8450220,8124404,7355122,7021094,6596993,6527013,6390079,6450312,6450434,6554862,6630594,6631372,6569189,6696368,6686880,6823626,7073162,7484960,8145440,8281250,7984998,7336687,6422603,5472268,4705107,4184049,3699199,3324633,3008730,2555964,2127893,1760507],"2025":[1348351,1045088,840470,675465,588123,546792,545705,582550,630745,880337,1147273,1897126,3271101,5609911,7972609,8850928,8822913,8445735,7691144,7369531,6927228,6845339,6709614,6745822,6717169,6797824,6943929,7007256,6888039,6942648,6878330,7035484,7304187,7711927,8329915,8394283,8072140,7503907,6657265,5733400,4981683,4448671,3890737,3508563,3170112,2619957,2166539,1817080]},"SF":{"2023":[513806,444669,390567,333519,287006,247870,220772,208242,201947,228376,245950,302722,394017,511473,605305,771401,821939,948593,923909,1056770,1065396,1133359,1194708,1281546,1334486,1410450,1465209,1476246,1407683,1314647,1218209,1175727,1154072,1162095,1165986,1180306,1172441,1165134,1157717,1151912,1136548,1118572,1054781,985195,902662,797851,700829,602181],"2024":[494817,432555,385313,334028,289465,252404,222493,202015,192862,214398,233378,293268,385629,508027,599330,771415,824816,960349,934359,1064398,1082460,1160011,1204563,1293215,1344675,1429832,1494285,1491883,1418868,1327089,1226689,1188357,1168781,1174368,1175580,1193104,1183081,1177640,1163310,1162279,1140565,1121160,1056788,978648,892413,800787,704708,604159],"2025":[510156,444729,390973,339139,295072,256965,223300,203878,193899,221360,244200,306951,401655,541385,639342,813740,856924,984997,957254,1098775,1108410,1180507,1222770,1320339,1373184,1460410,1510279,1514360,1440113,1345406,1241949,1199334,1180581,1187297,1190589,1211796,1206619,1200018,1181706,1173283,1160730,1137361,1077366,1003254,912517,808282,715385,621835]},"D":{"2023":[429811,378128,338555,292486,255727,224668,199879,182278,168415,174691,171495,179788,188620,217157,251141,304998,342216,412556,404212,486435,523465,600239,646676,712129,765878,843727,900878,930590,887663,815083,759138,764574,783625,828727,863034,905401,918683,937278,936423,936128,948319,940611,865172,793923,675445,553128,447398,364300],"2024":[422969,361560,322418,277477,240445,209515,185214,170654,156236,161546,161773,172260,186259,218887,247283,306332,350948,417001,405665,487580,530297,609595,647646,712661,753893,831423,888552,921283,881529,812599,757566,760673,786348,831995,872045,912629,918459,932557,927456,934462,934233,916334,847534,757929,653195,537734,432328,347963],"2025":[430867,367758,327467,281616,244001,213753,189894,172787,159127,166480,162084,172895,186470,225687,257817,318286,360697,426707,420058,507392,556215,634470,671554,744386,783195,864275,913793,957418,905033,835997,777966,775582,796912,848440,892576,939857,958441,965751,960735,967092,958329,940335,856470,775084,667892,550526,455651,372256]}},"cobertura_2026":{"anio":2026,"base":2025,"hasta":"2026-09-09","var_pct":{"laboral":8.8,"sábado":8.3,"domingo":10.1,"festivo":8.9}}},"TSC":{"nombre":"Túnel San Cristóbal","porticos":["P101","P102"],"parciales":[2008,2026],"serie":{"tx":{"2008":1453105,"2009":9644594,"2010":11863432,"2011":13892102,"2012":15369116,"2013":16203895,"2014":16993077,"2015":17677502,"2016":18029951,"2017":20229767,"2018":21564299,"2019":22341065,"2020":13805961,"2021":19016440,"2022":20885741,"2023":21129595,"2024":20624387,"2025":18494857,"2026":11255230},"uf":{"2008":14075,"2009":120868,"2010":154437,"2011":184601,"2012":210825,"2013":229919,"2014":242116,"2015":266295,"2016":278137,"2017":347426,"2018":389266,"2019":418855,"2020":269551,"2021":368817,"2022":374610,"2023":386994,"2024":407873,"2025":342308,"2026":209271}},"estacional":{"indice":{"2009":[60.7,56.2,89.0,96.9,94.1,102.9,106.0,112.3,111.9,120.0,126.7,123.2],"2010":[90.0,81.1,87.1,98.9,96.0,99.1,98.5,105.9,101.3,110.0,116.5,115.6],"2011":[85.4,80.0,100.2,97.9,103.4,99.9,98.0,104.4,105.3,103.2,112.4,109.9],"2012":[92.9,84.9,102.5,98.6,97.9,102.7,98.4,107.4,92.2,109.0,108.9,104.6],"2013":[96.0,84.9,96.2,105.9,99.2,100.6,100.5,103.1,93.0,108.9,105.7,105.9],"2014":[95.3,84.9,100.9,104.0,100.5,98.5,99.0,100.7,98.4,107.7,105.1,105.0],"2015":[92.8,85.0,102.9,103.8,97.2,100.5,98.8,100.6,101.8,105.4,107.9,103.3],"2016":[93.0,87.4,100.8,100.4,101.6,98.6,98.1,102.6,103.1,101.1,109.1,104.3],"2017":[87.3,79.8,103.5,94.2,102.8,101.8,100.6,106.2,99.7,105.1,113.5,105.5],"2018":[92.0,82.7,98.2,104.3,101.5,105.4,97.4,107.3,92.6,107.8,107.2,103.5],"2019":[92.1,83.8,104.1,105.3,102.5,102.0,102.4,107.2,97.6,100.9,97.1,105.1],"2020":[146.7,137.5,113.2,51.1,54.1,47.1,56.9,79.1,106.5,127.2,141.9,138.7],"2021":[93.8,99.3,98.8,67.2,87.6,84.7,99.5,109.7,110.9,109.6,115.2,123.9],"2022":[90.7,81.3,102.0,102.1,102.7,109.4,100.1,104.4,98.9,99.2,104.8,104.5],"2023":[93.3,87.4,104.6,99.3,102.1,96.5,97.4,101.2,96.4,110.1,109.2,102.6],"2024":[97.5,89.2,102.4,108.6,99.2,94.0,100.5,99.8,92.0,106.6,105.4,104.8],"2025":[106.7,89.8,97.3,99.8,95.1,94.8,96.8,87.9,98.8,111.5,110.7,110.7]},"patron":[92.8,84.9,100.9,104.0,101.5,100.6,99.0,103.1,98.4,105.4,107.2,105.0],"desvio":{"2009":14.3,"2010":5.27,"2011":3.59,"2012":2.46,"2013":2.09,"2014":1.05,"2015":1.26,"2016":1.8,"2017":3.23,"2018":2.19,"2019":2.65,"2020":36.41,"2021":11.23,"2022":2.54,"2023":2.54,"2024":3.21,"2025":6.01},"ref":[2013,2014,2015,2016,2017,2018,2019],"indice_lv":{"2009":[60.7,53.2,84.9,93.7,103.9,99.5,101.1,117.8,113.6,119.9,128.6,123.1],"2010":[94.5,76.9,79.6,95.7,106.1,95.9,98.5,106.0,103.0,115.5,112.7,115.6],"2011":[89.4,75.6,91.2,99.2,108.2,96.3,102.6,99.3,106.7,108.0,108.5,115.0],"2012":[92.7,79.3,97.6,99.9,97.7,104.2,98.1,102.3,103.9,103.8,105.2,115.4],"2013":[91.8,80.6,96.3,102.6,99.3,107.7,96.1,103.2,99.6,104.0,107.5,111.3],"2014":[91.1,80.6,101.0,100.7,105.6,100.1,94.5,105.8,100.1,102.8,112.5,105.1],"2015":[92.9,80.7,98.3,100.6,107.6,97.4,94.4,105.8,103.6,105.5,109.8,103.5],"2016":[97.5,81.6,91.9,101.8,106.5,95.2,102.8,97.8,104.6,105.9,105.3,109.3],"2017":[86.9,75.4,94.1,100.3,102.4,98.2,105.3,101.0,106.2,104.7,109.5,116.2],"2018":[87.8,78.4,93.8,106.0,101.5,107.1,97.4,102.4,104.5,102.9,103.7,114.4],"2019":[87.9,79.5,104.2,101.9,102.6,109.1,97.8,107.3,104.4,96.3,98.7,110.4],"2020":[140.8,135.7,108.7,49.7,60.1,45.8,54.6,83.5,108.8,127.9,145.0,139.5],"2021":[98.6,94.2,90.3,65.1,96.9,82.1,99.6,109.8,112.8,115.2,111.6,124.0],"2022":[94.9,76.9,92.9,103.5,107.5,105.6,104.8,99.4,100.2,103.8,101.2,109.4],"2023":[92.9,82.5,95.1,105.8,97.0,97.7,97.0,96.2,102.6,115.1,105.2,112.9],"2024":[93.3,83.6,107.8,100.5,99.4,100.8,96.2,100.0,104.1,102.0,107.4,105.0],"2025":[102.5,85.8,98.0,97.2,100.5,97.0,93.0,92.9,101.1,107.2,113.3,111.5]},"patron_lv":[91.1,80.6,96.3,101.8,102.6,100.1,97.4,103.2,104.4,104.0,107.5,110.4],"desvio_lv":{"2009":13.04,"2010":5.42,"2011":3.73,"2012":2.06,"2013":1.62,"2014":2.5,"2015":2.5,"2016":3.06,"2017":2.96,"2018":2.5,"2019":3.52,"2020":35.27,"2021":11.13,"2022":3.83,"2023":3.51,"2024":2.84,"2025":4.67},"exacto":{"2009":false,"2010":false,"2011":false,"2012":false,"2013":false,"2014":false,"2015":false,"2016":false,"2017":false,"2018":false,"2019":false,"2020":false,"2021":false,"2022":false,"2023":true,"2024":true,"2025":true}},"factor_temporada":{"2009":1.0831,"2010":1.0289,"2011":1.0346,"2012":1.0222,"2013":1.019,"2014":1.0197,"2015":1.0222,"2016":1.0196,"2017":1.033,"2018":1.0253,"2019":1.0242,"2020":0.9159,"2021":1.007,"2022":1.028,"2023":1.0194,"2024":1.0133,"2025":1.0035},"proyeccion":{"backtest":{"3":{"cuota":{"mae":2.25,"peor":4.11,"sesgo":0.92,"n":9},"movil":{"mae":4.44,"peor":9.38,"sesgo":-1.92,"n":9},"interanual":{"mae":2.42,"peor":5.76,"sesgo":0.11,"n":9}},"4":{"cuota":{"mae":1.81,"peor":5.09,"sesgo":0.61,"n":9},"movil":{"mae":3.69,"peor":8.98,"sesgo":-1.44,"n":9},"interanual":{"mae":2.61,"peor":5.05,"sesgo":1.1,"n":9}},"5":{"cuota":{"mae":1.15,"peor":3.38,"sesgo":0.38,"n":9},"movil":{"mae":3.01,"peor":7.93,"sesgo":-1.14,"n":9},"interanual":{"mae":2.53,"peor":7.49,"sesgo":1.12,"n":9}},"6":{"cuota":{"mae":0.99,"peor":2.35,"sesgo":0.13,"n":9},"movil":{"mae":2.41,"peor":6.77,"sesgo":-0.82,"n":9},"interanual":{"mae":2.36,"peor":10.92,"sesgo":1.24,"n":9}},"7":{"cuota":{"mae":0.96,"peor":2.15,"sesgo":0.07,"n":9},"movil":{"mae":2.05,"peor":5.63,"sesgo":-0.6,"n":9},"interanual":{"mae":2.12,"peor":9.24,"sesgo":1.05,"n":9}},"8":{"cuota":{"mae":1.04,"peor":2.65,"sesgo":-0.19,"n":9},"movil":{"mae":1.53,"peor":4.37,"sesgo":-0.51,"n":9},"interanual":{"mae":1.92,"peor":7.11,"sesgo":0.67,"n":9}},"9":{"cuota":{"mae":0.93,"peor":2.01,"sesgo":-0.16,"n":9},"movil":{"mae":1.28,"peor":3.72,"sesgo":-0.41,"n":9},"interanual":{"mae":1.44,"peor":4.79,"sesgo":0.41,"n":9}},"10":{"cuota":{"mae":0.5,"peor":1.2,"sesgo":-0.11,"n":9},"movil":{"mae":0.77,"peor":2.43,"sesgo":-0.23,"n":9},"interanual":{"mae":0.82,"peor":3.13,"sesgo":0.3,"n":9}},"11":{"cuota":{"mae":0.15,"peor":0.64,"sesgo":-0.04,"n":9},"movil":{"mae":0.41,"peor":1.08,"sesgo":-0.11,"n":9},"interanual":{"mae":0.38,"peor":1.85,"sesgo":0.14,"n":9}}},"anio":2026,"meses":7,"hist":[2023,2024,2025],"cuota":0.5681,"mae":0.96,"peor":2.15,"movil":[[2023,1,9.64],[2023,2,11.08],[2023,3,10.2],[2023,4,6.17],[2023,5,4.1],[2023,6,0.37],[2023,7,-0.55],[2023,8,-1.1],[2023,9,-1.04],[2023,10,0.04],[2023,11,0.51],[2023,12,1.17],[2024,1,0.99],[2024,2,0.65],[2024,3,-0.08],[2024,4,0.57],[2024,5,0.06],[2024,6,0.61],[2024,7,0.78],[2024,8,0.6],[2024,9,0.15],[2024,10,-1.41],[2024,11,-2.4],[2024,12,-2.39],[2025,1,-2.66],[2025,2,-3.71],[2025,3,-4.55],[2025,4,-6.55],[2025,5,-7.25],[2025,6,-7.57],[2025,7,-8.73],[2025,8,-10.15],[2025,9,-9.89],[2025,10,-9.94],[2025,11,-9.93],[2025,12,-10.33],[2026,1,-10.59],[2026,2,-9.41],[2026,3,-7.07],[2026,4,-4.8],[2026,5,-2.94],[2026,6,-1.22],[2026,7,0.49]],"porticos":{"RED":{"tx":{"valor":19810649,"lo":19384720,"hi":20236578,"var":7.11},"uf":{"valor":365912,"lo":358045,"hi":373779,"var":6.9}}},"peor_anio":2019,"peor_err":2.15},"categoria":{"2008":{"C1":1376943,"C2":73848,"C3":2314,"C4":0},"2009":{"C1":9239284,"C2":392232,"C3":13078,"C4":0},"2010":{"C1":11181461,"C2":641128,"C3":40843,"C4":0},"2011":{"C1":13106585,"C2":745913,"C3":39604,"C4":0},"2012":{"C1":14082782,"C2":875806,"C3":46160,"C4":364368},"2013":{"C1":14780809,"C2":953364,"C3":38580,"C4":431142},"2014":{"C1":15523562,"C2":944752,"C3":69982,"C4":454781},"2015":{"C1":16216475,"C2":879948,"C3":107400,"C4":473679},"2016":{"C1":16546349,"C2":853728,"C3":85524,"C4":544350},"2017":{"C1":18738833,"C2":844558,"C3":107333,"C4":539043},"2018":{"C1":20061738,"C2":838042,"C3":109501,"C4":555018},"2019":{"C1":20754804,"C2":891962,"C3":126352,"C4":567947},"2020":{"C1":12486975,"C2":789804,"C3":116627,"C4":412555},"2021":{"C1":17421596,"C2":914316,"C3":202599,"C4":477929},"2022":{"C1":19342991,"C2":857481,"C3":168866,"C4":516403},"2023":{"C1":19646887,"C2":787148,"C3":212041,"C4":483519},"2024":{"C1":19190229,"C2":817335,"C3":173054,"C4":443769},"2025":{"C1":17201740,"C2":740589,"C3":158096,"C4":394432},"2026":{"C1":10475729,"C2":502624,"C3":53117,"C4":223760}},"tarifa":{"bloques":{"2023":{"TBFP":63,"TBP":21,"TS":12},"2024":{"TBFP":55,"TBP":29,"TS":12},"2025":{"TBFP":66,"TBP":20,"TS":10},"2026":{"TBFP":66,"TBP":19,"TS":11}},"total_bloques":96},"perfil":{"LV":{"2023":[71199,49480,35782,25516,19700,16161,14118,14988,16498,19875,26809,47147,92340,248438,480955,693380,698785,644653,567601,549436,501266,504570,482794,495652,483633,499935,510441,510056,496742,501008,487583,510421,526809,553110,614636,633770,619819,579312,515013,427447,359754,311058,251486,208516,180945,150721,123847,110245],"2024":[68333,49215,35273,25079,19123,14785,12705,12487,14413,18240,24359,46895,93021,234294,486753,697857,701770,624236,556121,539527,487598,488615,467535,477743,470183,487676,497710,501147,489937,492714,481555,503420,518577,536669,606967,619240,599200,554298,498654,419143,347734,299303,248215,206635,180034,148872,122489,102865],"2025":[64838,45594,32671,22897,17849,13655,11444,10853,12641,15833,23373,47571,93187,242526,476527,654043,630369,555046,490392,471801,434692,441119,422218,431337,423165,435598,449514,454097,442146,442305,426434,445190,466134,481701,530866,519557,482404,445570,411624,353872,308849,268710,224884,191084,168293,137263,115284,97252]},"SF":{"2023":[34862,30886,25508,20727,17594,15222,14016,13304,13443,15447,15287,11964,11970,18155,23534,38544,49232,66522,63710,79044,78836,87442,90818,99635,101086,107415,110285,110731,102658,95022,86820,85914,83874,86729,86551,86823,85180,84619,83422,84032,80808,74987,64423,55341,49077,42680,38517,36801],"2024":[31498,27160,23362,20290,16861,14154,12893,11588,10740,11004,10598,9850,11640,17790,22834,37269,46858,64438,62276,77777,78481,87083,88685,96506,98273,105352,108364,108786,101385,93669,85150,83278,82513,83715,83233,83916,83002,82160,80751,80215,76252,71561,64048,54169,46949,41995,38196,34986],"2025":[29674,26459,23372,19221,16510,13750,12531,11145,11241,11669,11509,10745,11325,16930,22231,35560,43045,59626,57155,72670,71235,78545,79415,87692,88593,93158,96136,96137,89224,82235,75062,73940,72382,74183,73933,75608,74290,74422,72554,71823,68938,63732,58327,51222,45066,40005,36609,34988]},"D":{"2023":[30394,27218,22409,18639,16302,14209,13351,12959,13477,15909,15281,10606,7982,9101,11542,15504,19114,26505,24030,31218,34039,42148,45170,51447,54854,61101,65573,68236,63443,56276,52651,54145,55041,58667,60603,62319,62476,64043,63616,62901,61412,56002,46490,37945,31035,25720,18785,14760],"2024":[27806,24129,20296,16771,14508,12330,11896,11566,11623,11962,11193,8544,7541,8870,10887,14922,19379,26002,24078,31005,34625,42672,45562,50397,53431,59177,65005,68167,64643,56234,52575,53287,55788,58503,60296,62374,61748,61488,60755,60421,59159,54499,45198,37145,29910,23284,17002,12967],"2025":[26407,22753,19374,16026,14268,12803,12165,12370,12171,12866,11731,8149,6995,8639,10209,14597,17518,23608,22157,28371,32042,39160,41476,46709,49656,54405,58048,60938,57942,51778,48177,48918,50953,53182,55222,57076,56728,55722,54584,55033,52997,48701,40735,33085,27526,21475,16671,12647]}},"cobertura_2026":{"anio":2026,"base":2025,"hasta":"2026-09-09","var_pct":{"laboral":12.9,"sábado":12.8,"domingo":15.9,"festivo":20.3}}},"controles":{"serie_tx":{"max_abs":0,"no_cero":{}},"serie_uf":{"max_abs":1,"no_cero":{"2011":1,"2012":1,"2017":-1,"2020":1,"2021":1,"2023":-1}},"categoria_max_abs":0,"tarifa_bloques_max_abs":0,"perfil_max_abs":0,"red_peor_anio":2024,"red_peor_err":-2.01,"red_cobertura_2026":{"anio":2026,"base":2025,"hasta":"2026-09-09","var_pct":{"laboral":9.0,"sábado":8.5,"domingo":10.4,"festivo":9.5}},"proyeccion_tx_suma_menos_conjunto":{"suma":332757239,"conjunto":332766002,"dif":-8763,"dif_pct":-0.003},"proyeccion_uf_suma_menos_conjunto":{"suma":4222433,"conjunto":4222558,"dif":-125,"dif_pct":-0.003}},"RED":{"proyeccion":{"peor_anio":2024,"peor_err":-2.01},"cobertura_2026":{"anio":2026,"base":2025,"hasta":"2026-09-09","var_pct":{"laboral":9.0,"sábado":8.5,"domingo":10.4,"festivo":9.5}}}};
+const CONC_OK = !!(CONC_OBS && CONC_OBS.AVN && CONC_OBS.TSC);
+let CONC = 'RED';
+const CONC_NOM = {RED:'Conjunto', AVN:'Vespucio Norte', TSC:'Túnel San Cristóbal'};
+const CONC_DEL = {RED:'del conjunto AVN + túnel', AVN:'de Vespucio Norte', TSC:'del Túnel San Cristóbal'};
+const CONC_EN = {RED:'en el conjunto AVN + túnel', AVN:'en Vespucio Norte', TSC:'en el Túnel San Cristóbal'};
+/* la concesión de un pórtico: la que trae su punto en el mapa; si no la trae, por su número (P1–P17 AVN, P101–P102 túnel) */
+const concDe = cod => { const f = (D.geo_porticos.features||[]).find(x=>x.properties.cod===cod);
+  return f && f.properties.conc ? f.properties.conc : (+String(cod).replace(/^\D+/, '') >= 100 ? 'TSC' : 'AVN'); };
+const enConc = cod => !CONC_OK || CONC === 'RED' || cod === 'RED' || concDe(cod) === CONC;
+/* «RED» en los selectores de ámbito es TODO el ámbito de la concesión elegida: con AVN o el túnel, su agregado propio; con el
+   conjunto, null, y cada vista usa lo de siempre */
+const ambObs = cod => (cod === 'RED' && CONC_OK && CONC !== 'RED') ? CONC_OBS[CONC] : null;
+const agV28 = () => CONC === 'RED' ? 'red' : CONC;
+/* años incompletos de un ámbito: el túnel empieza en julio de 2008, así que en su serie 2008 es parcial */
+const parcDe = c => (CONC_OK && CONC_OBS[c] && CONC_OBS[c].parciales) ? CONC_OBS[c].parciales : (C.historia_parcial||[]);
+/* «a, b y c»: una enumeración en prosa */
+const yLista = xs => xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' y ' + xs[xs.length-1];
+/* HITOS DE UNA SOLA CONCESIÓN. Con el túnel no se marcan los de la autopista —pórticos P16 y P17, obras del enlace con la Ruta 68 y
+   cuartas pistas— y con Vespucio Norte no se marca la entrada del túnel a la serie. Las vías que compiten o se conectan se marcan en
+   las dos. Sólo filtran los gráficos que lo piden (los de las cuatro vistas con selector de concesión). */
+const HITO_SOLO = {AVN:/P16 y P17|enlace Ruta 68|[Cc]uartas pistas/, TSC:/Túnel San Cristóbal entra/};
+const hitoDeConc = (h, c) => !c || c === 'RED' || !CONC_OK || !Object.keys(HITO_SOLO).some(k => k !== c && HITO_SOLO[k].test(h.nom));
+const NUM_ES = ['cero','un','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce',
+  'quince','dieciséis','diecisiete','dieciocho','diecinueve','veinte'];
 let ANIOS = D.anios, P = D.porticos;
 const raiz = document.documentElement;
 const tok = n => getComputedStyle(raiz).getPropertyValue(n).trim();
@@ -2330,14 +2368,23 @@ function pintaEstVer(){
       if(seccion==='general'){ sel ? detalle(sel) : vacia(); pinta(); }
       if(seccion==='tendencial') tendencial(); });
   });
-  const tit = document.getElementById('estVerTit'); if(tit) tit.textContent = EST[estSel].corto;
+  const tit = document.getElementById('estVerTit'); if(tit) tit.textContent = EST[estSel].corto + (CONC !== 'RED' ? ' · ' + CONC_NOM[CONC] : '');
   const av = document.getElementById('estAviso');
+  /* (23-09-2026) Las cifras se calculan para la concesión elegida, sumando los pórticos del propio estudio, y la comparación con V&R
+     usa la línea V&R de esa misma concesión. El texto de 2026 decía «308,2 millones en AVN … 410,0 … 452,7» bajo el conjunto: eran
+     las cifras de AVN, no las del conjunto (326,7 · 437,0 · 482,6). */
+  const sumaEst = (e, a) => { const Pe = EST[e].porticos, i = EST[e].anios.indexOf(a);
+    return Object.keys(Pe).filter(enConc).reduce((s,c)=>s+Pe[c].tx[i],0); };
   if(av) av.innerHTML = estSel==='2023'
-    ? (()=>{ const d = []; for(let a=2026; a<=2037; a++) d.push((S('tx',ANIOS.indexOf(a))/ELA.v28.series.central[a]-1)*100);
-        return '<b>Esto es la proyección, no lo observado.</b> Entre 2026 y 2037 el estudio 2023 proyecta entre '+nd(Math.min(...d),0)+' % y '
+    ? (()=>{ const V = V28S(agV28(), 'central'), d = []; for(let a=2026; a<=2037; a++) d.push((sumaEst('2023',a)/V[a]-1)*100);
+        return '<b>Esto es la proyección, no lo observado.</b> Entre 2026 y 2037 el estudio 2023 proyecta '
+          + (CONC==='RED' ? '' : CONC_EN[CONC] + ' ') + 'entre '+nd(Math.min(...d),0)+' % y '
           +nd(Math.max(...d),0)+' % más tránsito que el escenario V&amp;R, y '+nd(d[d.length-1],1)+' % más en 2037. El contraste contra lo '
           +'ocurrido está en «Análisis entre la demanda y las proyecciones».'; })()
-    : '<b>Esto es la actualización 2026 de la proyección, no lo observado.</b> Parte de 2025 medido —308,2 millones en AVN— y llega a 410,0 millones en 2037, contra 452,7 del estudio 2023. Su ingreso sale del modelo de la concesionaria y no es comparable con el del estudio 2023. El resto del tablero sigue contrastando contra el estudio 2023.';
+    : '<b>Esto es la actualización 2026 de la proyección, no lo observado.</b> Parte de 2025 medido —' + nd(sumaEst('2026',2025)/1e6)
+      + ' millones ' + CONC_EN[CONC] + '— y llega a ' + nd(sumaEst('2026',2037)/1e6) + ' millones en 2037, contra '
+      + nd(sumaEst('2023',2037)/1e6) + ' del estudio 2023. Su ingreso sale del modelo de la concesionaria y no es comparable con el del '
+      + 'estudio 2023. El resto del tablero sigue contrastando contra el estudio 2023.';
 }
 
 const props = c => (D.geo_porticos.features.find(f=>f.properties.cod===c)||{properties:{}}).properties;
@@ -2367,7 +2414,7 @@ function fmt(v){
   return nf.format(Math.round(v));
 }
 function escala(){
-  const vs = Object.keys(P).map(c=>valor(c)).filter(v=>v>0);
+  const vs = Object.keys(P).filter(enConc).map(c=>valor(c)).filter(v=>v>0);
   return vs.length ? [Math.min(...vs), Math.max(...vs)] : [0,1];
 }
 const hex2 = h => { h=h.replace('#','').trim();
@@ -2389,7 +2436,8 @@ const _maxG = {};
 function maxGlobal(){
   if(_maxG[medida] != null) return _maxG[medida];
   let m = 0;
-  Object.keys(P).forEach(c=>ANIOS.forEach(a=>{ const v=valor(c,a); if(v>m) m=v; }));
+  /* con una concesión elegida, el máximo es el de sus pórticos: con el del conjunto el túnel se dibujaba como un hilo */
+  Object.keys(P).filter(enConc).forEach(c=>ANIOS.forEach(a=>{ const v=valor(c,a); if(v>m) m=v; }));
   return _maxG[medida] = m || 1;
 }
 const norm = v => Math.max(0, Math.min(1, v / maxGlobal()));
@@ -2552,6 +2600,9 @@ function dibujaGrosor(){
   capaGros.clearLayers();
   D.geo_ejes.features.forEach(f=>{
     const co = f.geometry.coordinates.map(c=>[c[1],c[0]]);
+    /* la otra concesión se atenúa: su eje queda de contexto, gris, sin dato y sin clic */
+    if(CONC_OK && CONC !== 'RED' && f.properties.conc && f.properties.conc !== CONC){
+      L.polyline(co, {color:tok('--line-2'), weight:2, opacity:.55, interactive:false}).addTo(capaGros); return; }
     /* El driver de GeoJSON puede devolver esta lista ya parseada como arreglo o
        como texto, segun version: se acepta cualquiera de las dos. */
     const cru = f.properties.porticos;
@@ -2597,29 +2648,33 @@ function pinta(){
   }else{
     if(mapa.hasLayer(capaGros)) mapa.removeLayer(capaGros);
     if(!mapa.hasLayer(capaTramo)) capaTramo.addTo(mapa);
-    capaTramo.setStyle(f=>({color:color(valor(f.properties.cod)),
-      weight: f.properties.cod===sel?12:7, opacity:.9}));
+    capaTramo.setStyle(f=>enConc(f.properties.cod)
+      ? {color:color(valor(f.properties.cod)), weight: f.properties.cod===sel?12:7, opacity:.9}
+      : {color:tok('--line-2'), weight:3, opacity:.45});
   }
   if(mapa.hasLayer(capaPtos)){
-    capaPtos.eachLayer(l=>l.setStyle({
-      fillColor: l.feature.properties.cod===sel ? tok('--accent') : tok('--navy'),
-      radius: l.feature.properties.cod===sel ? 7 : 4.5, color: tok('--surface')}));
+    /* los pórticos de la otra concesión no se dibujan */
+    capaPtos.eachLayer(l=>{ const c = l.feature.properties.cod, en = enConc(c);
+      l.setStyle({fillColor: c===sel ? tok('--accent') : tok('--navy'), radius: !en ? 0 : c===sel ? 7 : 4.5,
+        color: tok('--surface'), opacity: en ? 1 : 0, fillOpacity: en ? 1 : 0}); });
     capaPtos.bringToFront();
   }
   pintaTend();
+  const gn = document.getElementById('gNpor'), npo = Object.keys(P).filter(enConc).length;
+  if(gn) gn.textContent = NUM_ES[npo] || npo;
   kpis(); tabla(); leyenda(); if(sel) detalle(sel);
 }
 
 function kpis(){
   const B = EST[estVer].base, ib = ANIOS.indexOf(B);
-  const i = ANIOS.indexOf(anio), cs = Object.keys(P), n = anio-B;
+  const i = ANIOS.indexOf(anio), cs = Object.keys(P).filter(enConc), n = anio-B;
   const S = k => cs.reduce((s,c)=>s+P[c][k][i],0);
   const tx=S('tx'), ing=S('ing'), ts=S('ts');
   const tsIng = cs.reduce((s,c)=>s+P[c].ing_tar.TS[i],0);
   const tx0 = cs.reduce((s,c)=>s+P[c].tx[ib],0), ing0 = cs.reduce((s,c)=>s+P[c].ing[ib],0);
   const caa = (a,b)=> n>0 ? nd((Math.pow(a/b,1/n)-1)*100)+' % anual desde '+B : (n<0 ? 'antes del año base' : 'año base');
   document.getElementById('kpis').innerHTML = `
-  <div class="kpi"><div class="label">Tránsitos</div><div class="v">${nf.format(Math.round(tx/1e6))} M</div>
+  <div class="kpi"><div class="label">Tránsitos${CONC!=='RED' ? ' · '+CONC_NOM[CONC] : ''}</div><div class="v">${nf.format(Math.round(tx/1e6))} M</div>
     <div class="s">${caa(tx,tx0)}</div></div>
   <div class="kpi"><div class="label">Ingreso</div><div class="v">${nf.format(Math.round(ing/1000))}</div>
     <div class="s">${EST[estVer].ingKpi} · ${caa(ing,ing0)}</div></div>
@@ -2632,7 +2687,12 @@ function kpis(){
 }
 
 function tabla(){
-  const cs = Object.keys(P).sort((a,b)=>valor(b)-valor(a));
+  const cs = Object.keys(P).filter(enConc).sort((a,b)=>valor(b)-valor(a));
+  const tdesc = document.getElementById('tablaDesc');
+  if(tdesc && CONC_OK) tdesc.textContent = CONC === 'RED'
+    ? 'Las diecinueve unidades de cobro: diecisiete de Américo Vespucio Norte y dos del Túnel San Cristóbal. Elige una fila para ver su perfil de día.'
+    : 'Los ' + (NUM_ES[cs.length] || cs.length) + ' pórticos ' + CONC_DEL[CONC]
+      + '; los de la otra concesión quedan fuera de la tabla y atenuados en el mapa. Elige una fila para ver su perfil de día.';
   document.getElementById('tabla').innerHTML =
    `<thead><tr><th>Pórtico</th><th>Concesión</th><th>Sección</th><th>km</th>`+
    `<th style="text-align:right">${rotulo()}</th></tr></thead><tbody>`+
@@ -2742,6 +2802,7 @@ function pintaTend(){
   if(medida==='ts' || i < 1) return;
   D.geo_porticos.features.forEach(f=>{
     const cod = f.properties.cod, c = f.geometry.coordinates;
+    if(!enConc(cod)) return;
     const v1 = valor(cod, anio), v0 = valor(cod, ANIOS[i-1]);
     if(!(v0 > 0)) return;
     const d = (v1/v0 - 1)*100;
@@ -2772,7 +2833,7 @@ function leyenda(){
      ? `<div class="grp"><span class="ttl">Sentido</span>
         <span>cada calzada se desplaza a la derecha de su avance; la flecha marca la dirección</span></div>
        <div class="grp"><span class="ttl">Escala</span>
-        <span>absoluta, de cero al máximo de ${ANIOS[0]}–${ANIOS[ANIOS.length-1]}: comparable entre años</span></div>`
+        <span>absoluta, de cero al máximo de ${ANIOS[0]}–${ANIOS[ANIOS.length-1]}${CONC!=='RED' ? ' '+CONC_EN[CONC] : ''}: comparable entre años</span></div>`
      : '<div class="grp"><span class="ttl">Trazo</span><span>el arco que cada pórtico cobra</span></div>'}
    ${medida!=='ts' && ANIOS.indexOf(anio)>0 ? `<div class="grp"><span class="ttl">Flecha</span>
      <span>lo que el estudio proyecta en cada pórtico: ${rotulo().toLowerCase()} de ${anio} contra
@@ -2822,7 +2883,7 @@ function detalle(cod){
      <line x1="${xa}" y1="0" x2="${xa}" y2="${SH}" stroke="${tok('--tbp')}" stroke-width="1.5"/>
    </svg>`;
 }
-function elige(c){ detalle(c); pinta(); }
+function elige(c){ if(!enConc(c)) return; detalle(c); pinta(); }
 function vacia(){ document.getElementById('detalle').innerHTML =
   '<div class="vacio">Elige un pórtico en el mapa o en la tabla<br>para ver su perfil de día y su serie anual.</div>'; }
 
@@ -2980,8 +3041,8 @@ function encuadra(forzar){
      Si se reencuadra en cada cambio de tamano, secuestra el zoom del usuario:
      uno se acerca a un tramo y el mapa se vuelve solo a la vista general. */
   if(yaEncuadro && !forzar) return;
-  const b = capaEje.getBounds();
-  if(b.isValid()){ mapa.fitBounds(b,{padding:[30,30], animate:false}); yaEncuadro = true; }
+  const b = (CONC_OK && CONC !== 'RED') ? bordesConc() : capaEje.getBounds();
+  if(b.isValid()){ mapa.fitBounds(b,{padding:[30,30], animate:false, maxZoom:15}); yaEncuadro = true; }
 }
 new ResizeObserver(()=>encuadra()).observe(document.getElementById('map'));
 window.addEventListener('load', encuadra);
@@ -2992,6 +3053,10 @@ window.addEventListener('load', encuadra);
 const DIA = {LV:'L-V', SF:'S-F', D:'D'};          /* la otra planilla rotula distinto */
 const S = (k,i) => Object.keys(P).reduce((s,c)=>s+P[c][k][i],0);
 const Sd = (t,i) => Object.keys(P).reduce((s,c)=>s+P[c].tx_dia[t][i],0);
+/* las mismas sumas sólo sobre los pórticos de la concesión elegida, para las vistas del grupo del estudio. S y Sd siguen siendo
+   del conjunto porque las leen secciones que no tienen selector de concesión. */
+const SC = (k,i) => Object.keys(P).filter(enConc).reduce((s,c)=>s+P[c][k][i],0);
+const SdC = (t,i) => Object.keys(P).filter(enConc).reduce((s,c)=>s+P[c].tx_dia[t][i],0);
 const dias = (t,a) => (D.dias[DIA[t]]||{})[a] || 1;
 
 /* ─── EL ANCHO DE LOS GRÁFICOS EN PANTALLAS ANGOSTAS ────────────────────────
@@ -3068,9 +3133,10 @@ function tendencial(){
   const E = EST[estVer], B = E.base;
   const A = ANIOS, i22 = A.indexOf(B), fx = [A[0], A[A.length-1]];
   const tk = B===2022 ? [2022,2026,2030,2034,2037] : [2025,2029,2033,2037];
+  const AMBT = CONC === 'RED' ? '' : ' · ' + CONC_NOM[CONC];
 
   /* --- 1. indice base 2022 = 100 ------------------------------------------ */
-  const idx = k => A.map((a,i)=> S(k,i)/S(k,i22)*100);
+  const idx = k => A.map((a,i)=> SC(k,i)/SC(k,i22)*100);
   const acum = f => { let v = 100; return A.map(a=>{ if(a>B) v *= 1+f(a)/100; return v; }); };
   /* la actualización 2026 no trae PIB, valor del tiempo ni población: esas curvas no se dibujan en vez de copiarlas del 2023 */
   const S1 = [
@@ -3086,7 +3152,7 @@ function tendencial(){
   const g1 = ejes(430,210,34,16,30), fy1 = [80, my, v=>Math.round(v)];
   const prom1 = on1.map(s=>({s, p:promedio(s[2], A)}));
   const hx = g => a => g.ml+(a-fx[0])/(fx[1]-fx[0])*g.iw;
-  const H1 = hitosSvg(hx(g1), g1.mt, g1.ih+g1.mt, fx[0], fx[1], E.hitos);
+  const H1 = hitosSvg(hx(g1), g1.mt, g1.ih+g1.mt, fx[0], fx[1], E.hitos, null, CONC);
   const c1 = '<svg viewBox="0 0 '+g1.w+' '+g1.h+'" role="img" aria-label="Índice comparado">'
     + marco(g1,tk,[100,Math.round((100+my)/2),my],fx,fy1)
     + (PROM.t ? prom1.map(x=>linea(g1, A.map((a,i)=>[a,x.p.curva[i]]), fx, fy1, x.s[3], 1.4)
@@ -3108,7 +3174,7 @@ function tendencial(){
      medio punto de crecimiento para calcularla. */
   const el = t => A.map((a,i)=>{
     if(i===0 || D.pib[a]==null || Math.abs(D.pib[a]) < 0.5) return null;
-    const q1 = Sd(t,i)/dias(t,a), q0 = Sd(t,i-1)/dias(t,A[i-1]);
+    const q1 = SdC(t,i)/dias(t,a), q0 = SdC(t,i-1)/dias(t,A[i-1]);
     if(!(q0>0 && q1>0)) return null;
     const dp = Math.log(1 + D.pib[a]/100);
     return dp ? Math.log(q1/q0)/dp : null; });
@@ -3119,8 +3185,8 @@ function tendencial(){
      demanda. */
   const elNT = A.map((a,i)=>{
     if(i===0 || D.pib[a]==null || Math.abs(D.pib[a]) < 0.5) return null;
-    const v1 = Object.keys(P).reduce((s,c)=>s+((P[c].per.LV||{}).NT||[])[i]||0, 0);
-    const v0 = Object.keys(P).reduce((s,c)=>s+((P[c].per.LV||{}).NT||[])[i-1]||0, 0);
+    const v1 = Object.keys(P).filter(enConc).reduce((s,c)=>s+((P[c].per.LV||{}).NT||[])[i]||0, 0);
+    const v0 = Object.keys(P).filter(enConc).reduce((s,c)=>s+((P[c].per.LV||{}).NT||[])[i-1]||0, 0);
     if(!(v0>0 && v1>0)) return null;
     const dp = Math.log(1 + D.pib[a]/100);
     return dp ? Math.log((v1/dias('LV',a))/(v0/dias('LV',A[i-1])))/dp : null; });
@@ -3138,7 +3204,7 @@ function tendencial(){
   const prom2 = on2.map(s=>{
     const v = s[2].filter(x=>x!=null);
     return {s, m: v.length ? v.reduce((a,b)=>a+b,0)/v.length : null}; });
-  const H2 = hitosSvg(hx(g2), g2.mt, g2.ih+g2.mt, fx[0], fx[1], E.hitos);
+  const H2 = hitosSvg(hx(g2), g2.mt, g2.ih+g2.mt, fx[0], fx[1], E.hitos, null, CONC);
   const c2 = '<svg viewBox="0 0 '+g2.w+' '+g2.h+'" role="img" aria-label="Elasticidad implícita">'
     + marco(g2,[2024,2028,2032,2036],[lo2,0,1,hi2],fx,fy2)
     + '<line x1="'+g2.ml+'" y1="'+y1+'" x2="'+(g2.ml+g2.iw)+'" y2="'+y1
@@ -3158,7 +3224,7 @@ function tendencial(){
 
   /* --- 3. de donde viene el crecimiento del ingreso ------------------------ */
   const dln = (v,i) => i===0 ? null : Math.log(v[i]/v[i-1])*100;
-  const ing = A.map((a,i)=>S('ing',i)), tx = A.map((a,i)=>S('tx',i));
+  const ing = A.map((a,i)=>SC('ing',i)), tx = A.map((a,i)=>SC('tx',i));
   const eTx = A.map((a,i)=>dln(tx,i));
   const eTa = A.map((a,i)=> i===0 ? null : dln(ing,i)-dln(tx,i));
   /* El eje lleva TODOS los años, rotados noventa grados: horizontales no caben
@@ -3183,13 +3249,13 @@ function tendencial(){
     return '<text x="'+x+'" y="'+y+'" text-anchor="end" font-size="9" fill="'
       + tok('--ink-lo')+'" transform="rotate(-90 '+x+' '+y+')">'+a+'</text>';
   }).join('');
-  const H3 = hitosSvg(hx(g3), g3.mt, g3.ih+g3.mt, fx[0], fx[1], E.hitos);
+  const H3 = hitosSvg(hx(g3), g3.mt, g3.ih+g3.mt, fx[0], fx[1], E.hitos, null, CONC);
   const c3 = '<svg viewBox="0 0 '+g3.w+' '+g3.h+'" role="img" aria-label="Descomposición del ingreso">'
     + marco(g3,[],[-mm,0,mm],fx,fy3) + H3.fondo + barras + etiq + H3.frente + '</svg>';
 
   /* --- 4. activaciones tarifarias ------------------------------------------ */
-  const tot = 48*Object.keys(P).length;
-  const ts = A.map((a,i)=>S('ts',i)/tot*100), tbp = A.map((a,i)=>S('tbp',i)/tot*100);
+  const tot = 48*Object.keys(P).filter(enConc).length;
+  const ts = A.map((a,i)=>SC('ts',i)/tot*100), tbp = A.map((a,i)=>SC('tbp',i)/tot*100);
   const g4 = ejes(430,210,34,16,30), fy4 = [0,100,v=>v+' %'];
   const px = i => (g4.ml+(A[i]-fx[0])/(fx[1]-fx[0])*g4.iw).toFixed(1);
   const py = v => (g4.ih-(v-fy4[0])/(fy4[1]-fy4[0])*g4.ih+g4.mt).toFixed(1);
@@ -3197,7 +3263,7 @@ function tendencial(){
     const p = ser.map((v,i)=>px(i)+','+py(v+(base?base[i]:0))).join(' ');
     const b = (base||ser.map(()=>0)).map((v,i)=>px(i)+','+py(v)).reverse().join(' ');
     return '<polygon points="'+p+' '+b+'" fill="'+col+'" opacity=".85"/>'; };
-  const H4 = hitosSvg(hx(g4), g4.mt, g4.ih+g4.mt, fx[0], fx[1], E.hitos);
+  const H4 = hitosSvg(hx(g4), g4.mt, g4.ih+g4.mt, fx[0], fx[1], E.hitos, null, CONC);
   const c4 = '<svg viewBox="0 0 '+g4.w+' '+g4.h+'" role="img" aria-label="Activaciones tarifarias">'
     + marco(g4,tk,[0,25,50,75,100],fx,fy4)
     + area(tbp,null,tok('--tbp')) + area(ts,tbp,tok('--ts')) + H4.frente + '</svg>';
@@ -3205,15 +3271,17 @@ function tendencial(){
   const caja = (t,d,svg,ley) => '<div class="chartbox"><div class="t">'+t+'</div>'
     + '<div class="d">'+d+'</div>'+svg+'<div class="legend">'+ley+'</div></div>';
   document.getElementById('tendGrid').innerHTML =
-    caja('Trayectorias comparadas, '+B+' = 100',
-      (E.pib ? 'El ingreso se despega del tránsito y de todas las variables que lo explican. '
+    caja('Trayectorias comparadas, '+B+' = 100'+AMBT,
+      (CONC !== 'RED' && E.pib ? 'Tránsito e ingreso ' + CONC_DEL[CONC] + ', sumando sus pórticos en la planilla del estudio. El PIB, el '
+         + 'valor del tiempo y la población son los mismos para las dos concesiones: el estudio los declara para el modelo completo. ' : '')
+      + (E.pib ? 'El ingreso se despega del tránsito y de todas las variables que lo explican. '
              : 'El ingreso contra el tránsito. <b>La actualización 2026 no trae la serie de PIB, población ni valor del tiempo</b>, así que esas curvas no se dibujan; y su ingreso viene en pesos de la planilla, que se leen como corrientes (hipótesis), de modo que parte de la distancia es inflación. ')
       + 'Enciende o apaga cada serie para verla sola; la línea de trazos es cómo iría '
       + 'si creciera siempre al mismo ritmo.', c1, ley1) +
-    (!E.pib ? '<div class="chartbox"><div class="t">Cuánto crece el tránsito por punto de PIB</div>'
+    (!E.pib ? '<div class="chartbox"><div class="t">Cuánto crece el tránsito por punto de PIB'+AMBT+'</div>'
       + '<div class="d">No se puede calcular para la actualización 2026: la entrega no trae la serie de PIB con que Diadro proyectó. '
       + 'Las respuestas de Diadro a la auditoría sólo tabulan el PIB de 2017 a 2022. Cuando llegue la serie, este gráfico se arma igual que para el estudio 2023.</div></div>' :
-    caja('Cuánto crece el tránsito por punto de PIB, en la proyección de Diadro',
+    caja('Cuánto crece el tránsito por punto de PIB, en la proyección de Diadro'+AMBT,
       '<b>Cálculo de V&R sobre las series del estudio</b> —su tránsito proyectado y el PIB que declara—, no una elasticidad que el estudio '
       + 'declare: su modelo no proyecta con elasticidades en las horas que asigna. Es el cociente entre lo que crece el tránsito de cada tipo de día '
       + 'y lo que crece el producto. El sábado, '
@@ -3223,11 +3291,11 @@ function tendencial(){
       + 'sus picos coinciden con el calendario de obras y con el bucle de activación '
       + 'tarifaria, no con el producto. 2023 no se dibuja porque ese año el PIB cae y el '
       + 'cociente se divide por casi cero.', c2, ley2)) +
-    caja('De dónde viene el crecimiento del ingreso',
+    caja('De dónde viene el crecimiento del ingreso'+AMBT,
       'Variación anual del ingreso, separada en el aporte de más transacciones y el de '
       + 'una tarifa media más alta.' + (E.pib ? '' : ' En la actualización 2026 el efecto tarifa incluye la indexación de la tarifa base de la planilla (3,0 a 4,2 % al año).'), c3,
       chip(tok('--accent'),'Efecto transacciones') + chip(tok('--ts'),'Efecto tarifa')) +
-    caja('Medias horas del día laboral por tipo de tarifa',
+    caja('Medias horas del día laboral por tipo de tarifa'+AMBT,
       'Proporción de los bloques de media hora que el modelo lleva a tarifa de punta y de '
       + 'saturación a lo largo del horizonte.', c4,
       chip(tok('--tbp'),'Punta') + chip(tok('--ts'),'Saturación'))
@@ -3243,10 +3311,10 @@ function tendencial(){
   const i37 = A.length-1;
   const accIng = Math.log(ing[i37]/ing[i22])*100, accTx = Math.log(tx[i37]/tx[i22])*100;
   document.getElementById('tendNota').innerHTML = !E.pib
-    ? '<b>'+E.nombre+': entre '+B+' y 2037 el ingreso de la planilla crece '+accIng.toFixed(0)+' % en términos logarítmicos y las transacciones '
+    ? '<b>'+E.nombre+': entre '+B+' y 2037'+(CONC==='RED' ? '' : ', '+CONC_EN[CONC]+',')+' el ingreso de la planilla crece '+accIng.toFixed(0)+' % en términos logarítmicos y las transacciones '
       + accTx.toFixed(0)+' %.</b> La diferencia no se puede atribuir sólo a activaciones como en el estudio 2023: la tarifa base de la planilla se indexa '
       + 'cada año, y la unidad del ingreso no viene rotulada. Calculado sobre la planilla entregada, sin intervenir sus cifras.'
-    : '<b>Entre 2022 y 2037 el ingreso crece '+accIng.toFixed(0)+' % en términos '
+    : '<b>Entre 2022 y 2037 el ingreso '+(CONC==='RED' ? '' : CONC_DEL[CONC]+' ')+'crece '+accIng.toFixed(0)+' % en términos '
     + 'logarítmicos y las transacciones '+accTx.toFixed(0)+' %.</b> La diferencia, '
     + (accIng-accTx).toFixed(0)+' puntos, es tarifa: cerca del '
     + (100*(accIng-accTx)/accIng).toFixed(0)+' % del crecimiento del ingreso proyectado '
@@ -3280,7 +3348,10 @@ function tendencial(){
     document.getElementById('tablaSup').insertAdjacentHTML('afterend', '<p class="desc" id="notaSup" style="margin-top:10px"></p>');
   document.getElementById('notaSup').innerHTML = 'Fuente: '+sup.fuente
     + (E.pib ? '. La serie de PIB y el calendario de días se leyeron de la planilla del estudio; el resto está declarado en el texto del informe.'
-             : '. Sólo el calendario de días viene en la planilla; los demás supuestos del estudio 2026 no se entregaron y no se copian del 2023.');
+             : '. Sólo el calendario de días viene en la planilla; los demás supuestos del estudio 2026 no se entregaron y no se copian del 2023.')
+    /* verificado en el informe destilado (§3.5, §6.10, §6.11 y Figura 5.33): ningún supuesto se declara por concesión */
+    + (CONC !== 'RED' ? ' <b>Estos supuestos existen sólo para el modelo completo:</b> el estudio no declara ninguno por concesión, así que '
+         + 'la tabla es la misma para Vespucio Norte, para el túnel y para el conjunto.' : '');
 }
 
 /* =========================================================== ANÁLISIS COMPARATIVO
@@ -4164,9 +4235,9 @@ function hitosLista(modo){
 }
 /* X(año con fracción) → x; yTop, yBot: borde superior e inferior del área de datos. Los marcadores van en la franja de
    ~20 px sobre yTop, que cada gráfico reserva con su margen superior; las líneas y las bandas cruzan el área de datos. */
-function hitosSvg(X, yTop, yBot, a0, a1, modo, aMax){
+function hitosSvg(X, yTop, yBot, a0, a1, modo, aMax, conc){
   aMax = aMax == null ? a1 : aMax;
-  const L = hitosLista(modo).filter(h => (h.fin!=null ? h.fin : h.ini) >= a0 && h.ini <= aMax)
+  const L = hitosLista(modo).filter(h => (h.fin!=null ? h.fin : h.ini) >= a0 && h.ini <= aMax && hitoDeConc(h, conc))
     .sort((p,q)=>Math.max(p.ini,a0)-Math.max(q.ini,a0));
   let fondo = '', frente = '', ult = -1e9;
   L.forEach((h,i)=>{ h.n = i+1;
@@ -5119,7 +5190,10 @@ document.addEventListener('click', e=>{
 });
 
 function cmpEstacional(){
-  const E = (C.estacional||{})[cPor];
+  /* (23-09-2026) el ámbito: en «La serie y su forma», su propio selector (medAmb), que antes no movía esta tarjeta; llamado desde el
+     contraste, el pórtico de allá. «RED» es todo el ámbito de la concesión elegida. */
+  const amb = seccion === 'medido' ? medAmb : cPor, cx = ambObs(amb);
+  const E = cx ? cx.estacional : (C.estacional||{})[amb];
   const cont = document.getElementById('cmpEstac');
   if(!E){ cont.innerHTML = '<div class="vacio">Sin serie suficiente</div>'; return; }
   const LV = estNorm === 'lv';
@@ -5199,10 +5273,21 @@ function cmpEstacional(){
     + MESN[iMax] + ' es el mes mayor y ' + MESN[iMin] + ' mueve el ' + nd(mn,0)
     + ' % de él. <b>Desvío del patrón, en puntos:</b> los años más anómalos de toda la '
     + 'serie son ' + top + '. La mediana de todos los años es ' + nd(med,1)
-    + ' y los recientes están en ' + rec + '. <b>El control que valida el método:</b> '
-    + 'sin decirle nada, el indicador pone arriba a 2020 —pandemia— y a 2010 —el '
-    + 'terremoto de febrero—. Un detector que no encuentra las anomalías conocidas no '
-    + 'sirve para encontrar las que no se conocen.'
+    + ' y los recientes están en ' + rec + '. ' + (()=>{
+      /* EL CONTROL, MEDIDO EN EL ÁMBITO Y NO AFIRMADO (23-09-2026): el texto decía que 2020 y 2010 quedan arriba, que vale para el
+         conjunto y para AVN; en el túnel 2010 queda quinto, detrás de su primer año completo. Se dice lo que sale. */
+      const pos = y => dv.findIndex(x=>x[0]===y) + 1;
+      const p20 = pos(2020), p10 = pos(2010), a0 = Math.min(...dv.map(x=>x[0]));
+      if(p20 && p10 && p20 <= 4 && p10 <= 4)
+        return '<b>El control que valida el método:</b> sin decirle nada, el indicador pone entre los cuatro años más anómalos a 2020 '
+          + '—pandemia— y a 2010 —el terremoto de febrero—. Un detector que no encuentra las anomalías conocidas no sirve para '
+          + 'encontrar las que no se conocen.';
+      const antes = dv.slice(0, Math.max(0, p10-1)).map(x=>x[0]).filter(y=>y!==2020);
+      return '<b>El control que valida el método:</b> sin decirle nada, el indicador pone ' + (p20===1 ? 'primero' : 'en el lugar '+p20)
+        + ' a 2020 —pandemia—; 2010 —el terremoto de febrero— queda en el lugar ' + p10 + ' de ' + dv.length
+        + (antes.length ? ', detrás de ' + yLista(antes) : '') + '.'
+        + (antes.indexOf(a0) >= 0 ? ' ' + a0 + ' es el primer año completo de esta serie.' : '');
+    })()
     + (LV ? '<br><br><b>Normalizado por día laboral la estacionalidad no se aplana: se '
         + 'amplía.</b> El mes bajo no lo es por tener menos días hábiles: cada día hábil '
         + 'de febrero mueve menos tránsito. Los feriados se cuentan exacto en 2023–2025 '
@@ -5548,7 +5633,7 @@ function barrasAnuales(cont, leyenda, datos, parciales, color, uni, pr){
     s += '<rect x="'+(px(i)-bw/2-3).toFixed(1)+'" y="'+g.mt+'" width="'+(bw+6).toFixed(1)
       + '" height="'+g.ih+'" fill="'+tok('--ink-lo')+'" opacity=".09"/>';
   }
-  const HT = hitosSvg(a => g.ml + (a-A[0])/A.length*g.iw, g.mt, g.ih+g.mt, A[0], A[A.length-1], 'real', A[A.length-1]+1);
+  const HT = hitosSvg(a => g.ml + (a-A[0])/A.length*g.iw, g.mt, g.ih+g.mt, A[0], A[A.length-1], 'real', A[A.length-1]+1, CONC);
   document.getElementById(cont).innerHTML = '<svg viewBox="0 0 '+W+' '+HH
     + '" role="img" aria-label="Serie anual">'+HT.fondo+s+HT.frente+'</svg>';
   const ult = comp[comp.length-1];
@@ -5570,9 +5655,11 @@ function barrasAnuales(cont, leyenda, datos, parciales, color, uni, pr){
 
 function medSerieYUF(){
   medBotonRed();
-  const d = SP[medAmb] || {tx:{}, uf:{}};
-  const parc = (C.historia_parcial||[]);
-  const PR = C.proyeccion, pp = PR && PR.porticos[medAmb];
+  /* «RED» es todo el ámbito de la concesión elegida: con Vespucio Norte o el túnel, su propio agregado y su propia proyección */
+  const cx = ambObs(medAmb);
+  const d = cx ? cx.serie : (SP[medAmb] || {tx:{}, uf:{}});
+  const parc = parcDe(medAmb === 'RED' ? CONC : concDe(medAmb));
+  const PR = cx ? cx.proyeccion : C.proyeccion, pp = PR && PR.porticos[medAmb];
   const arma = k => pp && pp[k] ? (function(){ const o = {}; o[PR.anio] = pp[k]; return o; })() : null;
   barrasAnuales('medSerie', 'medLserie', d.tx, parc, '--accent', 'transacciones', arma('tx'));
   barrasAnuales('medUF', 'medLuf', d.uf, parc, '--tbfp', 'UF', arma('uf'));
@@ -5581,15 +5668,26 @@ function medSerieYUF(){
 
 /* ─────────────────────── el recuadro que explica cómo se proyecta el año ─── */
 function proyNota(){
-  const PR = C.proyeccion, el = document.getElementById('proyMetodo');
+  /* (23-09-2026) el recuadro explica el método sobre el ámbito de la concesión elegida: su cuota, su backtest, su peor año y su
+     impulso salen de su propia serie (observado_por_concesion.py). Lo que existe sólo para el conjunto —el rango de la partida del
+     escenario V&R y la caída de julio— se dice como tal. */
+  const cx = ambObs('RED'), PR = cx ? cx.proyeccion : C.proyeccion, el = document.getElementById('proyMetodo');
   if(!PR || !el) return;
   const r = PR.porticos.RED, bt = PR.backtest[String(PR.meses)];
+  const X = CONC_OK ? (CONC_OBS[CONC] || {}) : {}, XP = X.proyeccion || {peor_anio:2024, peor_err:-2.01};
   const MESN = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto',
                 'septiembre','octubre','noviembre','diciembre'];
   const mm = PR.movil || [];
   const ult = mm[mm.length-1], pri = mm.length > 11 ? mm[mm.length-12] : mm[0];
+  const nA = bt.cuota.n, nAt = NUM_ES[nA] || nA;
+  const quien = CONC === 'RED' ? 'La red' : CONC === 'AVN' ? 'Vespucio Norte' : 'El túnel';
+  const ag = agV28(), p26 = V28S(ag, 'central')[2026];
+  const avisos = CONC === 'RED' ? 'sabemos que P2 viene cayendo desde octubre de 2025 y que P102 bajó de febrero a agosto de '
+      + '2025, mientras el puente Lo Saldes, su acceso sur, estuvo restringido. A escala de red se diluyen, pero en un pórtico concreto pueden pesar'
+    : CONC === 'AVN' ? 'sabemos que P2 viene cayendo desde octubre de 2025. A escala de la concesión se diluye, pero en ese pórtico puede pesar'
+    : 'sabemos que P102 bajó de febrero a agosto de 2025, mientras el puente Lo Saldes, su acceso sur, estuvo restringido. En el túnel, con sólo dos pórticos, eso no se diluye';
   el.innerHTML =
-    '<h3>Cómo se proyecta ' + PR.anio + ', en tres pasos</h3>'
+    '<h3>Cómo se proyecta ' + PR.anio + (CONC === 'RED' ? '' : ' ' + CONC_EN[CONC]) + ', en tres pasos</h3>'
     + '<p>De ' + PR.anio + ' hay <b>' + PR.meses + ' meses medidos</b>, de enero a '
     + MESN[PR.meses-1] + '. La pregunta es cómo cerrará el año, y la respuesta más '
     + 'simple resultó también ser la más certera.</p>'
@@ -5607,10 +5705,10 @@ function proyNota(){
     + '</div><div class="ejc">'
     + '<div class="ejt">Paso 3 · cuánto puede errar</div>'
     + '<div class="ejl"><span>Error medio del método</span><b>' + nd(PR.mae,2) + ' %</b></div>'
-    + '<div class="ejl"><span>Peor caso en nueve años</span><b>' + nd(PR.peor,2) + ' %</b></div>'
+    + '<div class="ejl"><span>Peor caso en ' + nAt + ' años</span><b>' + nd(PR.peor,2) + ' %</b></div>'
     + '<div class="ejr">Banda <b>' + nd(r.tx.lo/1e6) + ' a ' + nd(r.tx.hi/1e6) + ' M</b></div>'
     + '</div></div>'
-    + '<p><b>Por qué este método y no otro.</b> Se probaron tres sobre nueve años, '
+    + '<p><b>Por qué este método y no otro.</b> Se probaron tres sobre ' + nAt + ' años, '
     + 'pidiéndoles predecir el año completo con los mismos ' + PR.meses + ' meses que hay '
     + 'ahora, y comparando contra el resultado real —que ya se conoce—. Eso es lo que '
     + 'convierte una intuición en un método con error medido:</p>'
@@ -5622,28 +5720,37 @@ function proyNota(){
         '<tr style="cursor:default"><td>'+x[0]+'</td><td>'+nd(bt[x[1]].mae,2)
         + ' %</td><td>'+nd(bt[x[1]].peor,2)+' %</td></tr>').join('')
     + '</tbody></table>'
+    + (bt.movil.mae < bt.cuota.mae || bt.interanual.mae < bt.cuota.mae
+        ? '<p><b>En este ámbito la cuota no es la de menor error medio</b>: se conserva por ser el método del conjunto, y la tabla '
+          + 'deja ver cuánto cuesta.</p>' : '')
     + '<p><b>La media móvil no está mal: contesta otra pregunta.</b> Dice qué pasó en '
     + 'los últimos doce meses, no qué pasará en el año calendario, y por eso al usarla '
     + 'como proyección pega el segundo semestre del año pasado al frente de éste. Donde '
     + 'sí es superior es como <b>indicador de impulso</b>'
     + (ult ? ': la variación de la móvil de 12 meses pasó de ' + cPct(pri[2]) + ' en '
         + MESN[pri[1]-1] + ' de ' + pri[0] + ' a <b>' + cPct(ult[2]) + '</b> en '
-        + MESN[ult[1]-1] + ' de ' + ult[0] + '. La red viene desacelerando, y eso el '
+        + MESN[ult[1]-1] + ' de ' + ult[0] + '. ' + quien + ' viene '
+        + (ult[2] < pri[2] ? 'desacelerando' : 'acelerando') + ', y eso el '
         + 'número puntual de la proyección no lo dice.' : '.') + '</p>'
     + '<p><b>Lo que el método supone, y hay que decirlo.</b> Arrastra el nivel observado '
     + 'y da por hecho que el resto del año se comporta como el patrón histórico. Si algo '
-    + 'cambió a mitad de año no lo captura: sabemos que P2 viene cayendo desde octubre de '
-    + '2025 y que P102 tuvo una interrupción de siete meses en 2025. A escala de red se '
-    + 'diluyen, pero en un pórtico concreto pueden pesar. Y el peor año del contraste fue '
-    + '2024, con −2,01 %, porque su segundo semestre creció más que el patrón.</p>'
+    + 'cambió a mitad de año no lo captura: ' + avisos + '. Y el peor año del contraste fue '
+    + XP.peor_anio + ', con ' + (XP.peor_err < 0 ? '−' : '+') + nd(Math.abs(XP.peor_err),2) + ' %, porque su segundo semestre creció '
+    + (XP.peor_err < 0 ? 'más' : 'menos') + ' que el patrón.</p>'
     + '<p><b>La única mejora disponible</b> es que la concesionaria declare qué ventana '
     + 'cubre la planilla de media hora en ' + PR.anio + ': llega hasta cerca de '
     + 'septiembre, y con nueve meses el error del método baja de ' + nd(PR.mae,2) + ' % a '
     + nd(PR.backtest['9'].cuota.mae,2) + ' %.</p>'
-    + '<p><b>Esta cifra no es la partida del escenario V&R, y conviene no confundirlas.</b> Aquí se usan los siete meses medidos. El '
-    + 'escenario V&R parte de <b>' + nd(ELA.v28.partida_2026.central_M) + ' M</b>: el cierre del año calculado sin julio, mes que en 2026 '
-    + 'cayó cerca de 3 % contra julio de 2025, y tomado en el punto medio de los cálculos sin ese mes, entre '
-    + nd(ELA.v28.partida_2026.rango_M[0]) + ' y ' + nd(ELA.v28.partida_2026.rango_M[1]) + ' M.</p>';
+    + (CONC === 'RED'
+      ? '<p><b>Esta cifra no es la partida del escenario V&R, y conviene no confundirlas.</b> Aquí se usan los siete meses medidos. El '
+        + 'escenario V&R parte de <b>' + nd(ELA.v28.partida_2026.central_M) + ' M</b>: el cierre del año calculado sin julio, mes que en 2026 '
+        + 'cayó cerca de 3 % contra julio de 2025, y tomado en el punto medio de los cálculos sin ese mes, entre '
+        + nd(ELA.v28.partida_2026.rango_M[0]) + ' y ' + nd(ELA.v28.partida_2026.rango_M[1]) + ' M.</p>'
+      : '<p><b>Esta cifra no es la partida del escenario V&R, y conviene no confundirlas.</b> Aquí se usan los siete meses medidos. '
+        + CONC_EN[CONC].charAt(0).toUpperCase() + CONC_EN[CONC].slice(1) + ' la línea V&R parte de <b>' + nd(p26/1e6, CONC === 'TSC' ? 2 : 1) + ' M</b>, su parte de la partida del '
+        + 'conjunto, ' + nd(ELA.v28.partida_2026.central_M) + ' M, que es el cierre del año calculado sin julio. <b>La caída de julio y el '
+        + 'rango de los cálculos sin ese mes (' + nd(ELA.v28.partida_2026.rango_M[0]) + ' a ' + nd(ELA.v28.partida_2026.rango_M[1])
+        + ' M) existen sólo para el conjunto</b>: no se calcularon por concesión y no se reparten.</p>');
 }
 
 /* ─────────────────────────────────────────────────── mapa de la sección medida */
@@ -5702,12 +5809,18 @@ let encM = 0;
 let fitM = false;
 mapaM.on('zoomend', ()=>{ if(!fitM) pintaMapaM(); });
 
-function eligeM(cod){ medAmb = cod; document.getElementById('medAmb').value = cod;
+/* el encuadre de la concesión elegida: sus tramos tarificados; con el conjunto, los de siempre */
+function bordesConc(){
+  if(!CONC_OK || CONC === 'RED') return BORDES_TRAMOS;
+  return L.geoJSON({type:'FeatureCollection', features:(D.geo_tramos.features||[]).filter(f=>f.properties.conc===CONC)}).getBounds();
+}
+function eligeM(cod){ if(!enConc(cod)) return; medAmb = cod; document.getElementById('medAmb').value = cod;
   pintaMapaM(); medSerieYUF(); }
 /* el botón para volver a la red completa: visible sólo con un pórtico elegido */
 function medBotonRed(){
   const b = document.getElementById('medRed'); if(!b) return;
   b.hidden = medAmb === 'RED';
+  b.textContent = (!CONC_OK || CONC === 'RED') ? 'Volver a toda la red' : CONC === 'AVN' ? 'Volver a todo Vespucio Norte' : 'Volver a todo el túnel';
   b.onclick = ()=>eligeM('RED');
 }
 
@@ -5717,7 +5830,7 @@ function pintaMapaM(){
     const w = mapaM.getSize().x;
     if(Math.abs(w - encM) > 8){
       fitM = true;
-      mapaM.fitBounds(BORDES_TRAMOS, {padding:[24,24], animate:false});
+      mapaM.fitBounds(bordesConc(), {padding:[24,24], animate:false, maxZoom:15});
       fitM = false;
       encM = w;
     }
@@ -5730,6 +5843,9 @@ function pintaMapaM(){
   /* grosor en escala ABSOLUTA de toda la serie, como en el mapa de proyecciones: el ancho se compara entre años */
   let mx = 0;
   Object.keys(SP).forEach(c=>{ if(c==='RED') return; Object.values((SP[c]||{})[k]||{}).forEach(v=>{ if(v>mx) mx = v; }); });
+  /* con una concesión elegida, la escala se toma sobre sus pórticos: con la del conjunto el túnel se dibujaba como un hilo */
+  if(CONC_OK && CONC !== 'RED'){ mx = 0; Object.keys(SP).forEach(c=>{ if(c==='RED' || !enConc(c)) return;
+    Object.values((SP[c]||{})[k]||{}).forEach(v=>{ if(v>mx) mx = v; }); }); }
   const gr = v => 1.2 + (mx>0 ? Math.min(1, v/mx) : 0)*14;
   const colCre = c => c==null ? tok('--line-2') : mezcla(tok('--ts'), tok('--tbfp'), Math.max(0, Math.min(1, (c+6)/12)));
   const uni = k==='uf' ? 'UF' : 'transacciones';
@@ -5740,6 +5856,9 @@ function pintaMapaM(){
     D.geo_tramos.features.forEach(f=>{
       const cod = f.properties.cod, v = val(cod,u);
       if(!v) return;
+      /* la otra concesión, atenuada: su tramo gris, sin dato y sin clic */
+      if(!enConc(cod)){ L.polyline(f.geometry.coordinates.map(x=>[x[1],x[0]]), {color:tok('--line-2'), weight:2.5, opacity:.5,
+        interactive:false}).addTo(capaM); return; }
       const pts = f.geometry.coordinates.map(x=>[x[1],x[0]]);
       const w = gr(v);
       const off = offsetPx(pts, f.properties.dir==='WE' ? w/2+1.5 : -(w/2+1.5), mapaM);
@@ -5752,6 +5871,8 @@ function pintaMapaM(){
     /* GROSOR POR SENTIDO a lo largo del eje, interpolando entre pórticos con dato ese año (P16–P17 desde 2014, túnel desde 2008) */
     D.geo_ejes.features.forEach(f=>{
       const co = f.geometry.coordinates.map(c=>[c[1],c[0]]);
+      if(CONC_OK && CONC !== 'RED' && f.properties.conc && f.properties.conc !== CONC){
+        L.polyline(co, {color:tok('--line-2'), weight:2, opacity:.55, interactive:false}).addTo(capaM); return; }
       const cru = f.properties.porticos, ps = (typeof cru === 'string' ? JSON.parse(cru) : cru)
         .filter(q=>val(q.cod,u)).sort((a,b)=>a.pos-b.pos);
       if(!ps.length) return;
@@ -5779,6 +5900,7 @@ function pintaMapaM(){
   /* el punto del pórtico elige y va encima: ver la nota en pintaMapaC */
   D.geo_porticos.features.forEach(f=>{
     const cod = f.properties.cod, c = f.geometry.coordinates, sel = cod === medAmb;
+    if(!enConc(cod)) return;
     L.circleMarker([c[1],c[0]],{radius: sel?6.5:4.5, weight:2, color:tok('--surface'),
       fillColor: sel?tok('--accent'):tok('--navy'), fillOpacity:1})
       .bindTooltip('<b>'+cod+'</b> · clic para ver su serie', {sticky:true})
@@ -5786,6 +5908,7 @@ function pintaMapaM(){
   });
   D.geo_porticos.features.forEach(f=>{
     const cod = f.properties.cod, c = f.geometry.coordinates;
+    if(!enConc(cod)) return;
     L.marker([c[1],c[0]],{zIndexOffset: cod===medAmb?1000:0, keyboard:false,
       icon:L.divIcon({className:'rotPor',
         html:'<span class="rp'+(cod===medAmb?' on':'')+ladoRp(cod)+'">'+cod+tendHTML(cre(cod))+'</span>',
@@ -5800,27 +5923,28 @@ function pintaMapaM(){
         + 'px;width:18px"></i><span>'+nf.format(Math.round(v/(k==='uf'?1e3:1e6)))+(k==='uf'?' mil':' M')+'</span></span>').join('')
       + '<span class="grp"><span class="ttl">Color y flecha</span><span>crecimiento medido de '+u+' contra '+p
       + ': verde sube, rojo baja, gris si se mueve menos de 1 %.</span></span>'
-      + '<span class="grp"><span class="ttl">Escala</span><span>absoluta, del máximo de toda la serie: comparable entre años.'
+      + '<span class="grp"><span class="ttl">Escala</span><span>absoluta, del máximo de toda la serie'
+      + (CONC_OK && CONC !== 'RED' ? ' ' + CONC_EN[CONC] : '') + ': comparable entre años.'
       + (MMAP.vista==='grosor' ? ' Cada calzada se desplaza a la derecha de su avance.' : ' Cada trazo es el arco que cobra el pórtico.')
       + '</span></span>';
   }
 }
 
 function medKpis(){
-  const H = SP.RED ? SP.RED.tx : C.historia;
+  const cx = ambObs('RED'), H = cx ? cx.serie.tx : (SP.RED ? SP.RED.tx : C.historia);
   const A = Object.keys(H).map(Number).sort((a,b)=>a-b);
-  const comp = A.filter(a=>(C.historia_parcial||[]).indexOf(a)<0);
+  const comp = A.filter(a=>parcDe(CONC).indexOf(a)<0);
   const u = comp[comp.length-1];
   const cagr = (x,y,n)=>(Math.pow(y/x,1/n)-1)*100;
   const mx = Math.max(...comp.map(a=>H[a]));
   const amx = comp.reduce((b,a)=>H[a]>H[b]?a:b, comp[0]);
   const K = [
     ['Años de serie', A.length, A[0]+'–'+A[A.length-1]+', mensual por pórtico', 'var(--ink)'],
-    ['Tránsito en '+u, nd(H[u]/1e6)+' M', 'transacciones de la red', 'var(--accent)'],
+    ['Tránsito en '+u, nd(H[u]/1e6)+' M', 'transacciones '+(CONC==='RED' ? 'de la red' : CONC_DEL[CONC]), 'var(--accent)'],
     ['Respecto del máximo', nd(H[u]/mx*100,1)+' %', 'el máximo fue '+amx, 'var(--ink)'],
     ['Crecimiento 8 años', cPct(cagr(H[2017],H[u],u-2017)), 'anual, 2017 a '+u, 'var(--ink)'],
-    ['Caída de 2020', cPct((H[2020]/H[2019]-1)*100), 'y recuperación en '
-      + comp.filter(a=>a>2020 && H[a]>=H[2019])[0], 'var(--ts)']];
+    ['Caída de 2020', cPct((H[2020]/H[2019]-1)*100), (function(){ const r = comp.filter(a=>a>2020 && H[a]>=H[2019])[0];
+      return r ? 'y recuperación en ' + r : 'y sin volver aún al nivel de 2019'; })(), 'var(--ts)']];
   document.getElementById('medKpis').innerHTML = K.map(k=>
     '<div class="kpi"><div class="label">'+k[0]+'</div><div class="v" style="color:'+k[3]
     + '">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
@@ -5832,6 +5956,41 @@ function medKpis(){
     + 'diagnóstico y por eso hay que declararlo:</b> medido desde 2023 el crecimiento '
     + 'sale '+cPct(cagr(H[2023],H[u],u-2023))+' anual, pero eso es rebote de la caída de '
     + cPct((H[2023]/H[2022]-1)*100)+' que tuvo 2023, no tendencia.';
+}
+
+/* LA NOTA DE LA SERIE, CALCULADA PARA EL ÁMBITO (23-09-2026). La nota de medKpis estaba redactada para el conjunto —«el corredor
+   está esencialmente plano», «la caída que tuvo 2023»— y no vale para el túnel, que cae desde 2019 y en 2023 subió. Aquí el
+   calificativo y cada frase salen de la serie de la concesión elegida; con el conjunto el texto sale igual al de antes. «Esencialmente
+   plano» = menos de medio punto al año, en valor absoluto, entre 2017 y el último año completo. El texto fijo de medKpis sigue en el
+   código sólo porque el bifurcador del tablero de la red lo busca literal para cambiarlo por el suyo; en este tablero se sobrescribe. */
+function medNotaConc(){
+  if(!CONC_OK) return;
+  const cx = ambObs('RED'), H = cx ? cx.serie.tx : (SP.RED ? SP.RED.tx : C.historia);
+  const par = parcDe(CONC), A = Object.keys(H).map(Number).sort((a,b)=>a-b).filter(a=>par.indexOf(a)<0);
+  const u = A[A.length-1];
+  const cagr = (x,y,n)=>(Math.pow(y/x,1/n)-1)*100;
+  const g17 = cagr(H[2017],H[u],u-2017), g23 = cagr(H[2023],H[u],u-2023), d23 = (H[2023]/H[2022]-1)*100;
+  const suj = CONC === 'RED' ? 'El corredor' : CONC === 'AVN' ? 'Vespucio Norte' : 'El túnel';
+  const cal = Math.abs(g17) < 0.5 ? 'está esencialmente plano desde hace ' + NUM_ES[u-2017] + ' años'
+    : (g17 > 0 ? 'crece' : 'cae') + ' en los últimos ' + NUM_ES[u-2017] + ' años';
+  let s = '<b>' + suj + ' ' + cal + '.</b> ' + nd(H[2017]/1e6) + ' millones en 2017 contra ' + nd(H[u]/1e6) + ' en ' + u + ', '
+    + cPct(g17) + ' anual. Desde 2019 —el último año pre-pandemia— son ' + cPct((H[u]/H[2019]-1)*100) + ' en ' + NUM_ES[u-2019] + ' años. ';
+  s += d23 < 0
+    ? '<b>El año base cambia el diagnóstico y por eso hay que declararlo:</b> medido desde 2023 el crecimiento sale ' + cPct(g23)
+      + ' anual, pero eso es rebote de la caída de ' + cPct(d23) + ' que tuvo 2023, no tendencia.'
+    : 'Medido desde 2023 sale ' + cPct(g23) + ' anual; aquí 2023 no fue un año de caída (' + cPct(d23) + ' contra 2022), así que no '
+      + 'hay rebote que descontar.';
+  const du = (H[u]/H[u-1]-1)*100;
+  if(du < -5) s += ' <b>El último año completo, ' + u + ', cae ' + cPct(du) + ' contra ' + (u-1) + '.</b>';
+  document.getElementById('medNota').innerHTML = s;
+}
+
+/* los selectores de ámbito siguen a la concesión: con Vespucio Norte o el túnel ofrecen sólo sus pórticos, y «toda la red» pasa a
+   ser toda esa concesión; con el conjunto, como siempre */
+function opcAmbito(el){
+  const ps = Object.keys(SP).filter(c=>c!=='RED' && enConc(c)).sort();
+  el.innerHTML = '<option value="RED">' + (CONC==='RED' ? 'Toda la red' : CONC==='AVN' ? 'Todo Vespucio Norte' : 'Todo el Túnel San Cristóbal')
+    + '</option>' + ps.map(c=>'<option value="'+c+'">'+c+'</option>').join('');
 }
 
 function medAlcance(){
@@ -5867,12 +6026,14 @@ function medAmbSel(){
     el.dataset.listo = '1';
     el.onchange = ()=>{ medAmb = el.value; pintaMapaM(); medSerieYUF(); };
   }
+  if(el && CONC_OK) opcAmbito(el);
+  if(!enConc(medAmb)) medAmb = 'RED';
   if(el) el.value = medAmb;
 }
 seg('medUnid', v=>{ medUnid = v; medSerieYUF(); });
 
 function medido(){
-  medAmbSel(); medKpis(); medSerieYUF(); medAlcance(); cmpEstacional();
+  medAmbSel(); medKpis(); medNotaConc(); medSerieYUF(); medAlcance(); cmpEstacional();
   setTimeout(()=>{ mapaM.invalidateSize(); pintaMapaM(); }, 60);
 }
 
@@ -5887,6 +6048,8 @@ function medDiaSel(){
     el.dataset.listo = '1';
     el.onchange = ()=>{ cPor = el.value; medidoDia(); };
   }
+  if(el && CONC_OK) opcAmbito(el);
+  if(!enConc(cPor)) cPor = 'RED';
   if(el) el.value = cPor;
   /* 2026 NO APARECE EN NINGUNA DE LAS TRES VISTAS, Y LA RAZON SE MIDIO.
      La idea era incluirlo en las de promedio, donde una ventana parcial deja de
@@ -5914,9 +6077,10 @@ const TIPO_CAL = {LV:'laboral', SF:'sábado', D:'domingo'};
 function medPerfilDia(){
   const a = String(medA);
   const cont = document.getElementById('medDia');
-  const fac = ((C.factor_temporada||{})[cPor]||{})[a];
+  const cx = ambObs(cPor);
+  const fac = cx ? (cx.factor_temporada||{})[a] : ((C.factor_temporada||{})[cPor]||{})[a];
   const ser = Object.keys(PERF).map(t=>{
-    const p = (PERF[t].porticos[cPor]||{}).obs || {};
+    const p = cx ? (cx.perfil[t]||{}) : ((PERF[t].porticos[cPor]||{}).obs || {});
     if(!p[a]) return null;
     let v = p[a], nota = '';
     if(medEsc !== 'tot'){
@@ -5960,7 +6124,8 @@ function medPerfilDia(){
   const UNI = {tot:'Transacciones del año', dia:'Transacciones por día',
                norm:'Transacciones por día, base temporada normal'};
   document.getElementById('medLdia').innerHTML =
-    '<span class="ttl">'+UNI[medEsc]+' · media hora · '+a+'</span>'
+    '<span class="ttl">'+UNI[medEsc]+' · media hora · '+a
+    + (CONC_OK ? ' · ' + (cPor === 'RED' ? (CONC === 'RED' ? 'toda la red' : CONC_NOM[CONC]) : cPor) : '') + '</span>'
     + ser.map(x=>chip(tok(COL[x.t]), x.nom+x.nota)).join('')
     + '<span class="grp"><span>Punta: '
     + ser.map(t=>{ const i = t.v.indexOf(Math.max(...t.v));
@@ -5979,7 +6144,26 @@ function medPerfilDia(){
       + 'la «temporada normal» con que el estudio calibra su día tipo, y con el nivel '
       + 'corregido por el factor de temporada medido en este pórtico'
       + (fac ? ' ('+nd((fac-1)*100,2)+' % sobre el año completo en '+a+')' : '')+'.'};
-  const FALTA = '<br><br><b>Por qué no está ' + C.anios[C.anios.length-1] + '.</b> '
+  /* (23-09-2026) las cuatro cifras se calculan para la concesión elegida (observado_por_concesion.py, que reproduce las del
+     conjunto); en el túnel no salen parejas y el texto lo dice en vez de afirmar la uniformidad */
+  const cob = CONC_OK ? (CONC_OBS[CONC] || {}).cobertura_2026 : null;
+  const FALTA = cob ? (()=>{
+    const v = cob.var_pct, xs = ['laboral','sábado','domingo','festivo'].map(k=>v[k]).filter(x=>x!=null);
+    const ab = Math.max(...xs) - Math.min(...xs), f = cob.hasta.split('-').map(Number);
+    const H = (ambObs('RED') || {serie:SP.RED||{tx:{}}}).serie.tx, db = (H[cob.base]/H[cob.base-1]-1)*100;
+    let s = '<br><br><b>Por qué no está ' + cob.anio + '.</b> La planilla de media hora no declara qué meses cubre en ese año, y el '
+      + 'divisor no se puede determinar. Usando el calendario de velocidades —que llega al ' + f[2] + ' de ' + MESN[f[1]-1] + '— saldría, '
+      + CONC_EN[CONC] + ', ' + cPct(v.laboral) + ' en día laboral, ' + cPct(v['sábado']) + ' en sábado, ' + cPct(v.domingo)
+      + ' en domingo y ' + cPct(v.festivo) + ' en festivo respecto de ' + cob.base + '. ';
+    s += ab <= 2.5
+      ? '<b>Esa uniformidad es la prueba de que es cobertura y no demanda:</b> el tránsito real no sube lo mismo un domingo que un día laboral. '
+      : '<b>Aquí las cifras no salen parejas</b> —' + nd(ab,1) + ' puntos entre la mayor y la menor—, así que la prueba de la uniformidad '
+        + 'no es concluyente' + (Math.abs(db) > 3 ? ': ' + cob.base + ' cambió ' + cPct(db) + ' contra ' + (cob.base-1)
+        + ', y la comparación con ese año mezcla la cobertura con ese cambio de nivel' : '') + '. El año queda fuera por la misma razón: el '
+        + 'divisor no se conoce. ';
+    return s + 'Deducir el divisor desde una tasa de crecimiento supuesta sería circular, porque el crecimiento es justamente lo que se '
+      + 'quiere medir.';
+  })() : '<br><br><b>Por qué no está ' + C.anios[C.anios.length-1] + '.</b> '
     + 'La planilla de media hora no declara qué meses cubre en ese año, y el divisor '
     + 'no se puede determinar. Usando el calendario de velocidades —que llega al 9 de '
     + 'septiembre— saldría +9,0 % en día laboral, +8,5 % en sábado, +10,4 % en domingo '
@@ -5999,7 +6183,8 @@ function medPerfilDia(){
 
 function medCatTar(){
   const a = String(medA);
-  const cat = ((OBS.categoria||{})[cPor]) || {};
+  const cx = ambObs(cPor);
+  const cat = cx ? cx.categoria : (((OBS.categoria||{})[cPor]) || {});
   const AA = Object.keys(cat).map(Number).filter(x=>x>=2015).sort((p,q)=>p-q);
   const W = anchoSvg(470), HH = 220, g = ejes(W,HH,40,38);
   const apila = (cont, ley, datos, AAx, claves, COL, NOM, uniTit) => {
@@ -6043,27 +6228,38 @@ function medCatTar(){
   };
   apila('medCat','medLcat',cat,AA,['C1','C2','C3','C4'],CATCOL,CATNOM,'% del tránsito');
 
-  const src = cPor==='RED' ? (OBS.tarifa||{}).bloques : ((OBS.tarifa_portico||{})[cPor]);
+  const src = cx ? cx.tarifa.bloques : (cPor==='RED' ? (OBS.tarifa||{}).bloques : ((OBS.tarifa_portico||{})[cPor]));
   const BA = src ? Object.keys(src).map(Number).sort((p,q)=>p-q) : [];
   apila('medTar','medLtar',src||{},BA,['TBFP','TBP','TS'],TARCOL,TARNOM,
         '% de las medias horas');
 
-  const B = (OBS.tarifa||{}).bloques || {};
+  /* (23-09-2026) la nota lee los bloques del ámbito en pantalla —concesión o pórtico—, no siempre los de la red */
+  const B = src || {};
   const ba = Object.keys(B).map(Number).sort((p,q)=>p-q);
   if(ba.length){
     const p = ba[0], u = ba[ba.length-1];
     const tot = ['TBFP','TBP','TS'].reduce((x,k)=>x+(B[p][k]||0),0);
     const sh = (y,k) => (B[y][k]||0)/['TBFP','TBP','TS']
       .reduce((x,j)=>x+(B[y][j]||0),0)*100;
+    /* (23-09-2026) el sentido de cada movimiento se mide: «siempre en el mismo sentido» sólo si las tres proporciones se mueven
+       hacia un solo lado todos los años. En el conjunto la de punta baja de 2023 a 2024 antes de subir, y en el túnel ninguna es
+       pareja: el texto anterior lo afirmaba para todas. */
+    const mueve = k => { const a = sh(p,k), b = sh(u,k);
+      return Math.abs(b-a) < 0.05 ? 'se mantiene en '+nd(b,1)+' %' : (b<a ? 'baja' : 'sube')+' de '+nd(a,1)+' % a '+nd(b,1)+' %'; };
+    const mono = k => { const v = ba.map(y=>sh(y,k)), d = v.slice(1).map((x,i)=>x-v[i]); return d.every(x=>x<=0) || d.every(x=>x>=0); };
+    const NOMT = {TBFP:'la base fuera de punta', TBP:'la de punta', TS:'la de saturación'};
+    const noMono = ['TBFP','TBP','TS'].filter(k=>!mono(k)).map(k=>NOMT[k]);
+    const cat0 = Object.keys(cat).map(Number).sort((x,y)=>x-y)[0];
     document.getElementById('medNotaTar').innerHTML =
-      '<b>Las proporciones sí se mueven, y siempre en el mismo sentido.</b> La base '
-      + 'fuera de punta baja de '+nd(sh(p,'TBFP'),1)+' % a '+nd(sh(u,'TBFP'),1)
-      + ' % entre '+p+' y '+u+', la de punta sube de '+nd(sh(p,'TBP'),1)+' % a '
-      + nd(sh(u,'TBP'),1)+' % y la de saturación de '+nd(sh(p,'TS'),1)+' % a '
-      + nd(sh(u,'TS'),1)+' %, sobre '+tot+' bloques de pórtico × media hora en día '
-      + 'laboral. <b>Esta serie no se puede extender hacia atrás:</b> la planilla de '
+      (noMono.length ? '<b>Las proporciones sí se mueven, pero no todas en un solo sentido:</b> ' + yLista(noMono)
+          + (noMono.length > 1 ? ' cambian' : ' cambia') + ' de dirección entre un año y otro. '
+        : '<b>Las proporciones sí se mueven, y siempre en el mismo sentido.</b> ')
+      + 'Entre '+p+' y '+u+' la base fuera de punta '+mueve('TBFP')+', la de punta '+mueve('TBP')+' y la de saturación '+mueve('TS')
+      + ', sobre '+tot+' bloques de pórtico × media hora en día laboral'
+      + (CONC_OK ? ' (' + (cPor === 'RED' ? (CONC === 'RED' ? 'toda la red' : CONC_NOM[CONC]) : cPor) + ')' : '') + '. '
+      + '<b>Esta serie no se puede extender hacia atrás:</b> la planilla de '
       + 'tarifa activada empieza en '+p+' y es el único registro de qué tarifa rigió '
-      + 'en cada media hora. La composición por categoría, en cambio, sí llega a 2006.';
+      + 'en cada media hora. La composición por categoría, en cambio, sí llega a '+(cat0 || 2006)+'.';
   }
 }
 
@@ -8846,6 +9042,34 @@ function boOye(){
   };
 }
 
+/* ═══════════════════════════════ SELECTOR «CONCESIÓN» DE LAS CUATRO VISTAS (23-09-2026) ═══
+   Un solo estado (CONC) y un selector por vista, con el mismo estilo y orden que el de «Estudio V&R 2022». Cambiar la concesión
+   repinta la vista abierta; las demás leen el estado al abrirse. */
+function pintaConcSel(){
+  document.querySelectorAll('.concRow').forEach(r=>{ r.hidden = !CONC_OK; });
+  if(!CONC_OK) return;
+  document.querySelectorAll('.concSel').forEach(s=>{
+    s.innerHTML = ['RED','AVN','TSC'].map(k=>'<button type="button" data-v="'+k+'"'+(k===CONC ? ' class="on"' : '')
+      + ' aria-pressed="'+(k===CONC)+'">'+CONC_NOM[k]+'</button>').join('');
+    s.querySelectorAll('button').forEach(b=>{ b.onclick = ()=>ponConc(b.dataset.v); });
+  });
+}
+function ponConc(v){
+  if(!CONC_OK || !CONC_NOM[v] || v === CONC) return;
+  CONC = v;
+  if(!enConc(medAmb)) medAmb = 'RED';
+  if(!enConc(cPor)) cPor = 'RED';
+  if(sel && !enConc(sel)) sel = null;
+  Object.keys(_maxG).forEach(k=>{ _maxG[k] = null; });
+  encM = 0;                                   /* el mapa de la serie se reencuadra en su próximo pintado */
+  pintaConcSel();
+  if(seccion === 'general'){ pintaEstVer(); sel ? detalle(sel) : vacia(); encuadra(true); pinta(); }
+  else { yaEncuadro = false;                  /* el mapa del estudio se reencuadra al volver a él */
+    if(seccion === 'tendencial'){ pintaEstVer(); tendencial(); }
+    if(seccion === 'medido') medido();
+    if(seccion === 'medidoDia') medidoDia(); }
+}
+
 const GRUPOS = {
   concesionaria: [
     {v:'concesionaria', t:'Proyecciones de la concesionaria', s:'estimación interna y estudio 2026'}],
@@ -8895,6 +9119,7 @@ function verSeccion(v){
   /* Al mostrarse, el mapa general se remide, recupera la vista si la perdió y se
      repinta: los trazos dibujados mientras estaba oculto salieron sin separación
      por sentido, porque no había píxeles con qué calcularla. */
+  if(v==='general' || v==='tendencial' || v==='medido' || v==='medidoDia') pintaConcSel();
   usaEstudio(v==='general' || v==='tendencial' ? estSel : '2023');
   if(v==='general') sincronizaCortes();
   if(v==='general' || v==='tendencial') pintaEstVer();
@@ -8985,7 +9210,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 46;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 47;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
