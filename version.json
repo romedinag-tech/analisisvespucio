@@ -1,8 +1,8 @@
 {
- "version": 48,
- "fecha": "2026-09-24T18:37:08",
- "bytes": 15161825,
- "sha256": "6d1ed601d43e1f7f83378f10e4813e2ca0eb68d2e6db0fe51b0c301ed73958fa",
- "sha256_origen": "84784389cec18c56c3a49624d91615f788f2a3f72d26b0cd9e4ca79c7e4c84f7",
+ "version": 49,
+ "fecha": "2026-09-24T20:18:06",
+ "bytes": 14731057,
+ "sha256": "5349791f085fd4f3547d8fac8c60917b5fb62d933c8ec073e35dfaf2abcb895d",
+ "sha256_origen": "8761c6bdf7ecafac01f56099ae3e98162cec7baa738c33a4a0f7476b79f9aef5",
  "origen": "Tablero-porticos-AVN-TSC.html"
 }
