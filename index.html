@@ -7366,7 +7366,7 @@ function concesionaria(){
   const REF = notaC('—', 'Es la referencia de esta fila: el cálculo pregunta qué necesitaría cada proyección si lo demás fuera como en V&R.');
   const SUP = [
     ['Partida 2026', 'millones de transacciones', c=>nd(c.p26)],
-    ['Contra lo medido en 2025', nd(h25)+' M', c=>cPct((c.p26/h25-1)*100)],
+    ['Crecimiento 2025 → 2026', 'partida 2026 sobre lo medido en 2025 ('+nd(h25)+' M)', c=>cPct((c.p26/h25-1)*100)],
     ['Tránsito 2037', 'millones de transacciones', c=>'<b>'+nd(c.p37)+'</b>'],
     ['Crecimiento anual 2026–2037', 'medido sobre la serie', c=>cPct((Math.pow(c.p37/c.p26, 1/11)-1)*100)],
     ['Crecimiento del PIB', 'supuesto, tasa anual equivalente', {
@@ -8370,7 +8370,7 @@ function calendario(){
    del esquema anterior se retiraron con el motor nuevo del simulador (T5, 22-09-2026). */
 function econEscenario(){
   /* crecimiento propio central 0 % (modelo mensual 2022–2026) y techo +1 % anual; el piso anterior usaba el −0,4 % retirado el 13-09-2026 */
-  /* TRES ESCENARIOS CON BANDA ECONOMÉTRICA (RM, 15-09-2026). Central = descuentos del estudio; pesimista = tasas de Cristian
+  /* TRES ESCENARIOS CON BANDA ECONOMÉTRICA (RM, 15-09-2026). Central = descuentos del estudio; pesimista = tasas de la modelación de red de V&R
      (punto medio); optimista = vías en cero. La banda de cada uno es el mismo escenario con las tres elasticidades en los bordes de
      su IC 95 % (escenario_rm_2037.py, banda_elasticidad). */
   /* ESQUEMA ACORDADO (RM, 16-09-2026). Cuatro dimensiones con rango —producto, elasticidad, punto de partida y efecto de las vías
@@ -8688,8 +8688,8 @@ function e22Metodo(){
   const U = H.filter(r=>r.medida==='uf');
   const f = E22.fuente;
   document.getElementById('e22Metodo').innerHTML =
-      '<p><b>De dónde sale cada serie.</b> Las proyecciones son las del paquete del estudio V&amp;R 2022 que entregó Cristian '
-    + 'Henríquez (' + Object.keys(f.archivos).map(k=>'«'+k+'»').join(' y ') + '), tomadas literales. El Estudio 2021 y el '
+      '<p><b>De dónde sale cada serie.</b> Las proyecciones son las del paquete del estudio V&amp;R 2022 ('
+    + '' + Object.keys(f.archivos).map(k=>'«'+k+'»').join(' y ') + '), tomadas literales. El Estudio 2021 y el '
     + 'Estudio 2022 salen de las hojas QQ y UF del primer libro; las cinco sensibilidades, de las hojas Transacciones e '
     + 'Ingresos del segundo, con la definición de su hoja Resumen. Lo observado es la serie de las planillas de la '
     + 'concesionaria que usa el resto del tablero: Túnel San Cristóbal son los pórticos P101 y P102, y Vespucio Norte el resto. '
@@ -9751,7 +9751,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 50;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 51;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
