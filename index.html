@@ -2097,7 +2097,7 @@ body.oyeAbierto{padding-bottom:86px}
   </div>
 
   <div class="card">
-    <h2>De dónde proviene el crecimiento del estudio entre 2022 y 2026</h2>
+    <h2>Descomposición del crecimiento del estudio 2023 entre 2022 y 2026</h2>
     <p class="desc">El estudio 2023 acierta 2022 y hace crecer mucho la demanda hasta 2026: ese nivel explica la mayor parte de su distancia
       con el escenario V&R en 2037. La descomposición es contable, exacta y sin regresión, sobre las planillas del estudio: separa lo que el
       modelo hace crecer con el producto —la regla con elasticidad 1 que aplica donde no asigna, visible en el período nocturno—, el
@@ -7466,7 +7466,7 @@ function concesionaria(){
     + 'series de cada proyección y la de V&R, sin suponer nada sobre cómo se construyó cada una. El punto de partida se valoriza llevando cada proyección a la '
     + 'partida de V&R con su propio crecimiento; el resto es lo que queda. <b>En el estudio de 2023 ese resto se abre</b> con lo que Diadro declaró —el '
     + 'efecto de cada proyecto y sus sendas de producto—: los proyectos lo reducen en '+nd(ELA.brecha_declarada.red.piezas.proyectos)+' M, el puente '
-    + 'Lo Saldes en '+nd(ELA.brecha_declarada.red.piezas.lo_saldes)+' M y el crecimiento propio del modelo agrega '
+    + 'Lo Saldes en '+nd(ELA.brecha_declarada.red.piezas.lo_saldes)+' M y el ritmo de crecimiento 2026–2037 agrega '
     + nd(-ELA.brecha_declarada.red.piezas.crecimiento_del_modelo)+' M (vista «Escenario V&R»). En Diadro 2026 y la concesionaria no se abre, porque '
     + 'esas fuentes no declaran sus supuestos.';
   const lecD = ([k]) => { const d = DP[k];
@@ -8555,7 +8555,7 @@ function econEscenario(){
   const i26 = ANIOS.indexOf(2026), p26e = S('tx', i26), p26v = V28.partida_2026.central_M*1e6;
   const BDr = ELA.brecha_declarada.red.piezas, gapM = (s37 - c37)/1e6, partM = -BDr.partida;
   const piezas = [['Punto de partida de 2026', partM], ['Proyectos viales que compiten', -BDr.proyectos],
-                  ['Puente Lo Saldes (túnel)', -BDr.lo_saldes], ['Crecimiento propio de cada modelo', -BDr.crecimiento_del_modelo]];
+                  ['Puente Lo Saldes (túnel)', -BDr.lo_saldes], ['Ritmo de crecimiento 2026–2037', -BDr.crecimiento_del_modelo]];
   const W2 = anchoSvg(470, 330), ang2 = W2 < 440, H2 = ang2 ? 334 : 320, ml2 = ang2 ? 140 : 170,
         top2 = ang2 ? 44 : 30, iw2 = W2-ml2-60, rh = 34;
   const mxp = Math.max(...piezas.map(p=>Math.abs(p[1])), gapM);
@@ -8576,8 +8576,8 @@ function econEscenario(){
     + nd(partM/gapM*100,0)+' %</b> de esa distancia: el estudio arranca 2026 en '+nd(p26e/1e6)+' M y V&R en '+nd(p26v/1e6)
     + ' M, y llevar la proyección del estudio a esa partida, con su mismo crecimiento, ya la baja '+nd(partM)+' M. Los proyectos viales '
     + 'van en sentido contrario: los escenarios de Diadro, en el cálculo de V&R, les asignan un efecto mayor que el de V&R, y cambiar ese por el de V&R sube el 2037 en '
-    + nd(BDr.proyectos)+' M. La recuperación del puente Lo Saldes suma '+nd(BDr.lo_saldes)+' M en el túnel, y el crecimiento propio de cada '
-    + 'modelo agrega '+nd(-BDr.crecimiento_del_modelo)+' M. La pieza de proyectos supone, como hipótesis, que la proyección del estudio contiene ese efecto, lo que Diadro no declara. Las piezas se miden con lo que el estudio y Diadro entregan, sin leer sus supuestos con una regresión; lo que se '
+    + nd(BDr.proyectos)+' M. La recuperación del puente Lo Saldes suma '+nd(BDr.lo_saldes)+' M en el túnel, y el ritmo de crecimiento 2026–2037 '
+    + 'agrega '+nd(-BDr.crecimiento_del_modelo)+' M. La pieza de proyectos supone, como hipótesis, que la proyección del estudio contiene ese efecto, lo que Diadro no declara. Las piezas se miden con lo que el estudio y Diadro entregan, sin leer sus supuestos con una regresión; lo que se '
     + 'atribuye a cada una depende del orden en que se aplican, y el total no.</span></span>';
 
   /* CÓMO SE FORMA LA DIFERENCIA CON EL ESTUDIO, AÑO A AÑO. Barras: lo que cada año agrega a la brecha, en puntos de
@@ -8638,7 +8638,7 @@ function econEscenario(){
     + nd((s37-c37)/1e6)+' millones bajo la proyección del estudio, que queda '+cPct((s37/c37-1)*100)+' sobre V&R. De esa distancia, '
     + nd(partM/gapM*100,0)+' % ya existe en el punto de partida de 2026 ('+nd(partM,1)+' M): el estudio acierta 2022, y esa distancia es crecimiento que proyectó entre 2022 y 2026, en parte porque dio por terminadas en '
     + '2025 las cuartas pistas del enlace, que siguieron en obra hasta junio de 2026. El resto, '
-    + nd(gapM-partM,1)+' M, es el saldo de las otras tres piezas: proyectos, Lo Saldes y crecimiento propio. <b>Cómo se arma cada cosa.</b> '
+    + nd(gapM-partM,1)+' M, es el saldo de las otras tres piezas: proyectos, Lo Saldes y ritmo de crecimiento 2026–2037. <b>Cómo se arma cada cosa.</b> '
     + '<b>La línea</b> usa el valor medio de las cinco dimensiones: producto base, elasticidad de referencia, partida de '
     + nd(V28.partida_2026.central_M)+' M, punto medio de las tasas de efecto de las vías competidoras y, en el túnel, la pérdida por Lo Saldes en su valor central. <b>Sus cotas</b> ('+nd(V.inf[2037]/1e6)+' a '
     + nd(V.sup[2037]/1e6)+' M) salen sólo de mover ese efecto entre el mínimo y el máximo de las tasas. <b>La banda del Montecarlo</b> '
@@ -10389,7 +10389,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 63;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 64;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
