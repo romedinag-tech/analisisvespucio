@@ -3466,12 +3466,12 @@ const CAL = {
     "fuente": "informe Diadro, Tabla 6.4 (línea 1296 del destilado)"
    },
    "real": {
-    "ini": 2026.0,
+    "ini": 2026.4961187214612,
     "fin": 2027.0,
-    "texto": "2026: configuración definitiva; conexiones nuevas entre febrero y octubre de 2025",
+    "texto": "30-06-2026: todas las conexiones operativas; conexiones nuevas entre febrero y octubre de 2025",
     "fuente_texto": "2026"
    },
-   "desfase_anios": 1.0,
+   "desfase_anios": 1.5,
    "evento_estudio_red": null,
    "evento_nombre": null
   },
@@ -3648,9 +3648,10 @@ const CAL = {
    },
    {
     "fase": "2 – Restricción severa",
-    "ini": "2023-01-01",
+    "ini": "2023-01-16",
     "fin": "2023-10-31",
-    "estado": "AVN 3→2 pistas + cambios de conectividad"
+    "estado": "AVN 3→2 pistas + cambios de conectividad",
+    "correccion": "ini: 2023-01-01 → 2023-01-16 (T48, HALLAZGOS §161)"
    },
    {
     "fase": "3 – Obras con capacidad parcialmente recuperada",
@@ -3661,14 +3662,16 @@ const CAL = {
    {
     "fase": "4 – Aperturas progresivas",
     "ini": "2025-01-01",
-    "fin": "2025-10-31",
-    "estado": "🟢 Entrada sucesiva de nuevos ramales"
+    "fin": "2026-06-30",
+    "estado": "🟢 Entrada sucesiva de nuevos ramales",
+    "correccion": "fin: 2025-10-31 → 2026-06-30 (T48, HALLAZGOS §161)"
    },
    {
     "fase": "5 – Nuevo régimen",
-    "ini": "2025-11-01",
+    "ini": "2026-07-01",
     "fin": "2026-12-31",
-    "estado": "Enlace prácticamente/totalmente operativo"
+    "estado": "Enlace prácticamente/totalmente operativo",
+    "correccion": "ini: 2025-11-01 → 2026-07-01 (T48, HALLAZGOS §161)"
    }
   ],
   "hitos": [
@@ -3691,6 +3694,10 @@ const CAL = {
    {
     "fecha": "2025-10-27",
     "texto": "nuevos accesos"
+   },
+   {
+    "fecha": "2026-06-30",
+    "texto": "todas las conexiones operativas"
    }
   ],
   "dd": {
@@ -4194,6 +4201,12 @@ const CAL = {
      -9.63
     ]
    ]
+  },
+  "restriccion": {
+   "ini": "2023-01-16",
+   "fin": "2026-06-30",
+   "inicio_proyecto": "2022-03-01",
+   "fuente": "DGC: trabajos de ampliación desde el 16-01-2023, dos pistas por sentido; Transporte Informa, 30-06-2026: todas las conexiones operativas; MOP, 12-12-2023: el proyecto se inició en marzo de 2022 (T48, HALLAZGOS §161)"
   }
  },
  "meta": {
@@ -4229,11 +4242,14 @@ function hitosLista(modo){
       add(o.ini, o.fin, 'Obras del enlace Ruta 68 y cuartas pistas', 'obra', o.ini+'–'+o.fin, 'estudio, Tabla 6.4'));
     if(P.enlace) add(P.enlace.estudio.anio, null, 'Cuartas pistas en servicio', 'obra', String(P.enlace.estudio.anio), 'estudio, Tabla 6.4');
   } else {
-    const fa = (ob.fases||[]).filter(x=>x.ini || x.fin);
-    const i0 = fa.find(x=>x.ini), i1 = fa.filter(x=>/Aperturas/.test(x.fase))[0];
-    if(i0 && i1) add(hitoAnio(i0.ini), hitoAnio(i1.fin), 'Obras del enlace Ruta 68 y cuartas pistas', 'obra',
-      hitoMes(hitoAnio(i0.ini))+' a '+hitoMes(hitoAnio(i1.fin)), 'calendario de obras, fases 1 a 4');
-    if(P.enlace) add(P.enlace.real.ini, null, 'Cuartas pistas: configuración definitiva', 'obra', P.enlace.real.fuente_texto, 'calendario de obras');
+    /* T48 (RM, 27-09-2026): la obra se dibuja con la restricción efectiva sobre AVN (16-01-2023 a 30-06-2026); marzo de 2022 fue el
+       inicio del proyecto, sin restricción sobre la autopista (HALLAZGOS §161) */
+    const rs = ob.restriccion;
+    if(rs){ add(hitoAnio(rs.inicio_proyecto), null, 'Enlace Ruta 68: inicio del proyecto, sin restricción en AVN', 'obra',
+      hitoMes(hitoAnio(rs.inicio_proyecto)), 'MOP, 12-12-2023: «el proyecto se inició en marzo de 2022»');
+      add(hitoAnio(rs.ini), hitoAnio(rs.fin), 'Obras del enlace Ruta 68 y cuartas pistas', 'obra',
+      hitoMes(hitoAnio(rs.ini))+' a '+hitoMes(hitoAnio(rs.fin)), 'restricción en AVN desde el 16-01-2023 (DGC); todas las conexiones operativas el 30-06-2026 (MOP)'); }
+    if(P.enlace) add(P.enlace.real.ini, null, 'Cuartas pistas: configuración definitiva', 'obra', hitoFecha(P.enlace), 'calendario de obras y MOP');
   }
   if(modo !== 'estudio' && ELA.motor_vyr && ELA.motor_vyr.lo_saldes)
     add(ELA.motor_vyr.lo_saldes.ini, null, 'Puente Lo Saldes: vuelve a 3 pistas por sentido', 'obra', 'mayo de 2027',
@@ -8348,8 +8364,9 @@ function calendario(){
       + '</b></td><td style="white-space:normal">'+efe(p)+'</td></tr>').join('') + '</tbody>';
   document.getElementById('calNota').innerHTML =
     '<b>La obra del enlace duró más y terminó más gradualmente de lo que supuso el estudio.</b> El estudio la puso en 2023 y 2024 y dio el cuarto '
-    + 'carril en servicio en 2025. El calendario vigente la empieza en marzo de 2022, abre las conexiones nuevas entre febrero y octubre de 2025 '
-    + 'y llega a la configuración definitiva en 2026. La sección 5 recuperó su nivel con las conexiones de 2025; la 6 no, y en julio de 2026 '
+    + 'carril en servicio en 2025. El proyecto se inició en marzo de 2022, pero la restricción sobre AVN empezó el 16 de enero de 2023; las conexiones '
+    + 'nuevas se abrieron entre febrero y octubre de 2025, cuando seguían en obra la Salida 20-B y la cuarta pista entre Los Mares y Claudio '
+    + 'Arrau, y todas quedaron operativas el 30 de junio de 2026. La sección 5 recuperó su nivel con las conexiones de 2025; la 6 no, y en julio de 2026 '
     + 'sigue '+sgnE(ult6[1],1)+' puntos bajo su nivel previo. Esa interferencia es una de las explicaciones de que el estudio se exceda entre '
     + '2022 y 2026: restó en AVN 11,9 de los 34,4 millones de diferencia de 2025 y 4,6 de los 56,9 de 2026 (informe final, capítulo III.2). '
     + '<b>En las vías competidoras</b>, la conexión Ruta 68–Ruta 78, a la que el estudio '
@@ -9674,7 +9691,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 61;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 62;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
