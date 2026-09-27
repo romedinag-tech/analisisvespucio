@@ -2096,6 +2096,23 @@ body.oyeAbierto{padding-bottom:86px}
     <div class="aviso" id="cmpBase"></div>
   </div>
 
+  <div class="card">
+    <h2>De dónde proviene el crecimiento del estudio entre 2022 y 2026</h2>
+    <p class="desc">El estudio 2023 acierta 2022 y hace crecer mucho la demanda hasta 2026: ese nivel explica la mayor parte de su distancia
+      con el escenario V&R en 2037. La descomposición es contable, exacta y sin regresión, sobre las planillas del estudio: separa lo que el
+      modelo hace crecer con el producto —la regla con elasticidad 1 que aplica donde no asigna, visible en el período nocturno—, el
+      calendario y lo que los períodos que asigna del día laboral crecen por sobre esa regla.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:18px">
+      <div class="chartbox" style="flex:1 1 440px;min-width:0"><div class="t">Conjunto AVN + túnel: componentes del crecimiento del estudio, por año</div>
+        <div id="cmpOrigA"></div><div class="legend" id="cmpOrigLA"></div></div>
+      <div class="chartbox" style="flex:1 1 380px;min-width:0"><div class="t">Crecimiento 2023–2025 del día laboral por período: estudio y observado</div>
+        <div class="ctrl" style="margin:4px 0"><span class="seg" id="cmpOrigC"><button data-v="AVN" class="on">Vespucio Norte</button>
+          <button data-v="TSC">Túnel</button></span></div>
+        <div id="cmpOrigB"></div><div class="legend" id="cmpOrigLB"></div></div>
+    </div>
+    <div class="aviso" id="cmpOrigNota"></div>
+  </div>
+
   <div class="card" id="cardMapaC">
     <h2>Dónde se aparta la proyección, pórtico por pórtico</h2>
     <p class="desc">El <b>color</b> mide cuánto se apartó la proyección de lo medido,
@@ -8636,8 +8653,689 @@ function econEscenario(){
     + 'restricción de capacidad, ni efecto de precio.';
 }
 
+/* DE DÓNDE PROVIENE EL CRECIMIENTO DEL ESTUDIO ENTRE 2022 Y 2026 (T51, RM 27-09-2026). Mismos datos del capítulo III.4 del informe final y
+   de la Figura 5 del ejecutivo: crecimiento_2022_2026.json. Variación logarítmica × 100, aditiva. */
+const CREC22 = {
+ "que_es": "Descomposición contable del crecimiento del estudio 2023 entre 2022 y 2026 (T51); log × 100, aditiva y exacta",
+ "concesiones": {
+  "AVN": {
+   "2022_2026": {
+    "nivel_M": [
+     304.840143,
+     374.0846156929755
+    ],
+    "total": 20.46944990969869,
+    "regla_producto": 7.365122731184298,
+    "calendario": 0.10725632844194893,
+    "fuera_de_punta": 7.806310759152963,
+    "puntas": 3.6637531729207513,
+    "transiciones": 1.36553614740654,
+    "punta_manana": 1.5986462030284136,
+    "punta_tarde": 2.0651069698923377,
+    "fin_de_semana": 0.16147077059216183,
+    "crec_periodo_laboral": {
+     "AM": 22.471760507336054,
+     "IP": 27.796667615688392,
+     "PM": 26.286838468770853,
+     "NT1": 24.801245137765324,
+     "NT2": 27.27936785566901,
+     "NT": 7.365122731184298
+    },
+    "peso_periodo_laboral": {
+     "AM": 10.582409049034936,
+     "IP": 38.20714881464253,
+     "PM": 10.913951982642669,
+     "NT1": 2.9843166880013605,
+     "NT2": 4.244132938021508,
+     "NT": 11.580154150727559
+    },
+    "exceso_asignados": 12.835600079480255
+   },
+   "anual": {
+    "2023": {
+     "nivel_M": [
+      304.840143,
+      294.70402367654526
+     ],
+     "total": -3.3815974779518463,
+     "regla_producto": -0.3450458530626125,
+     "calendario": -0.29835281100804484,
+     "fuera_de_punta": -1.9847224663331973,
+     "puntas": -0.4766345859920333,
+     "transiciones": -0.3180294649934952,
+     "punta_manana": -0.05147569149459349,
+     "punta_tarde": -0.4251588944974398,
+     "fin_de_semana": 0.04118770343753117,
+     "crec_periodo_laboral": {
+      "AM": -0.8343657860985706,
+      "IP": -5.8487920459667615,
+      "PM": -4.411827671510634,
+      "NT1": -4.914289596180502,
+      "NT2": -4.974869846502733,
+      "NT": -0.3450458530626125
+     },
+     "peso_periodo_laboral": {
+      "AM": 10.519843566399482,
+      "IP": 36.06130073534374,
+      "PM": 10.454430886083047,
+      "NT1": 2.8729764199611827,
+      "NT2": 4.033763917327668,
+      "NT": 12.437309783609182
+     },
+     "exceso_asignados": -2.7793865173187258
+    },
+    "2024": {
+     "nivel_M": [
+      294.70402367654526,
+      325.4153339039158
+     ],
+     "total": 9.913077380281827,
+     "regla_producto": 1.6962355499573503,
+     "calendario": 0.4442967211303647,
+     "fuera_de_punta": 5.259589859514548,
+     "puntas": 1.8155309932018202,
+     "transiciones": 0.6682721520469962,
+     "punta_manana": 0.7958075091781335,
+     "punta_tarde": 1.0197234840236868,
+     "fin_de_semana": 0.02915210443075542,
+     "crec_periodo_laboral": {
+      "AM": 9.205092870993955,
+      "IP": 16.04010897949009,
+      "PM": 11.443030210755047,
+      "NT1": 10.985774450170135,
+      "NT2": 11.68267719941144,
+      "NT": 1.6962355499573503
+     },
+     "peso_periodo_laboral": {
+      "AM": 10.59825050808492,
+      "IP": 36.667849067083424,
+      "PM": 10.462141858031414,
+      "NT1": 2.8612793195133603,
+      "NT2": 4.030189238016127,
+      "NT": 12.100551387479248
+     },
+     "exceso_asignados": 7.743393004763364
+    },
+    "2025": {
+     "nivel_M": [
+      325.4153339039158,
+      342.4818493464164
+     ],
+     "total": 5.111634476936286,
+     "regla_producto": 3.2540994674434334,
+     "calendario": -0.20687283600580977,
+     "fuera_de_punta": 0.8382785073012355,
+     "puntas": 0.8233001365889416,
+     "transiciones": 0.34928356743607714,
+     "punta_manana": 0.19618251147871008,
+     "punta_tarde": 0.6271176251102315,
+     "fin_de_semana": 0.05354563417243162,
+     "crec_periodo_laboral": {
+      "AM": 5.104934834844192,
+      "IP": 5.459660108622843,
+      "PM": 9.06434261758887,
+      "NT1": 5.7435638987128055,
+      "NT2": 9.885185343743496,
+      "NT": 3.2540994674434334
+     },
+     "peso_periodo_laboral": {
+      "AM": 10.599673797795486,
+      "IP": 38.00750211306688,
+      "PM": 10.793311207544455,
+      "NT1": 2.8964523747153854,
+      "NT2": 4.179970233676673,
+      "NT": 11.546385716112104
+     },
+     "exceso_asignados": 2.010862211326254
+    },
+    "2026": {
+     "nivel_M": [
+      342.4818493464164,
+      374.0846156929755
+     ],
+     "total": 8.826335530432418,
+     "regla_producto": 2.759833566846126,
+     "calendario": 0.23421643414838605,
+     "fuera_de_punta": 3.648767435276015,
+     "puntas": 1.491439977438298,
+     "transiciones": 0.6485888108515733,
+     "punta_manana": 0.6643266441732585,
+     "punta_tarde": 0.8271133332650396,
+     "fin_de_semana": 0.04348930587198888,
+     "crec_periodo_laboral": {
+      "AM": 8.996098587596462,
+      "IP": 12.145690573542225,
+      "PM": 10.191293311937585,
+      "NT1": 12.986196385062879,
+      "NT2": 10.686375159016823,
+      "NT": 2.759833566846126
+     },
+     "peso_periodo_laboral": {
+      "AM": 10.652636505389054,
+      "IP": 38.875165396967965,
+      "PM": 11.129890514597145,
+      "NT1": 2.979368644997072,
+      "NT2": 4.338686166255322,
+      "NT": 11.145306011648385
+     },
+     "exceso_asignados": 5.788796223565886
+    }
+   }
+  },
+  "TSC": {
+   "2022_2026": {
+    "nivel_M": [
+     20.885741,
+     23.22693057775918
+    ],
+    "total": 10.62457289001467,
+    "regla_producto": 7.294744292639215,
+    "calendario": 0.11231916050774811,
+    "fuera_de_punta": -2.5063762277598314,
+    "puntas": 4.730289563512235,
+    "transiciones": 0.8287916828511557,
+    "punta_manana": 3.9794953510345725,
+    "punta_tarde": 0.7507942124776629,
+    "fin_de_semana": 0.1648044182641508,
+    "crec_periodo_laboral": {
+     "AM": 37.36109116102983,
+     "IP": 0.6721720890293964,
+     "PM": 13.536745632115533,
+     "NT1": 37.57935928253886,
+     "NT2": 12.928433415986163,
+     "NT": 7.294744292639215
+    },
+    "peso_periodo_laboral": {
+     "AM": 13.235712900054047,
+     "IP": 37.84596302919372,
+     "PM": 12.028100790837893,
+     "NT1": 1.8453427351684049,
+     "NT2": 4.79147383448366,
+     "NT": 9.360197170926702
+    },
+    "exceso_asignados": 3.052705018603559
+   },
+   "anual": {
+    "2023": {
+     "nivel_M": [
+      20.885741,
+      20.78102321668845
+     ],
+     "total": -0.5026452413889844,
+     "regla_producto": -0.3417055922681569,
+     "calendario": -0.37532891297485205,
+     "fuera_de_punta": -0.8448802724833799,
+     "puntas": 0.9011986203362939,
+     "transiciones": 0.12086089938357394,
+     "punta_manana": 0.8667334456868742,
+     "punta_tarde": 0.03446517464941975,
+     "fin_de_semana": 0.03721001661752564,
+     "crec_periodo_laboral": {
+      "AM": 6.957074457625019,
+      "IP": -2.507697029773552,
+      "PM": -0.04893137481244103,
+      "NT1": 7.099336929482766,
+      "NT2": -0.39033937828349696,
+      "NT": -0.3417055922681569
+     },
+     "peso_periodo_laboral": {
+      "AM": 11.875045415289085,
+      "IP": 39.006630305816955,
+      "PM": 11.771929560236243,
+      "NT1": 1.6549378800992998,
+      "NT2": 4.6957725694189625,
+      "NT": 9.437553572960502
+     },
+     "exceso_asignados": 0.17717924723648795
+    },
+    "2024": {
+     "nivel_M": [
+      20.78102321668845,
+      20.776561094519106
+     ],
+     "total": -0.02147440598605487,
+     "regla_producto": 1.679987358481814,
+     "calendario": 0.46793424821173424,
+     "fuera_de_punta": -2.983702805833505,
+     "puntas": 0.6170947911104736,
+     "transiciones": 0.16776513325742892,
+     "punta_manana": 0.34578627343046836,
+     "punta_tarde": 0.2713085176800053,
+     "fin_de_semana": 0.029446868786006584,
+     "crec_periodo_laboral": {
+      "AM": 4.4289564951341,
+      "IP": -6.307774896673222,
+      "PM": 3.938542095611984,
+      "NT1": 4.694851902176353,
+      "NT2": 4.078318539956434,
+      "NT": 1.679987358481814
+     },
+     "peso_periodo_laboral": {
+      "AM": 12.57876157356824,
+      "IP": 37.3534252838825,
+      "PM": 12.012483612628452,
+      "NT1": 1.7565986197880807,
+      "NT2": 4.786914550467615,
+      "NT": 9.507662563537028
+     },
+     "exceso_asignados": -2.1988428814656023
+    },
+    "2025": {
+     "nivel_M": [
+      20.776561094519106,
+      21.646972219986758
+     ],
+     "total": 4.104011254201483,
+     "regla_producto": 3.2230979497853043,
+     "calendario": -0.2096742727242262,
+     "fuera_de_punta": 0.02938908828833522,
+     "puntas": 0.7863656336281792,
+     "transiciones": 0.21775448024019145,
+     "punta_manana": 0.3546135374012277,
+     "punta_tarde": 0.4317520962269516,
+     "fin_de_semana": 0.05707837498370806,
+     "crec_periodo_laboral": {
+      "AM": 5.944625642003338,
+      "IP": 3.304307706911116,
+      "PM": 6.688328387988378,
+      "NT1": 6.037110364265911,
+      "NT2": 6.575284645539871,
+      "NT": 3.2230979497853043
+     },
+     "peso_periodo_laboral": {
+      "AM": 13.029944116137917,
+      "IP": 36.189109940084116,
+      "PM": 12.459549340991028,
+      "NT1": 1.822849706493596,
+      "NT2": 4.965691899348968,
+      "NT": 9.583701814693589
+     },
+     "exceso_asignados": 1.0335092021567058
+    },
+    "2026": {
+     "nivel_M": [
+      21.646972219986758,
+      23.22693057775918
+     ],
+     "total": 7.044681283188238,
+     "regla_producto": 2.7333645766402475,
+     "calendario": 0.22109249635219988,
+     "fuera_de_punta": 1.243552107098395,
+     "puntas": 2.4676444263857933,
+     "transiciones": 0.3320284355856083,
+     "punta_manana": 2.4396441355689182,
+     "punta_tarde": 0.028000290816874978,
+     "fin_de_semana": 0.04699924112599642,
+     "crec_periodo_laboral": {
+      "AM": 20.030434566267378,
+      "IP": 6.183336308565066,
+      "PM": 2.95880652332759,
+      "NT1": 19.74806008661384,
+      "NT2": 2.6651696087733465,
+      "NT": 2.7333645766402475
+     },
+     "peso_periodo_laboral": {
+      "AM": 14.104378007558202,
+      "IP": 36.045283953807605,
+      "PM": 12.42017788983502,
+      "NT1": 1.9712210890915225,
+      "NT2": 4.939998737552931,
+      "NT": 9.379032383418958
+     },
+     "exceso_asignados": 4.043224969069797
+    }
+   }
+  },
+  "red": {
+   "2022_2026": {
+    "nivel_M": [
+     325.725884,
+     397.31154627073454
+    ],
+    "total": 19.86645432114256,
+    "regla_producto": 7.361597868067357,
+    "calendario": 0.10762733942660553,
+    "fuera_de_punta": 7.175309027196191,
+    "puntas": 3.7279558753992497,
+    "transiciones": 1.3324673957057163,
+    "punta_manana": 1.7436028486054052,
+    "punta_tarde": 1.9843530267938447,
+    "fin_de_semana": 0.1614968153474481,
+    "crec_periodo_laboral": {
+     "AM": 23.5918739729853,
+     "IP": 26.14745696415942,
+     "PM": 25.431669582642748,
+     "NT1": 25.29522261770299,
+     "NT2": 26.29475649748678,
+     "NT": 7.361597868067357
+    },
+    "peso_periodo_laboral": {
+     "AM": 10.742903184974624,
+     "IP": 38.195266931863856,
+     "PM": 10.981434153320254,
+     "NT1": 2.914091358769243,
+     "NT2": 4.277496441106595,
+     "NT": 11.441822293791457
+    },
+    "exceso_asignados": 12.235732298301157
+   },
+   "anual": {
+    "2023": {
+     "nivel_M": [
+      325.725884,
+      315.48504689323363
+     ],
+     "total": -3.1944895123165007,
+     "regla_producto": -0.34487849946334803,
+     "calendario": -0.3033677278250673,
+     "fuera_de_punta": -1.9106100825192196,
+     "puntas": -0.38706660587323233,
+     "transiciones": -0.2895027322033617,
+     "punta_manana": 0.008211741886613548,
+     "punta_tarde": -0.3952783477598459,
+     "fin_de_semana": 0.040936135567733144,
+     "crec_periodo_laboral": {
+      "AM": -0.2674697045821098,
+      "IP": -5.6151428051512156,
+      "PM": -4.0951112682765505,
+      "NT1": -4.451601676526502,
+      "NT2": -4.6316432291214165,
+      "NT": -0.34487849946334803
+     },
+     "peso_periodo_laboral": {
+      "AM": 10.608280233805633,
+      "IP": 36.252642594361305,
+      "PM": 10.54010169840566,
+      "NT1": 2.7939391628353203,
+      "NT2": 4.076813076328993,
+      "NT": 12.242192005327022
+     },
+     "exceso_asignados": -2.5871794205958136
+    },
+    "2024": {
+     "nivel_M": [
+      315.48504689323363,
+      346.1918949984349
+     ],
+     "total": 9.288194523264329,
+     "regla_producto": 1.695421533688413,
+     "calendario": 0.4458366277149825,
+     "fuera_de_punta": 4.7411642838558485,
+     "puntas": 1.7399157496640374,
+     "transiciones": 0.6367260159178998,
+     "punta_manana": 0.7673805574748586,
+     "punta_tarde": 0.9725351921891788,
+     "fin_de_semana": 0.02913031242312011,
+     "crec_periodo_laboral": {
+      "AM": 8.852741480769147,
+      "IP": 14.607517843531381,
+      "PM": 10.906072319220165,
+      "NT1": 10.736830442313792,
+      "NT2": 11.121200958376761,
+      "NT": 1.695421533688413
+     },
+     "peso_periodo_laboral": {
+      "AM": 10.721618750435365,
+      "IP": 36.71878035979046,
+      "PM": 10.55881082492948,
+      "NT1": 2.7915226579705585,
+      "NT2": 4.0774669161808985,
+      "NT": 11.935705800981815
+     },
+     "exceso_asignados": 7.117806049437785
+    },
+    "2025": {
+     "nivel_M": [
+      346.1918949984349,
+      364.12882156640313
+     ],
+     "total": 5.051447928859785,
+     "regla_producto": 3.2525466744932,
+     "calendario": -0.20703978614105348,
+     "fuera_de_punta": 0.7898805947207972,
+     "puntas": 0.820957783936226,
+     "transiciones": 0.3414113371758214,
+     "punta_manana": 0.20557097768063118,
+     "punta_tarde": 0.6153868062555948,
+     "fin_de_semana": 0.0536913246748203,
+     "crec_periodo_laboral": {
+      "AM": 5.165757304298211,
+      "IP": 5.3367231258794945,
+      "PM": 8.901997116759816,
+      "NT1": 5.754848488703181,
+      "NT2": 9.652899342407151,
+      "NT": 3.2525466744932
+     },
+     "peso_periodo_laboral": {
+      "AM": 10.74481682665449,
+      "IP": 37.89893097560941,
+      "PM": 10.892861395004918,
+      "NT1": 2.8323190550650064,
+      "NT2": 4.226925922894349,
+      "NT": 11.429128128000318
+     },
+     "exceso_asignados": 1.9522497158328447
+    },
+    "2026": {
+     "nivel_M": [
+      364.12882156640313,
+      397.31154627073454
+     ],
+     "total": 8.721301381334948,
+     "regla_producto": 2.7585081593490894,
+     "calendario": 0.23345412325656129,
+     "fuera_de_punta": 3.5069201576453275,
+     "puntas": 1.548862311359294,
+     "transiciones": 0.629914209530354,
+     "punta_manana": 0.7688956669765956,
+     "punta_tarde": 0.7799666443826984,
+     "fin_de_semana": 0.043642420194323114,
+     "crec_periodo_laboral": {
+      "AM": 9.84084489250004,
+      "IP": 11.81835879989973,
+      "PM": 9.718711414939309,
+      "NT1": 13.255145363212526,
+      "NT2": 10.1522994258243,
+      "NT": 2.7585081593490894
+     },
+     "peso_periodo_laboral": {
+      "AM": 10.856525126481975,
+      "IP": 38.70836613960098,
+      "PM": 11.206090048537783,
+      "NT1": 2.9199216331173083,
+      "NT2": 4.374219090162222,
+      "NT": 11.04096609113415
+     },
+     "exceso_asignados": 5.685696678534976
+    }
+   }
+  }
+ },
+ "enlace_vs_resto_asignados": {
+  "2023": {
+   "enlace": -17.82922771906155,
+   "resto": -1.908386725318392
+  },
+  "2024": {
+   "enlace": 20.422182630054504,
+   "resto": 12.578981973289324
+  },
+  "2025": {
+   "enlace": 12.0594897589549,
+   "resto": 4.271846821334239
+  },
+  "2026": {
+   "enlace": 12.010044051446336,
+   "resto": 12.09948109503843
+  },
+  "2022_2026": {
+   "enlace": 26.662488721394183,
+   "resto": 27.041923164343608
+  }
+ },
+ "contraste_2023_2025": {
+  "AVN": {
+   "NT1": {
+    "modelo": 19.16726915670712,
+    "observado": 12.47082012405587,
+    "nivel_2023_modelo_M": 8.350291080662103,
+    "nivel_2023_observado_M": 7.896281
+   },
+   "AM": {
+    "modelo": 16.31883786408408,
+    "observado": 10.379784433582074,
+    "nivel_2023_modelo_M": 31.206755094607857,
+    "nivel_2023_observado_M": 30.886258
+   },
+   "IP": {
+    "modelo": 24.98983783855675,
+    "observado": 8.50150449678826,
+    "nivel_2023_modelo_M": 104.32078533637167,
+    "nivel_2023_observado_M": 103.699457
+   },
+   "PM": {
+    "modelo": 23.755577867312017,
+    "observado": 5.619279067235161,
+    "nivel_2023_modelo_M": 30.46250102906652,
+    "nivel_2023_observado_M": 30.58177
+   },
+   "NT2": {
+    "modelo": 25.074976721306143,
+    "observado": 6.119003805862144,
+    "nivel_2023_modelo_M": 11.720546825929816,
+    "nivel_2023_observado_M": 11.676198
+   },
+   "NT": {
+    "modelo": 5.9257202380250895,
+    "observado": 3.9227176234755357,
+    "nivel_2023_modelo_M": 36.984991322303145,
+    "nivel_2023_observado_M": 35.922239
+   }
+  },
+  "TSC": {
+   "NT1": {
+    "modelo": 12.230452451788999,
+    "observado": -1.4863048670982315,
+    "nivel_2023_modelo_M": 0.3549921368415367,
+    "nivel_2023_observado_M": 0.340778
+   },
+   "AM": {
+    "modelo": 11.828960674266265,
+    "observado": -8.014543010827424,
+    "nivel_2023_modelo_M": 2.545462202032984,
+    "nivel_2023_observado_M": 2.517773
+   },
+   "IP": {
+    "modelo": -2.173052692728028,
+    "observado": -12.50711246725209,
+    "nivel_2023_modelo_M": 7.975710544487991,
+    "nivel_2023_observado_M": 8.181057
+   },
+   "PM": {
+    "modelo": 12.112569421954223,
+    "observado": -19.167840976459193,
+    "nivel_2023_modelo_M": 2.436887001910329,
+    "nivel_2023_observado_M": 2.447537
+   },
+   "NT2": {
+    "modelo": 12.142544147274137,
+    "observado": -18.776818114296624,
+    "nivel_2023_modelo_M": 0.9704033591654828,
+    "nivel_2023_observado_M": 0.94246
+   },
+   "NT": {
+    "modelo": 5.875682465596732,
+    "observado": -10.858024826605705,
+    "nivel_2023_modelo_M": 1.9507897364189317,
+    "nivel_2023_observado_M": 2.053845
+   }
+  }
+ },
+ "observado_red_M": {
+  "2022": 325.725884,
+  "2023": 310.98749,
+  "2024": 317.150744,
+  "2025": 326.573872,
+  "2026": 337.3
+ },
+ "observado_red_crec": {
+  "2023": -4.63034947413277,
+  "2024": 1.9624507680467078,
+  "2025": 2.92789833659291,
+  "2026": 3.231656473141048,
+  "2022_2026": 3.4916561036478897
+ }
+};
+let cmpOrigConc = 'AVN';
+function cmpOrigen(){
+  const R = CREC22, cA = document.getElementById('cmpOrigA');
+  if(!R || !cA) return;
+  const g = R.concesiones.red, cols = ['2023','2024','2025','2026','2022_2026'];
+  const comp = [['regla_producto','Regla de producto del modelo (elasticidad 1)',tok('--ink-mid')],['calendario','Calendario',tok('--line-2')],
+    ['fuera_de_punta','Fuera de punta, sobre esa regla','#C0392B'],['puntas','Puntas mañana y tarde, sobre esa regla','#E07A1F'],
+    ['resto','Transición y fin de semana, sobre esa regla','#E9B872']];
+  const val = c => { const r = c==='2022_2026' ? g['2022_2026'] : g.anual[c]; return Object.assign({}, r, {resto: r.transiciones + r.fin_de_semana}); };
+  const W = 560, H = 290, m = {l:40, r:12, t:18, b:34}, lo = -6, hi = 22;
+  const Y = v => m.t + (hi - v)/(hi - lo)*(H - m.t - m.b);
+  const X = i => m.l + 45 + i*98 + (i === 4 ? 14 : 0);
+  let s = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Componentes del crecimiento del estudio 2023 por año, conjunto">';
+  [-5,0,5,10,15,20].forEach(v => { s += '<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="'+tok(v===0?'--ink-lo':'--line')+'" stroke-width="'+(v===0?1:.6)+'"/>'
+    + '<text x="'+(m.l-6)+'" y="'+(Y(v)+3)+'" text-anchor="end" font-size="10" fill="'+tok('--ink-lo')+'">'+nd(v,0)+'</text>'; });
+  cols.forEach((c,i) => {
+    const r = val(c); let pos = 0, neg = 0;
+    comp.forEach(([k,,col]) => { const h = r[k]; const b = h >= 0 ? pos : neg; const y0 = Y(b + Math.max(h,0)), y1 = Y(b + Math.min(h,0));
+      s += '<rect x="'+(X(i)-24)+'" y="'+y0+'" width="48" height="'+Math.max(0,y1-y0)+'" fill="'+col+'"><title>'+c.replace('_','–')+' · '
+        + comp.find(z=>z[0]===k)[1]+': '+cPct(h).replace(' %','')+' puntos</title></rect>';
+      if(h >= 0) pos += h; else neg += h; });
+    const yt = Y(r.total);
+    s += '<path d="M'+X(i)+' '+(yt-5)+' l5 5 l-5 5 l-5 -5 z" fill="'+tok('--ink')+'"/>'
+      + '<text x="'+X(i)+'" y="'+(Y(Math.max(pos, r.total))-7)+'" text-anchor="middle" font-size="11" font-weight="700" fill="'+tok('--ink')+'">'+nd(r.total)+'</text>';
+    const o = R.observado_red_crec[c];
+    s += '<circle cx="'+X(i)+'" cy="'+Y(o)+'" r="4.5" fill="'+tok('--surface')+'" stroke="#2E8B57" stroke-width="2"><title>Observado: '+cPct(o)+'</title></circle>'
+      + '<text x="'+X(i)+'" y="'+(H-12)+'" text-anchor="middle" font-size="11" fill="'+tok('--ink-mid')+'">'+(c==='2022_2026'?'2022–2026':c)+'</text>';
+  });
+  cA.innerHTML = s + '</svg>';
+  document.getElementById('cmpOrigLA').innerHTML = comp.map(([,t,col]) => '<span class="grp"><i style="background:'+col+';height:9px"></i>'+t+'</span>').join('')
+    + '<span class="grp"><i style="background:'+tok('--ink')+';width:9px;height:9px;transform:rotate(45deg)"></i>Total del estudio</span>'
+    + '<span class="grp"><i style="width:9px;height:9px;border:2px solid #2E8B57;border-radius:50%;background:transparent"></i>Observado (2026: cierre estimado)</span>';
+  // gráfico B: períodos, estudio frente a observado
+  const Cc = R.contraste_2023_2025[cmpOrigConc], per = [['NT1','06–07'],['AM','Punta mañana'],['IP','Fuera de punta'],['PM','Punta tarde'],['NT2','19–20'],['NT','Noche']];
+  const vs = per.flatMap(([p]) => [Cc[p].modelo, Cc[p].observado]);
+  const lo2 = Math.min(0, Math.floor(Math.min(...vs)/5)*5), hi2 = Math.ceil(Math.max(...vs)/5)*5 + 3;
+  const W2 = 480, Y2 = v => m.t + (hi2 - v)/(hi2 - lo2)*(H - m.t - m.b), X2 = i => m.l + 34 + i*70;
+  let t = '<svg viewBox="0 0 '+W2+' '+H+'" role="img" aria-label="Crecimiento 2023–2025 por período, estudio y observado">';
+  for(let v = lo2; v <= hi2 - 3; v += 5) t += '<line x1="'+m.l+'" x2="'+(W2-m.r)+'" y1="'+Y2(v)+'" y2="'+Y2(v)+'" stroke="'+tok(v===0?'--ink-lo':'--line')+'" stroke-width="'+(v===0?1:.6)+'"/>'
+    + '<text x="'+(m.l-6)+'" y="'+(Y2(v)+3)+'" text-anchor="end" font-size="10" fill="'+tok('--ink-lo')+'">'+nd(v,0)+'</text>';
+  per.forEach(([p,et],i) => {
+    [['modelo','#C0392B',-13],['observado',tok('--ink-mid'),13]].forEach(([k,col,dx]) => { const v = Cc[p][k], ya = Y2(Math.max(v,0)), yb = Y2(Math.min(v,0));
+      t += '<rect x="'+(X2(i)+dx-12)+'" y="'+ya+'" width="24" height="'+Math.max(0,yb-ya)+'" fill="'+col+'"><title>'+et+' · '+(k==='modelo'?'estudio 2023':'observado')+': '+cPct(v)+'</title></rect>'
+        + '<text x="'+(X2(i)+dx)+'" y="'+(v>=0?ya-3:yb+10)+'" text-anchor="middle" font-size="9" fill="'+col+'">'+nd(v)+'</text>'; });
+    t += '<text x="'+X2(i)+'" y="'+(H-12)+'" text-anchor="middle" font-size="10" fill="'+tok('--ink-mid')+'">'+et+'</text>';
+  });
+  document.getElementById('cmpOrigB').innerHTML = t + '</svg>';
+  document.getElementById('cmpOrigLB').innerHTML = '<span class="grp"><i style="background:#C0392B;height:9px"></i>Estudio 2023</span>'
+    + '<span class="grp"><i style="background:'+tok('--ink-mid')+';height:9px"></i>Observado</span>';
+  // nota con las cifras
+  const r = g['2022_2026'], ex = r.total - r.regla_producto - r.calendario, A = R.concesiones.AVN['2022_2026'], T = R.concesiones.TSC['2022_2026'];
+  const o = R.observado_red_M, E = R.enlace_vs_resto_asignados, CA = R.contraste_2023_2025.AVN;
+  document.getElementById('cmpOrigNota').innerHTML = '<b>Lectura.</b> El conjunto pasa de '+nd(r.nivel_M[0])+' a '+nd(r.nivel_M[1])+' millones entre 2022 y 2026 en '
+    + 'el estudio, '+nd((r.nivel_M[1]/r.nivel_M[0]-1)*100)+' %, y lo observado crece '+nd((o['2026']/o['2022']-1)*100)+' % hasta el cierre estimado. De los '
+    + nd(r.total)+' puntos del estudio, sólo '+nd(r.regla_producto)+' siguen la regla de producto y '+nd(r.calendario)+' son calendario; <b>'+nd(ex)
+    + ' provienen de los períodos que el modelo asigna del día laboral</b>, sobre todo del fuera de punta ('+nd(r.fuera_de_punta)+'). No fueron la elasticidad '
+    + 'ni el producto. En AVN el fuera de punta crece '+nd(A.crec_periodo_laboral.IP)+' % frente a '+nd(A.crec_periodo_laboral.NT)+' % de la noche; en el túnel, '
+    + 'la punta mañana '+nd(T.crec_periodo_laboral.AM)+' % y el fuera de punta '+nd(T.crec_periodo_laboral.IP)+' %. Entre 2023 y 2025 el fuera de punta de AVN '
+    + 'creció '+nd(CA.IP.observado)+' % en la realidad y '+nd(CA.IP.modelo)+' % en el estudio. <b>Qué supuso más optimista:</b> el calendario de los saltos '
+    + 'coincide con la obra del enlace. Los cuatro pórticos del enlace crecen '+nd(E['2024'].enlace)+' % en 2024 y '+nd(E['2025'].enlace)+' % en 2025, frente a '
+    + nd(E['2024'].resto)+' % y '+nd(E['2025'].resto)+' % del resto, porque el modelo puso la cuarta pista en servicio en 2025; al cabo de los cuatro años terminan '
+    + 'donde el resto: el estudio dio la obra por resuelta en 2025, y terminó en junio de 2026. El alza de 2026 la atribuye Diadro a la liberación de '
+    + 'tarifas de las secciones 5 y 6, aunque en el modelo crecen por igual el enlace y el resto. La población, 0,7 % anual, aportaría a lo más unos 2 puntos; '
+    + 'el valor del tiempo y el cambio de estrato no se pueden separar sin las corridas del modelo. <b>Supuestos declarados:</b> variación logarítmica × 100; '
+    + 'la regla de producto es el crecimiento del período nocturno del día laboral; observado 2026 = cierre estimado de '+nd(o['2026'])+' M.';
+}
+seg('cmpOrigC', v=>{ cmpOrigConc = v; cmpOrigen(); });
+
 function comparativo(){
-  cmpKpis(); cmpTraySel(); cmpFlujos(); cmpGraficos(); cmpTabla(); cmpMetodo();
+  cmpOrigen(); cmpKpis(); cmpTraySel(); cmpFlujos(); cmpGraficos(); cmpTabla(); cmpMetodo();
   /* el mapa estuvo oculto: sin remedir queda 0x0 y los trazos degeneran a M0 0 */
   setTimeout(()=>{ mapaC.invalidateSize(); pintaMapaC(); }, 60);
 }
@@ -9691,7 +10389,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 62;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 63;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
