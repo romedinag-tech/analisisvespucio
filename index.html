@@ -6480,6 +6480,9 @@ const SIM = {
   epob: {min:0, max:1.5, step:0.05, uni:'', dec:2, rot:'Elasticidad a la población'},
   gtar: {min:-2, max:8, step:0.05, uni:' %', dec:2, rot:'Alza real del precio medio por transacción'},
   epre: {min:0, max:0.6, step:0.01, uni:'', dec:2, rot:'Elasticidad al precio (valor absoluto)'},
+  /* puente Lo Saldes (T44, RM 27-09-2026): la pérdida que el túnel todavía registraba con 4 de 6 pistas y que la proyección le devuelve
+     desde mayo de 2027. Negativa: es una pérdida; 0 % es que no se recupera nada. Sólo mueve el túnel. */
+  ls: {min:-15, max:0, step:0.01, uni:' %', dec:2, rot:'Puente Lo Saldes · pérdida que el túnel recupera'},
 };
 /* vías competidoras: una barra por proyecto y concesión, en el orden del archivo de rangos (incluye Lo Ruiz desde el 22-09-2026) */
 Object.keys(ELA.cristian_rangos).forEach(k=>{ const p = k.split('_')[1], c = k.endsWith('_avn') ? 'AVN' : 'TSC';
@@ -6499,7 +6502,7 @@ function evConc(v){
     Object.keys(r).forEach(a=>{ out[x.conc][a] = (out[x.conc][a] || 0) + l*r[a]; }); });
   /* puente Lo Saldes (T27, 24-09-2026): el túnel recupera en mayo de 2027 lo que le faltaba con 4 de 6 pistas; sin barra. Desde la
      fase 5 (26-09-2026) el Montecarlo lo sortea en su intervalo al 95 % y lo pasa en v._ls; fuera del Montecarlo vale su central */
-  const LS = VM.lo_saldes, lsl = (v && v._ls != null) ? v._ls : (LS ? LS.log : 0);
+  const LS = VM.lo_saldes, lsl = (v && v.ls != null) ? -Math.log(1 + v.ls/100) : (LS ? LS.log : 0);
   if(LS) Object.keys(VM.reparto.ls).forEach(a=>{ out.TSC[a] = (out.TSC[a] || 0) + lsl*VM.reparto.ls[a]; });
   return out;
 }
@@ -6523,9 +6526,9 @@ function simCalc(vv, on){
 function simSerie(vv0, ag){
   const vv = vv0 || valSIM(); ag = ag || SIMX.agr;
   const F = simCalc(vv), r0 = simCalc(vv, {}), r1 = simCalc(vv, {pib:true}), r2 = simCalc(vv, {pib:true, pob:true}),
-        r3 = simCalc(vv, {pib:true, pob:true, pre:true});
+        r3 = simCalc(vv, {pib:true, pob:true, pre:true}), r4 = simCalc(Object.assign({}, vv, {ls: 0}));
   const L = (x, y) => Math.log(y[ag][2037]/x[ag][2037]);
-  const ap = {partida: Math.log(F[ag][2026]/F[ag][2025]), pib: L(r0, r1), pob: L(r1, r2), precio: L(r2, r3), vias: L(r3, F)};
+  const ap = {partida: Math.log(F[ag][2026]/F[ag][2025]), pib: L(r0, r1), pob: L(r1, r2), precio: L(r2, r3), vias: L(r3, r4), ls: L(r4, F)};
   ap.total = Math.log(F[ag][2037]/F[ag][2025]);
   return {serie: F[ag], S: F, ap};
 }
@@ -6554,6 +6557,7 @@ function mcDefectos(){
   /* el intervalo completo, e ± 1,96 errores estándar, igual que el esquema */
   ELAS_K.forEach(k=>{ const m = EM[EL_MODO[k]]; d[k] = [m.e - 1.96*m.ee, m.e + 1.96*m.ee, true]; });
   EVS.forEach(k=>{ const r = ELA.cristian_rangos[k]; d[k] = [Math.min(r[0], r[1]), Math.max(r[0], r[1]), true]; });
+  if(VM.lo_saldes && VM.lo_saldes.lo != null) d.ls = [VM.lo_saldes.lo, VM.lo_saldes.hi, true];
   Object.keys(d).forEach(k=>{ SIM[k].mc = [d[k][0], d[k][1]]; SIM[k].mcOn = d[k][2]; });
 }
 
@@ -6569,6 +6573,7 @@ function simEscenario(cual){
   SIM.gpob.v = D23.sup.poblacion_rm_anual;  SIM.epob.v = 0;
   SIM.gtar.v = DEC.g_precio_equivalente*100;  SIM.epre.v = 0;
   SIM.partida.v = ELA.v28.partida_2026.central_M;
+  SIM.ls.v = VM.lo_saldes ? VM.lo_saldes.pct : 0;
   mcDefectos();
   if(cual === 'vyr') EVS.forEach(k=>{ const r = ELA.cristian_rangos[k]; SIM[k].v = (r[0] + r[1])/2; });
   else EVS.forEach(k=>{ SIM[k].v = VM.diadro_reportado[k] != null ? VM.diadro_reportado[k] : 0;  SIM[k].mcOn = false; });
@@ -6620,6 +6625,10 @@ function simAyudas(){
     + 'alza del ingreso por transacción de la proyección de Diadro 2023, derivada de sus propias salidas: ' + nd(DEC.g_precio_equivalente*100,2) + ' % anual.';
   SIM.epre.ay = 'Cuánto cae el tránsito por cada 1 % de alza del precio, en valor absoluto. V&R la deja en 0. La marca es la que declara Diadro 2023, '
     + '−' + nd(Math.abs(DD.precio),1) + ' (Figura 5.33), para los períodos que su modelo no asigna.';
+  if(VM.lo_saldes) SIM.ls.ay = 'La pérdida que el <b>túnel</b> todavía registraba entre mayo y julio de 2026 con el puente Lo Saldes en 4 de 6 '
+    + 'pistas, medida contra un grupo de control: ' + nd(VM.lo_saldes.pct,2) + ' % (IC 95 %: ' + nd(VM.lo_saldes.lo,2) + ' a ' + nd(VM.lo_saldes.hi,2)
+    + ' %, que es el rango del Montecarlo). La proyección se la devuelve desde mayo de 2027, cuando el puente vuelve a sus 3 pistas por '
+    + 'sentido. 0 % es que no se recupera nada. Sólo mueve el túnel; el estudio 2023 no lo contempla, por eso no lleva marca.';
   EVS.forEach(k=>{ const x = SIM[k], r = ELA.cristian_rangos[k], rep = VM.diadro_reportado[k];
     x.ay = 'Cuánto cambia la demanda ' + (x.conc === 'AVN' ? 'de AVN' : 'del túnel') + ' cuando entra ' + PROY_NOM[x.proy] + ', en su fecha vigente. '
       + 'Tasas de V&R (modelación de red): de ' + cPct(Math.min(r[0], r[1])) + ' a ' + cPct(Math.max(r[0], r[1])) + '; el escenario V&R usa el punto medio. '
@@ -6642,9 +6651,9 @@ simEscenario('vyr');
 /* El Montecarlo: percentiles 10, 25, 50, 75 y 90 por año y agrupación, la fracción de corridas que alcanza al estudio de Diadro 2023 en
    2030 y 2037, y los 2037 sorteados para el histograma. */
 function simMC(){
-  const t0 = performance.now(), rnd = mcAzar(MC.sem), K = Object.keys(SIM);
+  const t0 = performance.now(), rnd = mcAzar(MC.sem), K = Object.keys(SIM).filter(k => k !== 'ls');
   /* Lo Saldes con su propio generador (fase 5): no altera los sorteos de las demás perillas */
-  const rndLS = mcAzar(MC.sem + 1), LSR = VM.lo_saldes;
+  const rndLS = mcAzar(MC.sem + 1);
   const sortea = (k, u) => { const x = SIM[k]; if(!x.mcOn || !x.mc) return x.v;
     return MC.dist === 'uni' ? x.mc[0] + u*(x.mc[1]-x.mc[0]) : mcTri(u, x.mc[0], x.v, x.mc[1]); };
   const Y = [2026].concat(AS), G = ['red', 'AVN', 'TSC'], res = {};
@@ -6653,7 +6662,7 @@ function simMC(){
     /* las cinco elasticidades comparten el percentil: su error viene del mismo regresor */
     const v = {}; let uE = null;
     K.forEach(k=>{ let u = rnd(); if(ELAS_K.indexOf(k) >= 0){ if(uE === null) uE = u; else u = uE; } v[k] = sortea(k, u); });
-    if(LSR && LSR.lo != null) v._ls = -Math.log(1 + (LSR.lo + rndLS()*(LSR.hi - LSR.lo))/100);
+    v.ls = sortea('ls', SIM.ls.mcOn && SIM.ls.mc ? rndLS() : 0);
     const s = simCalc(v);
     G.forEach(g=>Y.forEach(a=>{ res[g][a][i] = s[g][a]; }));
   }
@@ -6686,7 +6695,8 @@ function simGrupos(){
     {t:'Punto de partida', k:['partida'], ap:'partida'},
     {t:'Vías competidoras', k:EVS, ap:'vias'},
     {t:'Población', k:['gpob','epob'], ap:'pob'},
-    {t:'Precio', k:['gtar','epre'], ap:'precio'}];
+    {t:'Precio', k:['gtar','epre'], ap:'precio'},
+    {t:'Puente Lo Saldes (sólo túnel)', k:['ls'], ap:'ls'}];
 }
 function simPesos(ap){
   simGrupos().forEach((g, i)=>{ const e = document.getElementById('pgh_' + i);
@@ -6717,7 +6727,10 @@ function simPars(){
     + (extra || '') + g.k.map(par).join('') + '</div>';
   document.getElementById('simIzq').innerHTML = caja(G[2], 2, '<div class="pgrp-nota">' + tip('Fechas vigentes', 'Ruta 68–Ruta 78 desde mayo de '
     + '2028 (8/12 del efecto en 2028 y 4/12 en 2029); Orbital Sur y AVO II juntas en 2030; Túnel Lo Ruiz desde el segundo semestre de 2029 '
-    + '(mitad en 2029 y mitad en 2030); Orbital Norponiente de una vez en 2035. Cada proyecto actúa desde que entra y para siempre.') + '</div>');
+    + '(mitad en 2029 y mitad en 2030); Orbital Norponiente de una vez en 2035. Cada proyecto actúa desde que entra y para siempre.') + '</div>')
+    + caja(G[5], 5, '<div class="pgrp-nota">' + tip('No es un proyecto que compite', 'El puente da el acceso sur al túnel. Vuelve a sus '
+    + '3 pistas por sentido en mayo de 2027 y el túnel recupera desde entonces la pérdida que todavía registraba con 4 de 6 pistas: 8/12 '
+    + 'del efecto en 2027 y 4/12 en 2028. El estudio 2023 no lo contempla.') + '</div>');
   document.getElementById('simDer').innerHTML = [0, 1, 3, 4].map(i => caja(G[i], i)).join('');
 
   const escTip = 'Los dos parten de ' + nd(ELA.v28.partida_2026.central_M) + ' M en 2026, con la senda media del PIB, las elasticidades de '
@@ -7112,6 +7125,8 @@ function simTabla(){
       + 'demanda de 2022; de Lo Ruiz no informa nada.'],
     ['Fechas de entrada', 'calendario vigente', 'Ruta 68–Ruta 78 en mayo de 2028; Orbital Sur y AVO II juntas en 2030; Lo Ruiz en el segundo '
       + 'semestre de 2029; Orbital Norponiente de una vez en 2035. Cada proyecto actúa desde que entra y para siempre.'],
+    ['Puente Lo Saldes', 'medido', 'El túnel recupera desde mayo de 2027 la pérdida que registraba con 4 de 6 pistas, medida contra un grupo de '
+      + 'control: ' + nd(VM.lo_saldes.pct, 2) + ' % (IC 95 %: ' + nd(VM.lo_saldes.lo, 2) + ' a ' + nd(VM.lo_saldes.hi, 2) + ' %), que es el rango del Montecarlo.'],
     ['Crecimiento propio', 'no se considera', 'Por acuerdo metodológico no entra en ninguna proyección.'],
     ['Restricción de capacidad', 'fuera del modelo', 'La demanda calculada se realiza aunque la vía no dé abasto. El estudio sí la impone: '
       + 'transfiere 20 % del exceso al período siguiente y suprime el 80 %.']];
@@ -8244,6 +8259,12 @@ const calMes = m => { const [a,b] = m.split('-').map(Number); return a + (b-1)/1
 const calFecha = x => { const a = Math.floor(x), m = Math.round((x-a)*12); return ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][Math.min(11,m)]+'-'+a; };
 function calendario(){
   const P = CAL.proyectos, desp = P.filter(p=>p.desfase_anios>0), ant = P.filter(p=>p.desfase_anios<0);
+  /* el puente Lo Saldes (T44, RM 27-09-2026): no es un proyecto que compite ni figura en el estudio, pero cambia la trayectoria del túnel
+     desde mayo de 2027; entra al diagrama y al cuadro, no a los indicadores de desfase */
+  const LSx = ELA.motor_vyr && ELA.motor_vyr.lo_saldes;
+  const PG = P.concat(LSx ? [{clave:'losaldes', nombre:'Puente Lo Saldes (acceso sur al túnel)', relacion:'acceso al túnel; no compite con la autopista',
+    estudio:null, real:{ini:LSx.ini, fin:LSx.ini + 1/12, texto:'mayo de 2027: vuelve a 3 pistas por sentido; restringido desde el 13-feb-2025', ls:true},
+    desfase_anios:null, evento_estudio_red:null, evento_nombre:null}] : []);
   const enl = P.find(p=>p.clave==='enlace'), r78 = P.find(p=>p.clave==='r68r78');
   const d6 = CAL.obra.dd['6'], ult6 = d6[d6.length-1];
   const K = [
@@ -8255,20 +8276,24 @@ function calendario(){
     + '</div><div class="v">'+x[1]+'</div><div class="s">'+x[2]+'</div></div>').join('');
 
   /* A. un renglón por proyecto: el año del estudio, contorno; la fecha vigente, lleno */
-  const W = anchoSvg(1000, 560), ml = Math.min(260, Math.round(W*.34)), mr = 44, top = 30, rh = 30, H = top + P.length*rh + 30, iw = W-ml-mr;
+  const W = anchoSvg(1000, 560), ml = Math.min(260, Math.round(W*.34)), mr = 44, top = 30, rh = 30, H = top + PG.length*rh + 30, iw = W-ml-mr;
   const a0 = 2021, a1 = 2037, X = a => ml + (a-a0)/(a1-a0)*iw;
   let s = txtS(0,14,'Puesta en servicio: año del estudio y fecha vigente u observada',{w:700,col:tok('--ink'),fs:11.5});
-  for(let a=a0; a<=a1; a++){ s += lin(X(a),top-4,X(a),top+P.length*rh,tok('--line'),1);
+  for(let a=a0; a<=a1; a++){ s += lin(X(a),top-4,X(a),top+PG.length*rh,tok('--line'),1);
     if((a-a0)%2===0 || W>760) s += txtS(X(a)+ (X(a+1)-X(a))/2, H-12, W>760?a:String(a).slice(2), {anc:'middle',fs:9}); }
   const hoy = 2026 + 8/12;
-  s += lin(X(hoy),top-8,X(hoy),top+P.length*rh+2,tok('--ink-mid'),1.2,'3 3') + txtS(X(hoy)+4,top-10,'hoy',{fs:8.5,col:tok('--ink-mid')});
-  P.forEach((p,i)=>{
+  s += lin(X(hoy),top-8,X(hoy),top+PG.length*rh+2,tok('--ink-mid'),1.2,'3 3') + txtS(X(hoy)+4,top-10,'hoy',{fs:8.5,col:tok('--ink-mid')});
+  PG.forEach((p,i)=>{
     const y = top + i*rh + rh/2, nom = W < 700 && p.nombre.length > 30 ? p.nombre.slice(0,29)+'…' : p.nombre;
     s += txtS(ml-8,y+3.5,nom,{anc:'end',col:tok('--ink'),fs:9.5});
-    s += '<rect x="'+X(p.estudio.anio).toFixed(1)+'" y="'+(y-8)+'" width="'+(X(p.estudio.anio+1)-X(p.estudio.anio)).toFixed(1)
+    if(p.estudio) s += '<rect x="'+X(p.estudio.anio).toFixed(1)+'" y="'+(y-8)+'" width="'+(X(p.estudio.anio+1)-X(p.estudio.anio)).toFixed(1)
       + '" height="16" rx="3" fill="none" stroke="'+tok('--ink-lo')+'" stroke-width="1.6" stroke-dasharray="4 2"><title>'+p.nombre
       + ' · estudio: '+p.estudio.anio+'</title></rect>';
     const xr0 = X(p.real.ini), xr1 = Math.max(X(p.real.fin), xr0+5);
+    if(p.real.ls){ const xa = X(2025 + 43/365);
+      s += '<rect x="'+xa.toFixed(1)+'" y="'+(y-3)+'" width="'+(xr0-xa).toFixed(1)+'" height="6" rx="2" fill="'+tok('--ts')+'" opacity=".35"><title>'
+        + 'Puente Lo Saldes restringido: 2 de 6 pistas desde el 13-feb-2025, 4 de 6 desde el 22-ago-2025 y una por sentido desde el 27-jul-2026, '
+        + 'por la obra definitiva</title></rect>'; }
     s += '<rect x="'+xr0.toFixed(1)+'" y="'+(y-5)+'" width="'+(xr1-xr0).toFixed(1)+'" height="10" rx="2" fill="'+tok('--accent')+'"><title>'
       + p.nombre+' · vigente: '+p.real.texto+'</title></rect>';
     if(p.desfase_anios){ const xa = X(p.estudio.anio + (p.desfase_anios>0?1:0)), xb = p.desfase_anios>0 ? xr0 : xr1;
@@ -8279,6 +8304,7 @@ function calendario(){
   document.getElementById('calLgantt').innerHTML =
     '<span class="grp" style="gap:5px"><i style="border:1.6px dashed '+tok('--ink-lo')+';background:none;height:10px;width:16px"></i><span>año del estudio (Tabla 6.4)</span></span>'
     + chip(tok('--accent'),'fecha vigente u observada (calendario de obras V&R)')
+    + chip(tok('--ts'),'puente Lo Saldes restringido (el estudio no lo contempla: sin año del estudio)')
     + '<span class="grp"><span>El número a la derecha es el desfase en años. Un año sin mes se dibuja completo; «hoy» es septiembre de 2026.</span></span>';
 
   /* B. la obra del enlace: fases vigentes, supuesto del estudio y pérdida medida */
@@ -8313,8 +8339,9 @@ function calendario(){
     : sgnE(p.evento_estudio_red*100,1)+' % <span style="color:var(--ink-lo)">('+p.evento_nombre+')</span>';
   document.getElementById('calTabla').innerHTML = '<thead><tr><th>Proyecto</th><th>Qué es para AVN</th><th>Estudio</th><th>Vigente u observado</th>'
     + '<th>Desfase</th><th>Efecto de red del año en la proyección del estudio (descomposición V&R)</th></tr></thead><tbody>'
-    + P.map(p=>'<tr style="cursor:default"><td style="white-space:normal">'+p.nombre+'</td><td style="white-space:normal">'+p.relacion+'</td><td>'
-      + p.estudio.anio+'</td><td style="white-space:normal">'+p.real.texto+'</td><td><b>'+(p.desfase_anios?sgnE(p.desfase_anios,1)+' años':'igual')
+    + PG.map(p=>'<tr style="cursor:default"><td style="white-space:normal">'+p.nombre+'</td><td style="white-space:normal">'+p.relacion+'</td><td>'
+      + (p.estudio ? p.estudio.anio : '<span style="color:var(--ink-lo)">no lo contempla</span>')+'</td><td style="white-space:normal">'+p.real.texto+'</td><td><b>'
+      +(p.desfase_anios?sgnE(p.desfase_anios,1)+' años':(p.estudio?'igual':'—'))
       + '</b></td><td style="white-space:normal">'+efe(p)+'</td></tr>').join('') + '</tbody>';
   document.getElementById('calNota').innerHTML =
     '<b>La obra del enlace duró más y terminó más gradualmente de lo que supuso el estudio.</b> El estudio la puso en 2023 y 2024 y dio el cuarto '
@@ -8325,7 +8352,9 @@ function calendario(){
     + 'telepeajes de las rutas 68 y 78 se atrasan entre 2,5 y 6 años; AVO II se adelanta un año. <b>Supuestos declarados:</b> el efecto de red es '
     + 'el que resulta de descomponer las salidas del propio estudio (año 2030: Orbital Sur y AVO II juntos) y no una medición; las fechas vigentes '
     + 'pueden volver a cambiar; y como en 2037 todos los proyectos están en servicio en ambos calendarios, el desfase mueve la trayectoria y el '
-    + 'ingreso acumulado, no el nivel final. El escenario V&R y el simulador aplican el efecto de las vías competidoras en estas fechas vigentes.';
+    + 'ingreso acumulado, no el nivel final. El escenario V&R y el simulador aplican el efecto de las vías competidoras en estas fechas vigentes. '
+    + '<b>El puente Lo Saldes</b> no es un proyecto que compite ni figura en el estudio: se muestra porque desde mayo de 2027, cuando vuelve a '
+    + 'sus 3 pistas por sentido, el escenario V&R le devuelve al túnel la pérdida que todavía registraba con 4 de 6 pistas.';
   calEfectos();
 }
 
@@ -8789,11 +8818,14 @@ const BO_VARS = [
      + 'equivale a suponer que ese cierre está mal calculado.'}
 ].concat(BO_PROY.map(([a,nom])=>({k:'ef'+a, rot:'Efecto en demanda · '+nom, uni:' %', dec:0, min:()=>0, max:()=>200, base:()=>100,
    ay:'El efecto de '+nom+' sobre la demanda, como porcentaje del que tiene hoy en el simulador —en V&R, el punto medio de sus tasas de '
-     + 'efecto—: 0 % es un proyecto que no quita tránsito y 200 % uno que quita el doble. Mueve a la vez AVN y el túnel, cada uno con su tasa.'})));
+     + 'efecto—: 0 % es un proyecto que no quita tránsito y 200 % uno que quita el doble. Mueve a la vez AVN y el túnel, cada uno con su tasa.'})))
+  .concat([{k:'efls', rot:'Recuperación del túnel · puente Lo Saldes', uni:' %', dec:0, min:()=>0, max:()=>200, base:()=>100,
+   ay:'La pérdida que el túnel recupera desde mayo de 2027, cuando el puente vuelve a sus 3 pistas por sentido, como porcentaje de la que '
+     + 'tiene hoy en el simulador —en V&R, la medida con 4 de 6 pistas—: 0 % es que no recupera nada y 200 % el doble. Sólo mueve el túnel.'}]);
 const BO = {mag:'tx', ref:'est23', otro:null, w:{}, res:null};
 /* pesos por defecto: un cuarto para cada tipo de variable —producto, elasticidades, tránsito de 2026 y vías—, repartido dentro de cada
    tipo; la columna suma exactamente 100 */
-const BO_W0 = {gpib:25, epib:5, ecar:5, emot:5, etli:5, etca:5, partida:25, ef2027:7, ef2030:6, ef2034:6, eflr:6};
+const BO_W0 = {gpib:25, epib:5, ecar:5, emot:5, etli:5, etca:5, partida:25, ef2027:6, ef2030:5, ef2034:5, eflr:5, efls:4};
 Object.assign(BO.w, BO_W0);
 /* al mover un peso, los demás se reescalan en proporción a su valor para que la columna siga sumando 100 */
 function boReparte(k, v){
@@ -8836,6 +8868,7 @@ function boEval(x){
   const vv = valSIM();
   ['gpib','partida'].concat(ELAS_K).forEach(k=>{ vv[k] = x[k]; });
   BO_PROY.forEach(([a])=>{ EVS.filter(k=>SIM[k].ev === a).forEach(k=>{ vv[k] = SIM[k].v*x['ef'+a]/100; }); });
+  if(x.efls != null) vv.ls = SIM.ls.v*x.efls/100;
   const s = simCalc(vv)[SIMX.agr];
   return {serie: s, val: boMag(s, vv), vv};
 }
@@ -9633,7 +9666,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 57;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 58;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
