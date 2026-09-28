@@ -9318,6 +9318,7 @@ function cmpOrigen(){
   // nota con las cifras
   const r = g['2022_2026'], ex = r.total - r.regla_producto - r.calendario, A = R.concesiones.AVN['2022_2026'], T = R.concesiones.TSC['2022_2026'];
   const o = R.observado_red_M, E = R.enlace_vs_resto_asignados, CA = R.contraste_2023_2025.AVN;
+  const sp = v => (Math.exp(v/100) - 1)*100;   // el JSON trae log×100; el texto lo lee como porcentaje (T66, 28-09-2026)
   document.getElementById('cmpOrigNota').innerHTML = '<b>Lectura.</b> El conjunto pasa de '+nd(r.nivel_M[0])+' a '+nd(r.nivel_M[1])+' millones entre 2022 y 2026 en '
     + 'el estudio, '+nd((r.nivel_M[1]/r.nivel_M[0]-1)*100)+' %, y lo observado crece '+nd((o['2026']/o['2022']-1)*100)+' % hasta el cierre estimado. De los '
     + nd(r.total)+' puntos del estudio, sólo '+nd(r.regla_producto)+' siguen la regla de producto y '+nd(r.calendario)+' son calendario; <b>'+nd(ex)
@@ -9325,11 +9326,11 @@ function cmpOrigen(){
     + 'ni el producto. En AVN el fuera de punta crece '+nd(A.crec_periodo_laboral.IP)+' % frente a '+nd(A.crec_periodo_laboral.NT)+' % de la noche; en el túnel, '
     + 'la punta mañana '+nd(T.crec_periodo_laboral.AM)+' % y el fuera de punta '+nd(T.crec_periodo_laboral.IP)+' %. Entre 2023 y 2025 el fuera de punta de AVN '
     + 'creció '+nd(CA.IP.observado)+' % en la realidad y '+nd(CA.IP.modelo)+' % en el estudio. <b>Qué supuso más optimista:</b> el calendario de los saltos '
-    + 'coincide con la obra del enlace. Los cuatro pórticos del enlace crecen '+nd(E['2024'].enlace)+' % en 2024 y '+nd(E['2025'].enlace)+' % en 2025, frente a '
-    + nd(E['2024'].resto)+' % y '+nd(E['2025'].resto)+' % del resto, porque el modelo puso la cuarta pista en servicio en 2025; al cabo de los cuatro años terminan '
+    + 'coincide con la obra del enlace. Los cuatro pórticos del enlace crecen '+nd(sp(E['2024'].enlace))+' % en 2024 y '+nd(sp(E['2025'].enlace))+' % en 2025, frente a '
+    + nd(sp(E['2024'].resto))+' % y '+nd(sp(E['2025'].resto))+' % del resto, porque el modelo puso la cuarta pista en servicio en 2025; al cabo de los cuatro años terminan '
     + 'donde el resto: el estudio dio la obra por resuelta en 2025, y terminó en junio de 2026. El alza de 2026 la atribuye Diadro a la liberación de '
     + 'tarifas de las secciones 5 y 6, aunque en el modelo crecen por igual el enlace y el resto. La población, 0,7 % anual, aportaría a lo más unos 2 puntos; '
-    + 'el valor del tiempo y el cambio de estrato no se pueden separar sin las corridas del modelo. <b>Supuestos declarados:</b> variación logarítmica × 100; '
+    + 'el valor del tiempo y el cambio de estrato no se pueden separar sin las corridas del modelo. <b>Supuestos declarados:</b> componentes en variación logarítmica × 100; enlace frente al resto y períodos 2023–2025, variación simple; '
     + 'la regla de producto es el crecimiento del período nocturno del día laboral; observado 2026 = cierre estimado de '+nd(o['2026'])+' M.';
 }
 seg('cmpOrigC', v=>{ cmpOrigConc = v; cmpOrigen(); });
@@ -10389,7 +10390,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 65;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 66;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
