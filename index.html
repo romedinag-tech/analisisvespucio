@@ -1447,9 +1447,7 @@ body.oyeAbierto{padding-bottom:86px}
       base, y bajo <b>50 km/h</b> la de saturación, que vale el triple. El contrato no mira una
       media hora suelta sino la <b>velocidad media del bloque durante cuatro semanas</b>. Los
       años se comparan en la misma ventana —del 1 de enero al 8 de septiembre— porque 2026
-      todavía no tiene los meses de más tránsito. <b>La velocidad de la consultora no viene
-      en sus planillas</b>: la calculamos nosotros aplicando su propia curva (Tabla 5.1) a su
-      propio flujo por media hora, y va punteada para que no se confunda con un dato.</p>
+      todavía no tiene los meses de más tránsito.</p>
     <div class="kpis" id="vKpis"></div>
     <div class="maprow">
       <span class="seglab">Año</span>
@@ -1474,7 +1472,7 @@ body.oyeAbierto{padding-bottom:86px}
       <div class="chartbox">
         <div class="t" id="vTitArco"></div>
         <div class="d">La velocidad de cada media hora del día laboral: medida, un trazo por
-          año, y la de la consultora para el año elegido, punteada. Debajo, la tarifa que se
+          año. Debajo, la tarifa que se
           cobró, la que pone el estudio y la que la regla del contrato deduce de la velocidad
           medida. Elige otra calzada en el mapa.</div>
         <div id="vPerfil"></div>
@@ -1506,29 +1504,6 @@ body.oyeAbierto{padding-bottom:86px}
     <div class="aviso" id="vLectura"></div>
   </div>
 
-  <div class="card">
-    <h2>La curva flujo–velocidad: la del estudio contra la medida</h2>
-    <p class="desc">El modelo de la consultora calcula la velocidad de cada tramo con una
-      función de flujo y demora: a más vehículos respecto de la capacidad, menos velocidad,
-      según <b>v = v₀ / (1 + α·(q/c)<sup>β</sup>)</b>. Es la pieza que decide cuándo la
-      proyección cruza los 70 y los 50 km/h, y por lo tanto cuánto sube el precio medio. Acá se
-      pone su curva (Tabla 5.1) sobre la que dibujan las velocidades medidas.</p>
-    <div class="maprow">
-      <span class="seglab">Escala del flujo</span>
-      <span class="seg" id="vEscSeg">
-        <button data-v="eq" class="on">Reescalado a transacciones</button>
-        <button data-v="raw">Como lo cuenta el sensor</button></span>
-    </div>
-    <div class="grid2">
-      <div class="chartbox">
-        <div class="t">Velocidad según flujo, día laboral</div>
-        <div class="d">Punto rojo y ámbar: donde la curva del estudio cruza 50 y 70 km/h.</div>
-        <div id="vCurva"></div>
-        <div class="legend" id="vLcurva"></div>
-      </div>
-      <div class="dectxt" id="vCurvaTxt"></div>
-    </div>
-  </div>
 
   <div class="card">
     <h2>La regla del contrato, aplicada a la velocidad medida</h2>
@@ -1700,26 +1675,6 @@ body.oyeAbierto{padding-bottom:86px}
   </div>
 </section>
 
-<section id="vCurvas" hidden>
-  <div class="card">
-    <h2>La curva flujo–velocidad, recalibrada con lo medido</h2>
-    <p class="desc">El modelo del estudio calcula la velocidad de cada tramo con una curva:
-      a más vehículos respecto de la capacidad, menos velocidad. Esa curva decide cuánta
-      congestión proyecta, y con ella la reasignación de rutas y la saturación. Acá se ajusta
-      la <b>misma forma y la misma capacidad</b> a la velocidad medida 2023–2026 de cada
-      calzada, y se compara con la del estudio donde importa: a los flujos que la autopista ya
-      opera y a los que el estudio proyecta. La pendiente de la curva, β, no se puede fijar con
-      este dato; por eso cada comparación dice si depende o no de ella.</p>
-    <div class="kpis" id="cuKpis"></div>
-    <div class="maprow"><span class="seglab">Calzada</span><select id="cuArco" aria-label="Calzada"></select></div>
-    <div class="grid2">
-      <div class="chartbox"><div id="cuCurva"></div><div class="legend" id="cuLcurva"></div></div>
-      <div class="dectxt" id="cuTxt"></div>
-    </div>
-    <div style="overflow-x:auto;margin-top:14px"><table id="cuTabla"></table></div>
-    <div class="aviso" id="cuNota"></div>
-  </div>
-</section>
 <section id="vCalendario" hidden>
   <div class="card">
     <h2>El calendario de obras: el que usó el estudio contra el vigente</h2>
@@ -2103,7 +2058,9 @@ body.oyeAbierto{padding-bottom:86px}
       modelo hace crecer con el producto —la regla con elasticidad 1 que aplica donde no asigna, visible en el período nocturno—, el
       calendario y lo que los períodos que asigna del día laboral crecen por sobre esa regla.</p>
     <div style="display:flex;flex-wrap:wrap;gap:18px">
-      <div class="chartbox" style="flex:1 1 440px;min-width:0"><div class="t">Conjunto AVN + túnel: componentes del crecimiento del estudio, por año</div>
+      <div class="chartbox" style="flex:1 1 440px;min-width:0"><div class="t" id="cmpOrigTA">Conjunto AVN + túnel: componentes del crecimiento del estudio, por año</div>
+        <div class="ctrl" style="margin:4px 0"><span class="seg" id="cmpOrigAg"><button data-v="red" class="on">Conjunto</button>
+          <button data-v="AVN">Vespucio Norte</button><button data-v="TSC">Túnel</button></span></div>
         <div id="cmpOrigA"></div><div class="legend" id="cmpOrigLA"></div></div>
       <div class="chartbox" style="flex:1 1 380px;min-width:0"><div class="t">Crecimiento 2023–2025 del día laboral por período: estudio y observado</div>
         <div class="ctrl" style="margin:4px 0"><span class="seg" id="cmpOrigC"><button data-v="AVN" class="on">Vespucio Norte</button>
@@ -2992,7 +2949,6 @@ function repintaSeccion(){
   if(seccion==='velocidades') velocidades();
   if(seccion==='calendario') calendario();
   if(seccion==='elasticidad') econElast();
-  if(seccion==='curvas') econCurvas();
   if(seccion==='escenario') econEscenario();
 }
 /* AL GIRAR EL TELÉFONO O CAMBIAR EL ANCHO, los gráficos se rehacen con el ancho
@@ -7631,7 +7587,7 @@ document.addEventListener('click', e=>{
 function velElige(k){
   vArco = k;
   const s = document.getElementById('vArcoSel'); if(s) s.value = k;
-  pintaMapaV(); velKpis(); velPerfil(); velMensual(); velCurva(); velRegla();
+  pintaMapaV(); velKpis(); velPerfil(); velMensual(); velRegla();
 }
 
 /* ────────────────────────────────────────────────────────── indicadores */
@@ -7676,14 +7632,6 @@ function velPerfil(){
     s += '<polyline points="'+p.v.map((v,i)=>v==null?'':x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ')
       + '" fill="none" stroke="'+VAN_COL(a)+'" stroke-width="'+(on?2.6:1.5)+'" opacity="'+(on?1:.9)
       + '" stroke-linejoin="round"/>'; });
-  /* LA VELOCIDAD QUE IMPLICA EL ESTUDIO, reconstruida: su curva de la Tabla 5.1
-     aplicada a su propio flujo por media hora. El estudio no publica velocidades;
-     por eso va punteada y la leyenda dice cuánto de su tarifa reproduce. */
-  cs.forEach((c,j)=>{ const ve = ((VEL.vest||{})[c]||{})[vAnio]; if(!ve || !VPV.est) return;
-    s += '<polyline points="'+ve.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ')
-      + '" fill="none" stroke="'+tok('--ts')+'" stroke-width="1.9" stroke-dasharray="'+(j?'2 3':'6 4')
-      + '" opacity=".95" stroke-linejoin="round"><title>Estudio '+c+' '+vAnio
-      + ': velocidad implícita, reconstruida</title></polyline>'; });
   /* franjas: la tarifa activada ese año en cada pórtico, la que el estudio pone
      para ese año, y la que la regla del contrato deduce de la velocidad medida */
   let yy = top + ih + 22;
@@ -7708,8 +7656,7 @@ function velPerfil(){
   document.getElementById('vLperfil').innerHTML =
     '<div class="lyr" style="width:100%;gap:6px"><span class="ttl">Medido</span>'
     + VEL.anios.filter(a=>P[a]).map(a=>cv(VAN_COL(a), String(a), 'y'+a)).join('')
-    + '<span class="ttl" style="margin-left:6px">Consultora</span>'
-    + cv(tok('--ts'), 'velocidad implícita '+vAnio, 'est') + '</div>'
+    + '</div>'
     + '<div class="lyr" style="width:100%;gap:6px"><span class="ttl">Franjas</span>'
     + cv(tok('--ink-mid'), 'tarifa cobrada', 'fAct') + cv(tok('--ink-mid'), 'tarifa del estudio', 'fEst')
     + cv(tok('--ink-mid'), 'regla → '+(vAnio+1), 'fReg')
@@ -7717,11 +7664,7 @@ function velPerfil(){
     + cv(T.B, 'base', 'B') + cv(T.P, 'punta', 'P') + cv(T.S, 'saturación', 'S') + '</div>'
     + '<span class="grp"><span>Clic en cada elemento para encenderlo o apagarlo; un nivel apagado '
     + 'queda tenue en las franjas, para ver sólo dónde cae la punta o la saturación. Medido: velocidad media de cada media hora, días laborales del '+VEL.ventana
-    + '. <b>Estudio: reconstruida</b>, porque sus planillas no traen velocidad; es su curva (Tabla 5.1) aplicada '
-    + 'a su flujo por media hora, con los pesados a '+nd(VEL.vest_meta.factor,1)+' vehículos equivalentes. Así '
-    + 'reproduce el tramo de tarifa que el propio estudio activa en el '+nd(VEL.vest_meta.acierto)+' % de los '
-    + 'bloques y en el '+nd(VEL.vest_meta.pct_activados,0)+' % de los activados: sirve para el orden de magnitud, no '
-    + 'para leer un km/h exacto. Las franjas: tarifa cobrada ese año, la que pone el estudio para ese año, y la '
+    + '. Las franjas: tarifa cobrada ese año, la que pone el estudio para ese año, y la '
     + 'que la regla del contrato deduce de la velocidad medida para el siguiente. El día del estudio es martes a '
     + 'jueves de marzo a diciembre; el medido, todos los laborales.</span></span>';
 }
@@ -7999,9 +7942,8 @@ function velFueraPunta(){
     + 'capacidad de la Tabla 5.1, mediana de los pórticos: en 2025, punta mañana '+nd(h25[0],2)+', fuera de punta '
     + nd(h25[1],2)+' y punta tarde '+nd(h25[2],2)+'; en 2037, '+nd(h37[0],2)+', '+nd(h37[1],2)+' y '+nd(h37[2],2)
     + '. El valle, que partía con más holgura, termina tan lleno como las puntas.</p>'
-    + '<p><b>4. La consecuencia: el valle se vuelve tarifa de saturación.</b> Con la curva del estudio la velocidad '
-    + 'cae bajo 50 km/h a 0,92 de la capacidad, y un valle lleno a ese nivel se cobra al triple toda la tarde de '
-    + 'oficina. Bloques de saturación del modelo dentro del fuera de punta, de '+(cs.length*16)+' posibles: '
+    + '<p><b>4. La consecuencia: el valle se vuelve tarifa de saturación.</b> Un valle lleno se cobra al triple toda la '
+    + 'tarde de oficina. Bloques de saturación del modelo dentro del fuera de punta, de '+(cs.length*16)+' posibles: '
     + tsValle('2025')+' en 2025, '+tsValle('2030')+' en 2030 y <b>'+tsValle('2037')+' en 2037</b>, el '
     + nd(tsValle('2037')/tsDia('2037')*100,0)+' % de los '+tsDia('2037')+' que el modelo tiene ese año. '
     + 'Activados de verdad en 2026: '+tsMed+'.</p>';
@@ -8022,11 +7964,10 @@ function velocidades(){
   }
   if(s) s.value = vArco;
   setTimeout(()=>{ pintaMapaV(); }, 60);
-  velKpis(); velPerfil(); velMensual(); velCurva(); velRegla(); velFueraPunta();
+  velKpis(); velPerfil(); velMensual(); velRegla(); velFueraPunta();
 }
-seg('vAnioSeg', v=>{ vAnio = +v; pintaMapaV(); velKpis(); velPerfil(); velCurva(); });
+seg('vAnioSeg', v=>{ vAnio = +v; pintaMapaV(); velKpis(); velPerfil(); });
 seg('vIndSeg', v=>{ vInd = v; pintaMapaV(); });
-seg('vEscSeg', v=>{ vEsc = v; velCurva(); });
 
 /* ═══════════════════════════════════════════ ECONOMETRÍA V&R (demanda) ═══
    Tres análisis propios, cada uno en su pestaña del bloque «Análisis
@@ -9266,11 +9207,14 @@ const CREC22 = {
   "2022_2026": 3.4916561036478897
  }
 };
-let cmpOrigConc = 'AVN';
+let cmpOrigConc = 'AVN', cmpOrigAgr = 'red';   // T74 (RM, 28-09-2026): el gráfico de componentes también por concesión
+const CMP_AGR = {red:'Conjunto AVN + túnel', AVN:'Américo Vespucio Norte', TSC:'Túnel San Cristóbal'};
 function cmpOrigen(){
   const R = CREC22, cA = document.getElementById('cmpOrigA');
   if(!R || !cA) return;
-  const g = R.concesiones.red, cols = ['2023','2024','2025','2026','2022_2026'];
+  const g = R.concesiones[cmpOrigAgr], cols = ['2023','2024','2025','2026','2022_2026'], conObs = cmpOrigAgr === 'red';
+  const tA = document.getElementById('cmpOrigTA');
+  if(tA) tA.textContent = CMP_AGR[cmpOrigAgr] + ': componentes del crecimiento del estudio, por año';
   const comp = [['regla_producto','Regla de producto del modelo (elasticidad 1)',tok('--ink-mid')],['calendario','Calendario',tok('--line-2')],
     ['fuera_de_punta','Fuera de punta, sobre esa regla','#C0392B'],['puntas','Puntas mañana y tarde, sobre esa regla','#E07A1F'],
     ['resto','Transición y fin de semana, sobre esa regla','#E9B872']];
@@ -9278,7 +9222,7 @@ function cmpOrigen(){
   const W = 560, H = 290, m = {l:40, r:12, t:18, b:34}, lo = -6, hi = 22;
   const Y = v => m.t + (hi - v)/(hi - lo)*(H - m.t - m.b);
   const X = i => m.l + 45 + i*98 + (i === 4 ? 14 : 0);
-  let s = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Componentes del crecimiento del estudio 2023 por año, conjunto">';
+  let s = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Componentes del crecimiento del estudio 2023 por año, '+CMP_AGR[cmpOrigAgr]+'">';
   [-5,0,5,10,15,20].forEach(v => { s += '<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="'+tok(v===0?'--ink-lo':'--line')+'" stroke-width="'+(v===0?1:.6)+'"/>'
     + '<text x="'+(m.l-6)+'" y="'+(Y(v)+3)+'" text-anchor="end" font-size="10" fill="'+tok('--ink-lo')+'">'+nd(v,0)+'</text>'; });
   cols.forEach((c,i) => {
@@ -9289,15 +9233,16 @@ function cmpOrigen(){
       if(h >= 0) pos += h; else neg += h; });
     const yt = Y(r.total);
     s += '<path d="M'+X(i)+' '+(yt-5)+' l5 5 l-5 5 l-5 -5 z" fill="'+tok('--ink')+'"/>'
-      + '<text x="'+X(i)+'" y="'+(Y(Math.max(pos, r.total))-7)+'" text-anchor="middle" font-size="11" font-weight="700" fill="'+tok('--ink')+'">'+nd(r.total)+'</text>';
-    const o = R.observado_red_crec[c];
-    s += '<circle cx="'+X(i)+'" cy="'+Y(o)+'" r="4.5" fill="'+tok('--surface')+'" stroke="#2E8B57" stroke-width="2"><title>Observado: '+cPct(o)+'</title></circle>'
-      + '<text x="'+X(i)+'" y="'+(H-12)+'" text-anchor="middle" font-size="11" fill="'+tok('--ink-mid')+'">'+(c==='2022_2026'?'2022–2026':c)+'</text>';
+      + '<text x="'+X(i)+'" y="'+(Y(Math.max(pos, r.total))-7)+'" text-anchor="middle" font-size="11" font-weight="700" fill="'+tok('--ink')+'">'+nd(Math.abs(r.total)<0.05?0:r.total)+'</text>';   // sin «−0,0»
+    const o = R.observado_red_crec[c];      // lo observado existe sólo para el conjunto
+    if(conObs) s += '<circle cx="'+X(i)+'" cy="'+Y(o)+'" r="4.5" fill="'+tok('--surface')+'" stroke="#2E8B57" stroke-width="2"><title>Observado: '+cPct(o)+'</title></circle>';
+    s += '<text x="'+X(i)+'" y="'+(H-12)+'" text-anchor="middle" font-size="11" fill="'+tok('--ink-mid')+'">'+(c==='2022_2026'?'2022–2026':c)+'</text>';
   });
   cA.innerHTML = s + '</svg>';
   document.getElementById('cmpOrigLA').innerHTML = comp.map(([,t,col]) => '<span class="grp"><i style="background:'+col+';height:9px"></i>'+t+'</span>').join('')
     + '<span class="grp"><i style="background:'+tok('--ink')+';width:9px;height:9px;transform:rotate(45deg)"></i>Total del estudio</span>'
-    + '<span class="grp"><i style="width:9px;height:9px;border:2px solid #2E8B57;border-radius:50%;background:transparent"></i>Observado (2026: cierre estimado)</span>';
+    + (conObs ? '<span class="grp"><i style="width:9px;height:9px;border:2px solid #2E8B57;border-radius:50%;background:transparent"></i>Observado (2026: cierre estimado)</span>'
+              : '<span class="grp">Lo observado se muestra sólo para el conjunto, como en el informe final.</span>');
   // gráfico B: períodos, estudio frente a observado
   const Cc = R.contraste_2023_2025[cmpOrigConc], per = [['NT1','06–07'],['AM','Punta mañana'],['IP','Fuera de punta'],['PM','Punta tarde'],['NT2','19–20'],['NT','Noche']];
   const vs = per.flatMap(([p]) => [Cc[p].modelo, Cc[p].observado]);
@@ -9316,7 +9261,8 @@ function cmpOrigen(){
   document.getElementById('cmpOrigLB').innerHTML = '<span class="grp"><i style="background:#C0392B;height:9px"></i>Estudio 2023</span>'
     + '<span class="grp"><i style="background:'+tok('--ink-mid')+';height:9px"></i>Observado</span>';
   // nota con las cifras
-  const r = g['2022_2026'], ex = r.total - r.regla_producto - r.calendario, A = R.concesiones.AVN['2022_2026'], T = R.concesiones.TSC['2022_2026'];
+  // la lectura es la del conjunto, cualquiera sea la agrupación del gráfico
+  const r = R.concesiones.red['2022_2026'], ex = r.total - r.regla_producto - r.calendario, A = R.concesiones.AVN['2022_2026'], T = R.concesiones.TSC['2022_2026'];
   const o = R.observado_red_M, E = R.enlace_vs_resto_asignados, CA = R.contraste_2023_2025.AVN;
   const sp = v => (Math.exp(v/100) - 1)*100;   // el JSON trae log×100; el texto lo lee como porcentaje (T66, 28-09-2026)
   document.getElementById('cmpOrigNota').innerHTML = '<b>Lectura.</b> El conjunto pasa de '+nd(r.nivel_M[0])+' a '+nd(r.nivel_M[1])+' millones entre 2022 y 2026 en '
@@ -9334,6 +9280,7 @@ function cmpOrigen(){
     + 'la regla de producto es el crecimiento del período nocturno del día laboral; observado 2026 = cierre estimado de '+nd(o['2026'])+' M.';
 }
 seg('cmpOrigC', v=>{ cmpOrigConc = v; cmpOrigen(); });
+seg('cmpOrigAg', v=>{ cmpOrigAgr = v; cmpOrigen(); });
 
 function comparativo(){
   cmpOrigen(); cmpKpis(); cmpTraySel(); cmpFlujos(); cmpGraficos(); cmpTabla(); cmpMetodo();
@@ -9361,10 +9308,10 @@ const OYE_DESTINO = {
   cmpMensual:['#cmpMensual','dentro'], cmpHisto:['#cmpHisto','dentro'], cmpPerf:['#cmpPerfOP','antes'],
   cmpG1:['#cmpG1','dentro'], cmpG2:['#cmpG2','dentro'], cmpTabla:['#cmpTabla','antes'],
   vPerfil:['#vPerfil','dentro'], mapV:['#mapV','mapa'], vMensual:['#vMensual','dentro'],
-  vCurva:['#vCurva','dentro'], vRegla:['#vRegla','antes'], vFP:['#vFPtab','antes'],
+  vRegla:['#vRegla','antes'], vFP:['#vFPtab','antes'],
   simG1:['#simG1','dentro'], simG2:['#simG2','dentro'],
   elBarras:['#elBarras','dentro'], elDisp:['#elDisp','dentro'], elAuto:['#elAuto','dentro'],
-  cuCurva:['#cuCurva','dentro'], esTray:['#esTray','dentro'], esCasc:['#esCasc','dentro'],
+  esTray:['#esTray','dentro'], esCasc:['#esCasc','dentro'],
   calGantt:['#calGantt','dentro'], calObra:['#calObra','dentro'], esBrecha:['#esBrecha','dentro'],
   coTray:['#coTray','antes'], coSup:['#coSupuestos','antes'], coDif:['#coDiferencias','antes'],
   simUso:['#vPropio .sim4','antes'], boUso:['#vObjetivo .bo-obj','antes'],
@@ -10265,7 +10212,6 @@ const GRUPOS = {
     {v:'propio',      t:'Simulador de demanda', s:'qué tendría que pasar'},
     {v:'objetivo',    t:'Buscar objetivo', s:'qué combinación llega a una cifra dada'},
     {v:'elasticidad', t:'Elasticidad al PIB', s:'veinte años de tránsito medido'},
-    {v:'curvas',      t:'Curva flujo–velocidad', s:'recalibrada contra la del estudio'},
     {v:'escenario',   t:'Escenario V&R', s:'demanda 2026–2037'},
     {v:'proyTSC',     t:'Túnel: Lo Saldes y AVO1', s:'el efecto de cada obra, medido'},
     {v:'proyAVN',     t:'Vespucio Norte: Lo Saldes y AVO1', s:'el efecto de cada obra, medido'}],
@@ -10273,7 +10219,7 @@ const GRUPOS = {
 const SEC = {general:'vGeneral', tendencial:'vTendencial',
              medido:'vMedido', medidoDia:'vMedidoDia',
              comparativo:'vComparativo', velocidades:'vVelocidades', calendario:'vCalendario', propio:'vPropio',
-             elasticidad:'vElasticidad', curvas:'vCurvas', escenario:'vEscenario', concesionaria:'vConcesionaria',
+             elasticidad:'vElasticidad', escenario:'vEscenario', concesionaria:'vConcesionaria',
              objetivo:'vObjetivo', proyTSC:'vProyTSC', proyAVN:'vProyAVN'};
 let grupo = 'medido', seccion = 'medido';
 
@@ -10312,7 +10258,6 @@ function verSeccion(v){
   if(v==='velocidades') velocidades();
   if(v==='calendario') calendario();
   if(v==='elasticidad') econElast();
-  if(v==='curvas') econCurvas();
   if(v==='escenario') econEscenario();
   if(v==='objetivo') econObjetivo();
   if(v==='concesionaria') concesionaria();
@@ -10390,7 +10335,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 66;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 67;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
