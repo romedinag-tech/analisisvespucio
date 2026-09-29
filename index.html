@@ -1709,7 +1709,9 @@ body.oyeAbierto{padding-bottom:86px}
       <span class="tipw" tabindex="0">Qué es cada serie <span class="tipi">?</span><span class="tip" role="tooltip" id="coTipSeries"></span></span></p>
     <div class="kpis" id="coKpis"></div>
     <div class="chartbox">
-      <div class="t">Transacciones anuales de la red, AVN y túnel</div>
+      <div class="t" id="coTitTray">Transacciones anuales del conjunto AVN + túnel</div>
+      <div class="ctrl" style="margin:4px 0"><span class="seg" id="coAgr"><button data-v="red" class="on">Conjunto</button>
+        <button data-v="AVN">Vespucio Norte</button><button data-v="TSC">Túnel</button></span></div>
       <div id="coTray"></div>
       <div class="legend" id="coLtray"></div>
     </div>
@@ -7244,44 +7246,52 @@ function tablaALupa(tabla, arma, titulo){
   tabla.onkeydown = ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); abre(); } };
 }
 
-const COX = {curvas:{med:true, vyr:true, e23:true, d26:true, c17:true, c20:true, cot:false, mc:false}};
+const COX = {agr:'red', curvas:{med:true, vyr:true, e23:true, d26:true, c17:true, c20:true, cot:false, mc:false}};
+const CO_AGR = {red:'del conjunto AVN + túnel', AVN:'de Américo Vespucio Norte', TSC:'del Túnel San Cristóbal'};
+seg('coAgr', v=>{ COX.agr = v; concesionaria(); });
 function concesionaria(){
   const CP = ELA.concesionaria.por_portico, CX = ELA.curvas_externas, V28 = ELA.v28;
   /* línea V&R del esquema acordado, desde el medido de 2025; sus cotas por efecto de proyectos y la banda P10–P90 del Montecarlo */
   const serM = o => Object.keys(o).map(Number).sort((p,q)=>p-q).map(a=>[a, o[a]/1e6]);
-  const vrPts = [[2025, C.historia['2025']/1e6]].concat(serM(V28.series.central));
+  /* T78 (RM, 29-09-2026): el gráfico y sus indicadores, por agrupación; el cuadro de supuestos de abajo sigue en el conjunto (m, e37) */
+  const ag = COX.agr, HA = ag === 'red' ? C.historia : VM.historia[ag];
+  const vrPts = [[2025, HA['2025']/1e6]].concat(serM(V28S(ag, 'central')));
   const BANDAS = [
-    {k:'cot', t:'Cotas de la línea V&R (efecto de proyectos)', col:tok('--accent'), op:.22, lo:V28.series.maximo, hi:V28.series.minimo},
-    {k:'mc', t:'Banda Montecarlo P10–P90 (cinco dimensiones)', col:tok('--ink-lo'), op:.14, lo:V28.montecarlo.percentiles['10'], hi:V28.montecarlo.percentiles['90']}];
-  const i37 = ANIOS.indexOf(2037), e37 = S('tx', i37)/1e6;
-  const m = (k, a) => CX[k].M[String(a)];
+    {k:'cot', t:'Cotas de la línea V&R (efecto de proyectos)', col:tok('--accent'), op:.22, lo:V28S(ag, 'maximo'), hi:V28S(ag, 'minimo')},
+    {k:'mc', t:'Banda Montecarlo P10–P90 (cinco dimensiones)', col:tok('--ink-lo'), op:.14, lo:V28MC(ag).percentiles['10'], hi:V28MC(ag).percentiles['90']}];
+  const i37 = ANIOS.indexOf(2037), e37 = S('tx', i37)/1e6, e37A = S_AG(ag, 'tx', i37)/1e6;
+  const m = (k, a) => CX[k].M[String(a)], mA = (k, a) => CX_AG(ag, k)[String(a)];
+  const tA = document.getElementById('coTitTray');
+  if(tA) tA.textContent = 'Transacciones anuales ' + CO_AGR[ag];
   const K = [
-    ['Concesionaria, 17 pórticos', nd(m('concesionaria_17', 2037))+' M', '2037, comparable con las demás series'],
-    ['Con pórticos 18–20', nd(m('concesionaria_20', 2037))+' M', '2037; los tres nuevos suman '+nd(m('concesionaria_20', 2037)-m('concesionaria_17', 2037))+' M'],
-    ['Estudio Diadro 2026', nd(m('diadro_2026', 2037))+' M', '2037, actualización del estudio'],
-    ['Estudio Diadro 2023', nd(e37)+' M', '2037, caso Nuevo PIB'],
-    ['V&R', nd(V28.series.central['2037']/1e6)+' M', '2037; cotas '+nd(V28.series.maximo['2037']/1e6)+' a '+nd(V28.series.minimo['2037']/1e6)+' M']];
+    ['Concesionaria, 17 pórticos', nd(mA('concesionaria_17', 2037))+' M', '2037, comparable con las demás series'],
+    ['Con pórticos 18–20', nd(mA('concesionaria_20', 2037))+' M', '2037; los tres nuevos suman '+nd(mA('concesionaria_20', 2037)-mA('concesionaria_17', 2037))+' M'],
+    ['Estudio Diadro 2026', nd(mA('diadro_2026', 2037))+' M', '2037, actualización del estudio'],
+    ['Estudio Diadro 2023', nd(e37A)+' M', '2037, caso Nuevo PIB'],
+    ['V&R', nd(V28S(ag, 'central')['2037']/1e6)+' M', '2037; cotas '+nd(V28S(ag, 'maximo')['2037']/1e6)+' a '+nd(V28S(ag, 'minimo')['2037']/1e6)+' M']];
   document.getElementById('coKpis').innerHTML = K.map(k=>'<div class="kpi"><div class="label">'+k[0]+'</div><div class="v">'+k[1]
     +'</div><div class="s">'+k[2]+'</div></div>').join('');
 
   const V = COX.curvas;
   const SER = [
-    {k:'med', t:'Medido', col:tok('--ink'), w:2.4, dash:'', pts:Object.keys(C.historia).map(Number).filter(a=>a>=2015 && (C.historia_parcial||[]).indexOf(a)<0).sort((p,q)=>p-q).map(a=>[a, C.historia[a]/1e6])},
+    {k:'med', t:'Medido', col:tok('--ink'), w:2.4, dash:'', pts:Object.keys(HA).map(Number).filter(a=>a>=2015 && a<=2025 && (C.historia_parcial||[]).indexOf(a)<0).sort((p,q)=>p-q).map(a=>[a, HA[a]/1e6])},
     {k:'vyr', t:'V&R', col:tok('--tbp'), w:2.6, dash:'', pts:vrPts},
-    {k:'e23', t:'Estudio Diadro 2023 (Nuevo PIB)', col:tok('--ts'), w:2, dash:'6 4', pts:ANIOS.filter(a=>a>=2021).map(a=>[a, S('tx', ANIOS.indexOf(a))/1e6])},
-    {k:'d26', t:'Estudio Diadro 2026 (actualización)', col:tok('--ser-b'), w:2, dash:'8 3 2 3', pts:Object.keys(CX.diadro_2026.M).map(Number).sort((p,q)=>p-q).map(a=>[a, m('diadro_2026', a)])},
-    {k:'c17', t:'Concesionaria, estimación interna (17 pórticos)', col:tok('--ser-a'), w:2.4, dash:'1.5 2.5', pts:Object.keys(CX.concesionaria_17.M).map(Number).sort((p,q)=>p-q).map(a=>[a, m('concesionaria_17', a)])},
-    {k:'c20', t:'Concesionaria con pórticos 18–20 (no comparable)', col:tok('--ser-c'), w:2, dash:'5 2 1 2', pts:Object.keys(CX.concesionaria_20.M).map(Number).sort((p,q)=>p-q).map(a=>[a, m('concesionaria_20', a)])}];
+    {k:'e23', t:'Estudio Diadro 2023 (Nuevo PIB)', col:tok('--ts'), w:2, dash:'6 4', pts:ANIOS.filter(a=>a>=2021).map(a=>[a, S_AG(ag, 'tx', ANIOS.indexOf(a))/1e6])},
+    {k:'d26', t:'Estudio Diadro 2026 (actualización)', col:tok('--ser-b'), w:2, dash:'8 3 2 3', pts:Object.keys(CX_AG(ag, 'diadro_2026')).map(Number).sort((p,q)=>p-q).map(a=>[a, mA('diadro_2026', a)])},
+    {k:'c17', t:'Concesionaria, estimación interna (17 pórticos)', col:tok('--ser-a'), w:2.4, dash:'1.5 2.5', pts:Object.keys(CX_AG(ag, 'concesionaria_17')).map(Number).sort((p,q)=>p-q).map(a=>[a, mA('concesionaria_17', a)])},
+    {k:'c20', t:'Concesionaria con pórticos 18–20 (no comparable)', col:tok('--ser-c'), w:2, dash:'5 2 1 2', pts:Object.keys(CX_AG(ag, 'concesionaria_20')).map(Number).sort((p,q)=>p-q).map(a=>[a, mA('concesionaria_20', a)])}];
   const vis = SER.filter(x=>V[x.k]);
   const bVis = BANDAS.filter(b=>V[b.k]);
   const todos = vis.flatMap(x=>x.pts.map(p=>p[1])).concat(bVis.flatMap(b=>Object.values(b.lo).concat(Object.values(b.hi)).map(v=>v/1e6)));
-  const my = Math.ceil(Math.max(...(todos.length ? todos : [500]))/50)*50, yp = Math.max(0, Math.floor((Math.min(...(todos.length ? todos : [200])) - 20)/50)*50);
+  /* escala por agrupación (T78): el túnel mueve decenas de millones y con pasos de 50 quedaba aplastado */
+  const pasoY = ag === 'TSC' ? 5 : 50, holgY = ag === 'TSC' ? 2 : 20;
+  const my = Math.ceil(Math.max(...(todos.length ? todos : [500]))/pasoY)*pasoY, yp = Math.max(0, Math.floor((Math.min(...(todos.length ? todos : [200])) - holgY)/pasoY)*pasoY);
   const g = ejes(760, 300, 44, 22, 34), fx = [2015, 2037], fy = [yp, my, v=>Math.round(v)];
   const X = a => g.ml + (a-fx[0])/(fx[1]-fx[0])*g.iw;
   const HS = hitosSvg(anual(X), g.mt, g.ih+g.mt, fx[0]+.5, fx[1]+.5, 'real');
   let sv = '<svg viewBox="0 0 '+g.w+' '+g.h+'" role="img" aria-label="Proyecciones de la concesionaria">'
     + '<rect x="'+X(2015)+'" y="'+g.mt+'" width="'+(X(2025)-X(2015))+'" height="'+g.ih+'" fill="'+tok('--ink-lo')+'" opacity=".07"/>'
-    + HS.fondo + marco(g, [2015,2019,2023,2027,2031,2035,2037], [yp, Math.round((yp+my)/2), my], fx, fy);
+    + HS.fondo + marco(g, [2015,2019,2023,2027,2031,2035,2037], [yp, Math.round((yp+my)/2/pasoY)*pasoY, my], fx, fy);
   /* las sombras van debajo de las líneas: la más ancha primero */
   const Yv = v => g.ih - (v-fy[0])/(fy[1]-fy[0])*g.ih + g.mt;
   bVis.slice().reverse().forEach(b=>{ const aa = Object.keys(b.lo).map(Number).sort((p,q)=>p-q);
@@ -10335,7 +10345,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 67;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 68;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
