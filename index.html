@@ -2463,9 +2463,11 @@ L.control.attribution({prefix:false}).addAttribution(
    fondo «claro» y los rótulos de calle se piden en su versión oscura, como en el
    tablero del cliente, y tema() los vuelve a pedir al cambiar. */
 const esOscuro = () => document.documentElement.getAttribute('data-theme')==='dark';
+/* T83 (RM, 30-09-2026): CARTO pasó a exigir clave de API y sus teselas salían con la marca «API KEY REQUIRED» (también desde el sitio
+   publicado). Los nombres de calle vienen ahora de la capa de transporte de Esri, sin clave, con halo legible en los dos temas. */
 const ROTULOS = ()=>L.tileLayer(
-  'https://basemaps.cartocdn.com/rastertiles/'+(esOscuro()?'dark_only_labels':'voyager_only_labels')
-  +'/{z}/{x}/{y}{r}.png', {maxZoom:19, pane:'shadowPane'});
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+  {maxZoom:19, maxNativeZoom:19, pane:'shadowPane', attribution:'Calles © Esri', opacity:.5});   // tenue: dibuja también las calles y no debe tapar los flujos
 /* Un solo ayudante para los tres mapas: crea la capa de rotulos la primera vez
    que se pide y la conserva, para no rearmarla en cada encendido. Vive ACA, antes
    de todos los mapas, porque los tres lo llaman y el primero esta mas arriba. */
@@ -2482,11 +2484,11 @@ const _calC = {}, _calM = {}, _calG = {};
 const BASES = {
   claro: ()=>L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_'
     +(esOscuro()?'Dark':'Light')+'_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:19, maxNativeZoom:16}),
-  /* calles: CARTO Voyager. tile.openstreetmap.org bloquea el uso desde un sitio publicado (su política de teselas), y el
-     mapa quedaba con «acceso bloqueado» (RM, 23-09-2026). La gris de Esri no tiene teselas sobre el zoom 16: sin
-     maxNativeZoom mostraba «Map data not yet available» al acercarse; con él, estira la tesela 16. */
-  calles: ()=>L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    {maxZoom:19, maxNativeZoom:19, subdomains:'abcd'}),
+  /* calles: Esri World Street Map. tile.openstreetmap.org bloquea el uso desde un sitio publicado (su política de teselas;
+     RM, 23-09-2026) y CARTO Voyager exige clave de API desde septiembre de 2026 (T83). La gris de Esri no tiene teselas sobre
+     el zoom 16: sin maxNativeZoom mostraba «Map data not yet available» al acercarse; con él, estira la tesela 16. */
+  calles: ()=>L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    {maxZoom:19, maxNativeZoom:19}),
   satelite: ()=>L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19, maxNativeZoom:18}),
 };
 let baseActual = null;
@@ -10360,7 +10362,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 69;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 70;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
