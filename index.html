@@ -8520,7 +8520,9 @@ function econEscenario(){
     s2 += txtS(ml2-8,yy+15,p[0],{anc:'end',col:tok(T?'--ink':'--ink-mid'),w:T?700:400,fs:10})
       + '<rect x="'+Math.min(X2(0),X2(v)).toFixed(1)+'" y="'+(yy+3)+'" width="'+Math.max(1,Math.abs(X2(v)-X2(0))).toFixed(1)
       + '" height="18" rx="2" fill="'+tok(T?'--navy':v>=0?'--ts':'--tbfp')+'" opacity=".85"/>'
-      + txtS((v>=0?X2(v)+5:X2(v)-5),yy+16,(v>=0?'+':'−')+nd(Math.abs(v)),{anc:v>=0?'start':'end',col:tok('--ink'),w:700,fs:10}); });
+      + txtS((v>=0?X2(v)+5:X2(v)-5),yy+16,(v>=0?'+':'−')+nd(Math.abs(v))
+          + (T ? '' : ' · '+(Math.round(v/gapM*100)<0?'−'+(-Math.round(v/gapM*100)):Math.round(v/gapM*100))+' %'),   // T80: parte de la diferencia
+          {anc:v>=0?'start':'end',col:tok('--ink'),w:700,fs:10}); });
   svgW('esCasc', W2, H2, s2, 'Descomposición de la diferencia');
   document.getElementById('esLcasc').innerHTML = '<span class="grp"><span>Cuánto más proyecta el estudio de 2023 que la línea V&R en 2037: '
     + nd(gapM)+' millones de transacciones, '+sgnE((s37/c37-1)*100,1)+' % sobre la línea V&R. <b>El punto de partida explica '
@@ -8529,7 +8531,8 @@ function econEscenario(){
     + 'van en sentido contrario: los escenarios de Diadro, en el cálculo de V&R, les asignan un efecto mayor que el de V&R, y cambiar ese por el de V&R sube el 2037 en '
     + nd(BDr.proyectos)+' M. La recuperación del puente Lo Saldes suma '+nd(BDr.lo_saldes)+' M en el túnel, y el ritmo de crecimiento 2026–2037 '
     + 'agrega '+nd(-BDr.crecimiento_del_modelo)+' M. La pieza de proyectos supone, como hipótesis, que la proyección del estudio contiene ese efecto, lo que Diadro no declara. Las piezas se miden con lo que el estudio y Diadro entregan, sin leer sus supuestos con una regresión; lo que se '
-    + 'atribuye a cada una depende del orden en que se aplican, y el total no.</span></span>';
+    + 'atribuye a cada una depende del orden en que se aplican, y el total no. El porcentaje junto a cada pieza es su participación en la '
+    + 'diferencia total; negativo, si la pieza la achica.</span></span>';
 
   /* CÓMO SE FORMA LA DIFERENCIA CON EL ESTUDIO, AÑO A AÑO. Barras: lo que cada año agrega a la brecha, en puntos de
      logaritmo (crecimiento del estudio menos crecimiento V&R; hasta 2025 V&R es lo medido). Línea: la brecha acumulada, en %.
@@ -9217,6 +9220,14 @@ const CREC22 = {
   "2022_2026": 3.4916561036478897
  }
 };
+/* texto legible sobre un relleno: oscuro sobre claro y blanco sobre oscuro, según la luminancia (T80; vale en los dos temas) */
+function txtSobre(c){
+  let r, g, b; const m = String(c).trim().match(/^#([0-9a-f]{6})$/i), n = String(c).match(/rgba?\(([^)]+)\)/i);
+  if(m){ r = parseInt(m[1].slice(0,2),16); g = parseInt(m[1].slice(2,4),16); b = parseInt(m[1].slice(4,6),16); }
+  else if(n){ [r, g, b] = n[1].split(',').map(x=>parseFloat(x)); }
+  else return '#1A1A1A';
+  return (0.299*r + 0.587*g + 0.114*b)/255 > 0.6 ? '#1A1A1A' : '#FFFFFF';
+}
 let cmpOrigConc = 'AVN', cmpOrigAgr = 'red';   // T74 (RM, 28-09-2026): el gráfico de componentes también por concesión
 const CMP_AGR = {red:'Conjunto AVN + túnel', AVN:'Américo Vespucio Norte', TSC:'Túnel San Cristóbal'};
 function cmpOrigen(){
@@ -9238,8 +9249,11 @@ function cmpOrigen(){
   cols.forEach((c,i) => {
     const r = val(c); let pos = 0, neg = 0;
     comp.forEach(([k,,col]) => { const h = r[k]; const b = h >= 0 ? pos : neg; const y0 = Y(b + Math.max(h,0)), y1 = Y(b + Math.min(h,0));
+      const pp = Math.abs(r.total) >= 1 && Math.abs(h) >= 1 ? Math.round(h / r.total * 100) : null;   // T80: participación en la columna
       s += '<rect x="'+(X(i)-24)+'" y="'+y0+'" width="48" height="'+Math.max(0,y1-y0)+'" fill="'+col+'"><title>'+c.replace('_','–')+' · '
-        + comp.find(z=>z[0]===k)[1]+': '+cPct(h).replace(' %','')+' puntos</title></rect>';
+        + comp.find(z=>z[0]===k)[1]+': '+cPct(h).replace(' %','')+' puntos'+(pp===null?'':' · '+pp+' % del total de la columna')+'</title></rect>'
+        + (pp===null ? '' : '<text x="'+(X(i)-21)+'" y="'+((y0+y1)/2+3.5).toFixed(1)+'" font-size="9" font-weight="700" fill="'
+          + txtSobre(col)+'" style="pointer-events:none">'+(pp<0?'−'+(-pp):pp)+' %</text>');
       if(h >= 0) pos += h; else neg += h; });
     const yt = Y(r.total);
     s += '<path d="M'+X(i)+' '+(yt-5)+' l5 5 l-5 5 l-5 -5 z" fill="'+tok('--ink')+'"/>'
@@ -9251,6 +9265,7 @@ function cmpOrigen(){
   cA.innerHTML = s + '</svg>';
   document.getElementById('cmpOrigLA').innerHTML = comp.map(([,t,col]) => '<span class="grp"><i style="background:'+col+';height:9px"></i>'+t+'</span>').join('')
     + '<span class="grp"><i style="background:'+tok('--ink')+';width:9px;height:9px;transform:rotate(45deg)"></i>Total del estudio</span>'
+    + '<span class="grp">Porcentajes: participación de cada componente en el total de su columna (se omiten los tramos y los totales de menos de 1 punto)</span>'
     + (conObs ? '<span class="grp"><i style="width:9px;height:9px;border:2px solid #2E8B57;border-radius:50%;background:transparent"></i>Observado (2026: cierre estimado)</span>'
               : '<span class="grp">Lo observado se muestra sólo para el conjunto, como en el informe final.</span>');
   // gráfico B: períodos, estudio frente a observado
@@ -10345,7 +10360,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 68;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 69;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
