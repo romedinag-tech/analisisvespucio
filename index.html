@@ -1064,6 +1064,16 @@ select{border:1px solid var(--line-2);background:var(--surface);color:var(--ink)
 .lupaBtns{display:flex;gap:8px;flex-wrap:wrap}
 #lupaCuerpo{padding:16px 18px 20px;overflow:auto}
 #lupaCuerpo svg{width:100%;height:auto;display:block}
+/* T145 (RM, 10-10-2026): valores al pasar el mouse por las líneas del gráfico ampliado */
+#lupaCuerpo svg[data-hover]{cursor:crosshair}
+#hovTip{position:fixed;z-index:9500;pointer-events:none;background:var(--surface);color:var(--ink);
+ border:1px solid var(--line-2);border-radius:6px;box-shadow:var(--sh);padding:7px 10px;font-size:.8rem;
+ line-height:1.45;max-width:340px;font-variant-numeric:tabular-nums}
+#hovTip[hidden]{display:none}
+#hovTip .hA{font-weight:700;margin-bottom:2px}
+#hovTip .hF{display:flex;align-items:center;gap:6px;white-space:nowrap}
+#hovTip .hF i{display:inline-block;width:10px;height:10px;border-radius:2px;flex:0 0 auto}
+#hovTip .hS{color:var(--ink-lo);padding-left:16px;white-space:nowrap}
 .tagm{font-size:.68rem;font-weight:700;letter-spacing:.04em;padding:1px 7px;
  border-radius:20px;text-transform:uppercase}
 #cmpLado{height:min(58vh,520px);overflow:auto;border:1px solid var(--line);
@@ -6390,6 +6400,7 @@ function lupaAbre(svg, titulo){
   const cuerpo = document.getElementById('lupaCuerpo');
   cuerpo.innerHTML = '';
   cuerpo.appendChild(clon);
+  if(clon.hasAttribute('data-hover')) hoverActiva(clon);
   /* LA SIMBOLOGÍA VIAJA CON EL GRÁFICO. Al ampliar, la leyenda del recuadro va debajo, con lo que en la página está en
      globos (por ejemplo los hitos numerados) desplegado, para que cada número y cada línea se lean sin buscarlos. */
   const caja = svg.closest('.chartbox');
@@ -6418,10 +6429,73 @@ function lupaAbre(svg, titulo){
 function lupaCierra(){
   document.getElementById('lupa').hidden = true;
   document.body.style.overflow = '';
+  const t = document.getElementById('hovTip'); if(t) t.hidden = true;
+}
+
+/* VALORES AL PASAR EL MOUSE (T145, RM, 10-10-2026). En el gráfico ampliado, al posar el mouse sobre una línea aparece una ventana con el
+   año y el valor de esa línea en ese año. Si dos o más líneas pasan cerca del puntero —se cruzan o casi—, aparecen todas. En la
+   proyección de V&R, que es un intervalo, se marcan la línea central y los dos extremos de cada banda visible (cotas por proyectos o
+   Montecarlo P10–P90), y basta con estar dentro de la banda. Los datos viajan en el atributo data-hover del SVG, con los valores que
+   dibujan las líneas (no se recalculan), y se leen sólo en la lupa; la descarga como SVG o PNG no los lleva. */
+function hoverAttr(o){ return " data-hover='" + JSON.stringify(o).replace(/&/g, '&amp;').replace(/'/g, '&#39;') + "'"; }
+function hoverActiva(svg){
+  let D; try{ D = JSON.parse(svg.getAttribute('data-hover')); }catch(e){ return; }
+  const NS = 'http://www.w3.org/2000/svg';
+  const gO = document.createElementNS(NS, 'g'); gO.setAttribute('class', 'hovO'); gO.setAttribute('pointer-events', 'none');
+  svg.appendChild(gO);
+  let tip = document.getElementById('hovTip');
+  if(!tip){ tip = document.createElement('div'); tip.id = 'hovTip'; tip.hidden = true; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip); }
+  const X = a => D.ml + (a - D.x0)/(D.x1 - D.x0)*D.iw, Y = v => D.mt + D.ih - (v - D.y0)/(D.y1 - D.y0)*D.ih;
+  const val = (pts, a) => { for(const p of pts) if(p[0] === a) return p[1]; return null; };
+  const enX = (pts, x) => { for(let i = 1; i < pts.length; i++){ const xa = X(pts[i-1][0]), xb = X(pts[i][0]);
+    if(x >= xa && x <= xb){ const t = xb > xa ? (x - xa)/(xb - xa) : 0; return Y(pts[i-1][1] + (pts[i][1] - pts[i-1][1])*t); } } return null; };
+  const f = v => nd(v, D.dec) + ' M';
+  const circ = (x, y, col, lleno) => '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (lleno ? 3.8 : 3.2) + '" fill="'
+    + (lleno ? col : tok('--surface')) + '" stroke="' + (lleno ? tok('--surface') : col) + '" stroke-width="' + (lleno ? 1.2 : 1.6) + '"/>';
+  const esconde = () => { tip.hidden = true; gO.innerHTML = ''; };
+  const mueve = ev => {
+    const m = svg.getScreenCTM(); if(!m) return;
+    const pt = new DOMPoint(ev.clientX, ev.clientY).matrixTransform(m.inverse());
+    if(pt.x < D.ml - 4 || pt.x > D.ml + D.iw + 4 || pt.y < D.mt - 6 || pt.y > D.mt + D.ih + 6){ esconde(); return; }
+    const a = Math.min(D.x1, Math.max(D.x0, Math.round(D.x0 + (pt.x - D.ml)/D.iw*(D.x1 - D.x0))));
+    const TH = 8, filas = [];
+    D.series.forEach(s => {
+      const v = val(s.pts, a); if(v == null) return;
+      const yi = enX(s.pts, pt.x);
+      const bs = (s.bandas || []).map(b => ({t: b.t, lo: b.lo[a], hi: b.hi[a], v: b.v})).filter(b => b.lo != null && b.hi != null)
+        .map(b => ({t: b.t, lo: Math.min(b.lo, b.hi), hi: Math.max(b.lo, b.hi), v: b.v !== false}));
+      /* estar dentro de una banda cuenta sólo si la banda se ve; una apagada se informa, pero no captura el puntero */
+      const cerca = (yi != null && Math.abs(pt.y - yi) <= TH) || Math.abs(pt.y - Y(v)) <= TH
+        || bs.some(b => b.v && pt.y <= Y(b.lo) + 2 && pt.y >= Y(b.hi) - 2);
+      if(cerca) filas.push({s, v, bs});
+    });
+    if(!filas.length){ esconde(); return; }
+    filas.sort((p, q) => q.v - p.v);
+    let o = '<line x1="' + X(a).toFixed(1) + '" x2="' + X(a).toFixed(1) + '" y1="' + D.mt + '" y2="' + (D.mt + D.ih) + '" stroke="'
+      + tok('--ink-lo') + '" stroke-width=".8" stroke-dasharray="3 3"/>';
+    filas.forEach(r => {
+      r.bs.forEach(b => { o += '<line x1="' + X(a).toFixed(1) + '" x2="' + X(a).toFixed(1) + '" y1="' + Y(b.hi).toFixed(1) + '" y2="'
+        + Y(b.lo).toFixed(1) + '" stroke="' + r.s.col + '" stroke-width="1.4" stroke-opacity=".7"/>'
+        + circ(X(a), Y(b.lo), r.s.col, false) + circ(X(a), Y(b.hi), r.s.col, false); });
+      o += circ(X(a), Y(r.v), r.s.col, true); });
+    gO.innerHTML = o;
+    tip.innerHTML = '<div class="hA">Año ' + a + '</div>' + filas.map(r => '<div class="hF"><i style="background:' + r.s.col + '"></i>'
+      + r.s.t + ': <b>' + f(r.v) + '</b></div>' + r.bs.map(b => '<div class="hS">' + b.t + ': ' + nd(b.lo, D.dec) + ' – ' + f(b.hi)
+      + '</div>').join('')).join('');
+    tip.hidden = false;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = ev.clientX + 16, y = ev.clientY + 16;
+    if(x + w > window.innerWidth - 8) x = ev.clientX - w - 16;
+    if(y + h > window.innerHeight - 8) y = ev.clientY - h - 16;
+    tip.style.left = Math.max(4, x) + 'px'; tip.style.top = Math.max(4, y) + 'px';
+  };
+  svg.addEventListener('pointermove', mueve);
+  svg.addEventListener('pointerleave', esconde);
 }
 
 function svgTexto(svg){
   const c = svg.cloneNode(true);
+  c.removeAttribute('data-hover'); c.querySelectorAll('.hovO').forEach(n => n.remove());
   c.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
   /* fondo explicito: sin el, un PNG sobre fondo transparente se ve ilegible al
      pegarlo en un documento de fondo claro u oscuro */
@@ -7098,8 +7172,18 @@ function simPinta(){
   const L = (pares,col,gr,dash) => { const s = linea(g1, pares, fx, fy, col, gr);
     return dash ? s.replace('/>', ' stroke-dasharray="' + dash + '"/>') : s; };
   const ticks = [yPiso, Math.round((yPiso+my)/2), my];
+  /* T145: lo que lee la ventana de valores en la lupa, con las mismas series y bandas que se dibujan (millones) */
+  const mapM = (aa, fn) => { const o = {}; aa.forEach(a=>{ o[a] = fn(a)/1e6; }); return o; };
+  const bandasT = M ? [{t:'Montecarlo P10–P90', lo:mapM(aM, a=>PM(a,0)), hi:mapM(aM, a=>PM(a,4))}]
+    : bV ? [{t:'Cotas por proyectos', lo:mapM(aV, a=>bV.lo[a]), hi:mapM(aV, a=>bV.hi[a])}] : [];
+  const HOV = {x0:fx[0], x1:fx[1], y0:fy[0], y1:fy[1], ml:g1.ml, iw:g1.iw, mt:g1.mt, ih:g1.ih, dec:dM, series:[
+    {t:'Medido', col:tok('--ink'), pts:hAn.map(y=>[y, H[y]/1e6])}]
+    .concat(VIS.est23 ? [{t:'Diadro 2023', col:tok('--ts'), pts:ANIOS.filter(x=>x>=2025).map(x=>[x, S_AG(ag, 'tx', ANIOS.indexOf(x))/1e6])}] : [])
+    .concat(VIS.d26 ? [{t:'Diadro 2026', col:tok('--ser-b'), pts:serieExt('diadro_2026')}] : [])
+    .concat(VIS.conc ? [{t:'Concesionaria (17 pórticos)', col:tok('--ser-a'), pts:serieExt('concesionaria_17')}] : [])
+    .concat([{t:'Tus valores', col:tok('--tbp'), pts:Object.keys(sim).map(y=>[+y, sim[y]/1e6]), bandas:bandasT}])};
   document.getElementById('simG1').innerHTML =
-    '<svg viewBox="0 0 ' + g1.w + ' ' + g1.h + '" role="img" aria-label="Trayectoria simulada ' + AGR_DE[ag] + '">'
+    '<svg viewBox="0 0 ' + g1.w + ' ' + g1.h + '" role="img" aria-label="Trayectoria simulada ' + AGR_DE[ag] + '"' + hoverAttr(HOV) + '>'
     + '<rect x="' + xh(A0) + '" y="' + g1.mt + '" width="' + (xh(2025)-xh(A0)) + '" height="' + g1.ih
     + '" fill="' + tok('--ink-lo') + '" opacity=".08"/>'
     + HS.fondo + '<text x="' + ((xh(A0)+xh(2025))/2) + '" y="' + (g1.mt+12) + '" text-anchor="middle" font-size="8.5" fill="'
@@ -7385,7 +7469,13 @@ function concesionaria(){
   const g = ejes(760, 300, 44, 22, 34), fx = [2015, 2037], fy = [yp, my, v=>Math.round(v)];
   const X = a => g.ml + (a-fx[0])/(fx[1]-fx[0])*g.iw;
   const HS = hitosSvg(anual(X), g.mt, g.ih+g.mt, fx[0]+.5, fx[1]+.5, 'real');
-  let sv = '<svg viewBox="0 0 '+g.w+' '+g.h+'" role="img" aria-label="Proyecciones de la concesionaria">'
+  /* T145: lo que lee la ventana de valores en la lupa. La línea V&R lleva las bandas visibles: cotas por proyectos y Montecarlo */
+  const enM = o => { const r = {}; Object.keys(o).forEach(a=>{ r[a] = o[a]/1e6; }); return r; };
+  const HOV = {x0:fx[0], x1:fx[1], y0:fy[0], y1:fy[1], ml:g.ml, iw:g.iw, mt:g.mt, ih:g.ih, dec:ag === 'TSC' ? 2 : 1,
+    series:vis.map(x=>({t:x.t, col:x.col, pts:x.pts,
+      bandas:x.k === 'vyr' ? BANDAS.map(b=>({t:b.k === 'cot' ? 'Cotas por proyectos' : 'Montecarlo P10–P90', lo:enM(b.lo), hi:enM(b.hi),
+        v:!!V[b.k]})) : []}))};   /* V&R es un intervalo: sus extremos se informan aunque la sombra esté apagada (v: si se dibuja) */
+  let sv = '<svg viewBox="0 0 '+g.w+' '+g.h+'" role="img" aria-label="Proyecciones de la concesionaria"'+hoverAttr(HOV)+'>'
     + '<rect x="'+X(2015)+'" y="'+g.mt+'" width="'+(X(2025)-X(2015))+'" height="'+g.ih+'" fill="'+tok('--ink-lo')+'" opacity=".07"/>'
     + HS.fondo + marco(g, [2015,2019,2023,2027,2031,2035,2037], [yp, Math.round((yp+my)/2/pasoY)*pasoY, my], fx, fy);
   /* las sombras van debajo de las líneas: la más ancha primero */
@@ -10468,7 +10558,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 73;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 74;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
