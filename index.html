@@ -1641,6 +1641,15 @@ body.oyeAbierto{padding-bottom:86px}
     </div>
     <div class="aviso" id="simVeredicto" style="margin-top:14px"></div>
     <div class="chartbox" style="margin-top:14px">
+      <div class="t" id="simG4t">La diferencia con el estudio Diadro 2023 sobre las trayectorias, paso a paso</div>
+      <div class="d">Las mismas piezas del gráfico de barras, sobre las curvas: del estudio 2023 se baja a su versión con el punto de partida de la línea
+        (franja azul), se suman los proyectos que compiten y las dos recuperaciones de V&amp;R (franjas naranja, azul oscuro y verde) y queda, hasta la
+        línea, el ritmo de crecimiento del PIB y la elasticidad (franja morada). Entre las dos curvas sólo cabe la diferencia neta: las piezas que la
+        reducen se montan sobre la del punto de partida. Pasa el mouse para ver cada año.</div>
+      <div id="simG4"></div>
+      <div class="legend" id="simL4"></div>
+    </div>
+    <div class="chartbox" style="margin-top:14px">
       <div class="t" id="simG3t">De qué se compone la diferencia con el estudio Diadro 2023, año a año</div>
       <div class="d">Cuánto proyecta el estudio 2023 por sobre la línea del simulador cada año, y de qué se compone: el punto de partida de 2026
         —que ya contiene lo que Lo Saldes y la obra del enlace le restan a ese año—, los proyectos que compiten, las dos recuperaciones desde 2027 y,
@@ -7097,6 +7106,66 @@ function brPinta(vv, S){
     + '</tbody></table></div><div class="mcaviso" style="color:var(--ink-lo)">Las piezas están en ' + uRot + '. Positiva: amplía la diferencia; negativa: la reduce. '
     + 'Suman exactamente la diferencia de cada año. «Diferencia (%)» es cuánto proyecta el estudio sobre la línea. «PIB y elasticidad» es el ritmo de crecimiento '
     + 'de cada modelo, por diferencia: en el estudio arrastra también población, valor del tiempo y estratos de ingreso, que no declara por separado.</div>';
+  brLineas(R, A, dM, ndm, filas, M);
+}
+/* LA MISMA DIFERENCIA SOBRE LAS TRAYECTORIAS (T148b, RM, 14-10-2026): el gráfico de líneas del simulador con el recorrido del estudio a la
+   línea, paso a paso. Entre las dos curvas sólo cabe la diferencia NETA y las piezas brutas suman más (unas la amplían, otras la
+   reducen), así que no se apilan: se dibuja una línea por paso —Diadro 2023; con el punto de partida de la línea; más los proyectos que
+   compiten, Lo Saldes y la obra del enlace; la línea— y cada franja es el tramo entre dos pasos. Las franjas que van en sentido contrario
+   se montan, semitransparentes, sobre la anterior: eso es lo que devuelven. Siempre en millones. */
+function brLineas(R, A, dM, ndm, filas, M){
+  const g0 = document.getElementById('simG4'); if(!g0) return;
+  const ag = SIMX.agr, H = HIST_AG(ag), A0 = 2017, A1 = 2037, fx = [A0, A1];
+  const hAn = Object.keys(H).map(Number).filter(x=>x>=A0 && x<=2025).sort((p,q)=>p-q);
+  const est25 = S_AG(ag, 'tx', ANIOS.indexOf(2025))/1e6, h25 = H[2025]/1e6;
+  const P = {};   /* los pasos del recorrido, por año */
+  A.forEach(a=>{ const r = R[a], s1 = r.est - r.partida, s2 = s1 - r.vias, s3 = s2 - r.ls, s3b = s3 - r.enl;
+    P[a] = {s0: r.est, s1, s2, s3, s3b, v: r.vyr}; });
+  const vals = hAn.map(y=>H[y]/1e6).concat([est25, h25]).concat(...A.map(a=>Object.values(P[a])));
+  const pa = ag === 'TSC' ? 5 : 50, hol = ag === 'TSC' ? 2 : 20;
+  const my = Math.ceil(Math.max(...vals)/pa)*pa, y0 = Math.max(0, Math.floor((Math.min(...vals) - hol)/pa)*pa);
+  const g = ejes(640, 268, 40, 18, 30), fy = [y0, my, v=>Math.round(v)];
+  const X = a => g.ml + (a - fx[0])/(fx[1] - fx[0])*g.iw, Y = v => g.ih - (v - fy[0])/(fy[1] - fy[0])*g.ih + g.mt;
+  const banda = (k0, k1, col, op) => '<polygon points="' + A.map(a=>X(a).toFixed(1) + ',' + Y(P[a][k0]).toFixed(1)).join(' ') + ' '
+    + A.slice().reverse().map(a=>X(a).toFixed(1) + ',' + Y(P[a][k1]).toFixed(1)).join(' ') + '" fill="' + tok(col) + '" fill-opacity="' + op + '" stroke="none"/>';
+  const lin = (pts, col, gr, dash) => { const s = linea(g, pts, fx, fy, col, gr); return dash ? s.replace('/>', ' stroke-dasharray="' + dash + '"/>') : s; };
+  const HS = hitosSvg(anual(X), g.mt, g.ih + g.mt, A0 + .5, A1 + .5, 'real');
+  const ticks = [y0, Math.round((y0 + my)/2), my];
+  const ser = k => A.map(a=>[a, P[a][k]]);
+  let s = '<rect x="' + X(A0) + '" y="' + g.mt + '" width="' + (X(2025) - X(A0)) + '" height="' + g.ih + '" fill="' + tok('--ink-lo') + '" opacity=".08"/>'
+    + HS.fondo + '<text x="' + ((X(A0) + X(2025))/2) + '" y="' + (g.mt + 12) + '" text-anchor="middle" font-size="8.5" fill="' + tok('--ink-lo') + '" letter-spacing=".05em">MEDIDO</text>'
+    + marco(g, [2017, 2021, 2025, 2029, 2033, 2037], ticks, fx, fy)
+    + banda('s0', 's1', '--ser-b', .30) + banda('s1', 's2', '--ser-nar', .55) + banda('s2', 's3', '--ser-c', .55) + banda('s3', 's3b', '--ser-a', .55)
+    + banda('s3b', 'v', '--accent', .40)
+    + lin(ser('s1'), tok('--ser-b'), 1, '3 2') + lin(ser('s3b'), tok('--ser-a'), 1, '3 2')
+    + lin(hAn.map(y=>[y, H[y]/1e6]), tok('--ink'), 2.2)
+    + lin([[2025, est25]].concat(ser('s0')), tok('--ts'), 2, '6 4')
+    + lin([[2025, h25]].concat(ser('v')), tok('--tbp'), 2.6);
+  /* flecha doble del punto de partida, en 2026, entre las dos curvas */
+  const xa = X(2026), d26 = P[2026].s0 - P[2026].v;
+  s += '<line x1="' + xa.toFixed(1) + '" x2="' + xa.toFixed(1) + '" y1="' + Y(P[2026].s0).toFixed(1) + '" y2="' + Y(P[2026].v).toFixed(1) + '" stroke="' + tok('--ser-b')
+    + '" stroke-width="1.4" marker-start="url(#brFl2)" marker-end="url(#brFl2)"/><text x="' + (xa - 5).toFixed(1) + '" y="' + (Y((P[2026].s0 + P[2026].v)/2) + 3).toFixed(1)
+    + '" text-anchor="end" font-size="8.5" font-weight="600" fill="' + tok('--ser-b') + '" stroke="' + tok('--surface') + '" stroke-width="3" paint-order="stroke">Punto de partida: ' + ndm(d26, dM) + ' M</text>';
+  /* la diferencia neta de 2037, rotulada al final */
+  const d37 = P[2037].s0 - P[2037].v;
+  s += '<text x="' + (X(2037) - 4).toFixed(1) + '" y="' + (Y(P[2037].s0) - 6).toFixed(1) + '" text-anchor="end" font-size="8.5" font-weight="600" fill="' + tok('--ink') + '">Diferencia 2037: '
+    + ndm(d37, dM) + ' M</text>' + HS.frente;
+  const fM = x => ndm(x, dM) + ' M';
+  const HOVL = filas.map(f=>({a: f.a, x: X(f.a), w: (X(2027) - X(2026))*0.5, t: '<div class="hA">Año ' + f.a + '</div><div class="hF">Diadro 2023: <b>' + nd(f.est, dM) + ' M</b></div><div class="hF">'
+    + (M ? 'Línea central (tus valores)' : 'Tus valores') + ': <b>' + nd(f.vyr, dM) + ' M</b></div><div class="hF">Diferencia: <b>' + fM(f.d) + '</b> (' + nd(f.d/f.vyr*100, 1) + ' % sobre la línea)</div>'
+    + BR_PZ.map(z=>{ const v = R[f.a][z[0]]; return '<div class="hS"><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:' + tok(z[2]) + ';margin-right:5px"></i>' + z[1] + ': '
+      + (v > 0 ? '+' : '') + fM(v) + '</div>'; }).join('')}));
+  g0.innerHTML = '<svg viewBox="0 0 ' + g.w + ' ' + g.h + '" role="img" aria-label="La diferencia con el estudio 2023 sobre las trayectorias" data-brecha=\''
+    + JSON.stringify({mt: g.mt, ih: g.ih, b: HOVL}).replace(/&/g, '&amp;').replace(/'/g, '&#39;') + '\'>'
+    + '<defs><marker id="brFl2" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="' + tok('--ser-b') + '"/></marker></defs>'
+    + s + '</svg>';
+  const fr = (col, op, txt) => '<span class="grp" style="gap:5px"><i style="background:' + tok(col) + ';opacity:' + Math.min(1, op + .3) + ';height:10px;width:14px;border-radius:2px"></i><span>' + txt + '</span></span>';
+  document.getElementById('simL4').innerHTML = chip(tok('--ink'), 'Medido') + chip(tok('--ts'), 'Diadro 2023') + chip(tok('--tbp'), M ? 'Línea central (tus valores)' : 'Tus valores')
+    + fr('--ser-b', .30, 'Punto de partida 2026: hasta la línea punteada azul, el estudio con la partida de la línea') + fr('--ser-nar', .55, 'Proyectos que compiten')
+    + fr('--ser-c', .55, 'Recuperación de Lo Saldes') + fr('--ser-a', .55, 'Recuperación de la obra del enlace: hasta la línea punteada verde')
+    + fr('--accent', .40, 'PIB y elasticidad (ritmo de crecimiento)')
+    + '<span class="tipw der" tabindex="0">Hitos del gráfico <span class="tipi">?</span><span class="tip" role="tooltip">' + HS.ley + '</span></span>';
+  const t4 = document.getElementById('simG4t'); if(t4) t4.textContent = 'La diferencia con el estudio Diadro 2023 sobre las trayectorias, paso a paso · ' + AGR[ag];
 }
 /* ventana de valores de las barras de la diferencia, en la página y en la lupa */
 document.addEventListener('pointermove', ev=>{
@@ -10685,7 +10754,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 75;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 76;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
