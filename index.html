@@ -1654,7 +1654,7 @@ body.oyeAbierto{padding-bottom:86px}
       <div class="d">Cuánto proyecta el estudio 2023 por sobre la línea del simulador cada año, y de qué se compone: el punto de partida de 2026
         —que ya contiene lo que Lo Saldes y la obra del enlace le restan a ese año—, los proyectos que compiten, las dos recuperaciones desde 2027 y,
         por diferencia, el ritmo de crecimiento del PIB y la elasticidad. Es la conciliación del informe llevada a cada año, con tus valores; con el
-        Montecarlo, descompone su línea central. <span class="seg" id="simBRu" style="margin-left:6px"><button type="button" data-u="M">Millones</button><button type="button" data-u="pct">% de la línea</button><button type="button" data-u="prop">% de la diferencia</button></span></div>
+        Montecarlo, descompone su línea central. <span class="seg" id="simBRm" style="margin-left:6px"><button type="button" data-m="acum">Acumulado</button><button type="button" data-m="cambio">Cambio del año</button></span> <span class="seg" id="simBRu" style="margin-left:6px"><button type="button" data-u="M">Millones</button><button type="button" data-u="pct">% de la línea</button><button type="button" data-u="prop">% de la diferencia</button></span></div>
       <div id="simG3"></div>
       <div class="legend" id="simL3"></div>
     </div>
@@ -7026,15 +7026,17 @@ function simPars(){
    Cada pieza es su aporte a la diferencia Diadro 2023 − línea: positiva la amplía, negativa la reduce; suman exactamente la diferencia.
    En el conjunto se calcula por concesión y se suma. Con el escenario V&R, 2037 reproduce las cinco piezas del informe. */
 const BR_ANIO_EST = {r68: 2027, osa: 2030, onp: 2034};   /* año en que el estudio hace entrar cada proyecto: AN_EST de descompone_brecha_declarada.py */
-const BR_PZ = [['partida', 'Punto de partida 2026', '--ser-b'], ['vias', 'Proyectos que compiten', '--ser-nar'],
-               ['ls', 'Recuperación de Lo Saldes', '--ser-c'], ['enl', 'Recuperación de la obra del enlace', '--ser-a'],
-               ['ritmo', 'PIB y elasticidad (ritmo de crecimiento)', '--accent']];
+/* T148c (RM, 14-10-2026): el punto de partida se parte en dos tonos —la brecha fija de 2026 y lo que esa brecha crece al ritmo del
+   estudio, que en 2037 son 12,9 M en el conjunto—; juntos son la pieza del informe. El cuarto campo es la opacidad del tono. */
+const BR_PZ = [['p0', 'Brecha inicial de 2026 (fija)', '--ser-b', .9], ['pc', 'Crecimiento del estudio sobre esa brecha', '--ser-b', .42],
+               ['vias', 'Proyectos que compiten', '--ser-nar', .85], ['ls', 'Recuperación de Lo Saldes', '--ser-c', .85],
+               ['enl', 'Recuperación de la obra del enlace', '--ser-a', .85], ['ritmo', 'PIB y elasticidad (ritmo de crecimiento)', '--accent', .85]];
 function simBrecha(vv, S, ag){
   const conc = ag === 'red' ? ['AVN', 'TSC'] : [ag];
   const cum = (E, c) => { const o = {}; let s = 0; for(let a = 2026; a <= 2037; a++){ s += (E[c][a] || 0); o[a] = s; } return o; };
   const E1 = evConc(vv), E0 = evConc(Object.assign({}, vv, {ls: 0, enl: 0})), En = evConc(Object.assign({}, vv, {ls: 0}));
   const R = {};
-  for(let a = 2026; a <= 2037; a++) R[a] = {est: 0, vyr: 0, partida: 0, vias: 0, ls: 0, enl: 0, ritmo: 0};
+  for(let a = 2026; a <= 2037; a++) R[a] = {est: 0, vyr: 0, partida: 0, p0: 0, pc: 0, vias: 0, ls: 0, enl: 0, ritmo: 0};
   conc.forEach(c=>{
     const c1 = cum(E1, c), c0 = cum(E0, c), cn = cum(En, c), i26 = ANIOS.indexOf(2026), est26 = S_AG(c, 'tx', i26), v26 = S[c][2026];
     for(let a = 2026; a <= 2037; a++){
@@ -7047,74 +7049,105 @@ function simBrecha(vv, S, ag){
       const r = R[a];
       r.est += est/1e6; r.vyr += vyr/1e6; r.partida += (est - s1)/1e6; r.vias += (s1 - s2)/1e6; r.ls += (s2 - s3)/1e6;
       r.enl += (s3 - s3b)/1e6; r.ritmo += (s3b - vyr)/1e6;
+      /* la pieza del punto de partida = (est26 − v26) · est/est26: la brecha fija de 2026 más lo que crece al ritmo del estudio */
+      r.p0 += (est26 - v26)/1e6; r.pc += (est26 - v26)*(est/est26 - 1)/1e6;
     }
   });
   return R;
 }
-const BRX = {u: 'M'};   /* unidad del gráfico y del cuadro: M, % de la línea o % de la diferencia */
+/* unidad (M, % de la línea, % de la diferencia) y modo: «acum», el nivel de cada pieza ese año; «cambio», lo que cada pieza agrega
+   respecto del año anterior (2026 se muestra en nivel, porque es el punto de arranque) */
+const BRX = {u: 'M', modo: 'acum'};
 function brPinta(vv, S){
   const g0 = document.getElementById('simG3'); if(!g0) return;
   const ag = SIMX.agr, R = simBrecha(vv, S, ag), A = Object.keys(R).map(Number).sort((p,q)=>p-q), dM = ag === 'TSC' ? 2 : 1;
-  const U = BRX.u, cv = (a, x) => U === 'M' ? x : U === 'pct' ? x/R[a].vyr*100 : x/(R[a].est - R[a].vyr)*100;
-  const ndm = (x, d) => nd(x, d).replace('-', '−');
+  const MO = BRX.modo;
+  if(MO === 'cambio' && BRX.u === 'prop') BRX.u = 'M';   /* la proporción de un cambio que puede ser casi cero no se lee */
+  const U = BRX.u;
+  const pv = (a, k) => MO === 'acum' || a === 2026 ? R[a][k] : R[a][k] - R[a-1][k];
+  const dif = a => R[a].est - R[a].vyr, netv = a => MO === 'acum' || a === 2026 ? dif(a) : dif(a) - dif(a-1);
+  const cv = (a, x) => U === 'M' ? x : U === 'pct' ? x/R[a].vyr*100 : x/dif(a)*100;
+  /* un valor que redondea a cero no lleva signo: «−0,0» se leía como una pieza negativa */
+  const ndm = (x, d) => { const t = nd(x, d).replace('-', '−'); return /^[−+]?0(,0+)?$/.test(t) ? t.replace('−', '') : t; };
+  const sg = (x, d) => { const t = ndm(x, d); return x > 0 && !/^0(,0+)?$/.test(t) ? '+' + t : t; };
   const fu = (x, d) => U === 'M' ? ndm(x, d === undefined ? dM : d) + ' M' : ndm(x, 1) + ' %';
-  const uRot = U === 'M' ? 'millones de transacciones' : U === 'pct' ? '% de la línea V&R del año' : '% de la diferencia del año';
+  const uRot = (U === 'M' ? 'millones de transacciones' : U === 'pct' ? '% de la línea V&R del año' : '% de la diferencia del año')
+    + (MO === 'cambio' ? ' · cambio respecto del año anterior (2026, nivel)' : ' · nivel de cada año');
   const M = MC.modo === 'montecarlo' && MC.res;
-  /* gráfico: barras apiladas divergentes por año y la diferencia neta como punto */
-  const pos = a => BR_PZ.reduce((s, z)=> s + Math.max(0, cv(a, R[a][z[0]])), 0), neg = a => BR_PZ.reduce((s, z)=> s + Math.min(0, cv(a, R[a][z[0]])), 0);
-  const hi = Math.max(...A.map(pos)), lo = Math.min(0, ...A.map(neg));
-  const paso = U === 'M' ? (ag === 'TSC' ? 1 : 10) : 10, y1 = Math.ceil(hi*1.08/paso)*paso, y0 = Math.floor(lo*1.08/paso)*paso;
+  /* gráfico: barras apiladas divergentes por año y la diferencia neta (o su cambio) como punto */
+  const pos = a => BR_PZ.reduce((s, z)=> s + Math.max(0, cv(a, pv(a, z[0]))), 0), neg = a => BR_PZ.reduce((s, z)=> s + Math.min(0, cv(a, pv(a, z[0]))), 0);
+  const AV = MO === 'cambio' ? A.filter(a=>a > 2026) : A;      /* la escala del cambio no la aplasta el nivel de 2026 */
+  const hi = Math.max(0, ...AV.map(pos), ...AV.map(a=>cv(a, netv(a)))), lo = Math.min(0, ...AV.map(neg), ...AV.map(a=>cv(a, netv(a))));
+  const rng = hi - lo, paso = rng > 60 ? 10 : rng > 24 ? 5 : rng > 10 ? 2 : rng > 4 ? 1 : .5;
+  const y1 = Math.ceil(hi*1.08/paso)*paso || paso, y0 = Math.floor(lo*1.08/paso)*paso;
   const g = ejes(640, 268, 44, 22, 34), fx = [2025.4, 2037.6];
-  const X = a => g.ml + (a - fx[0])/(fx[1] - fx[0])*g.iw, Y = v => g.mt + g.ih - (v - y0)/(y1 - y0)*g.ih, bw = g.iw/(fx[1]-fx[0])*0.62;
+  const X = a => g.ml + (a - fx[0])/(fx[1] - fx[0])*g.iw, Y = v => g.mt + g.ih - (Math.max(y0, Math.min(y1, v)) - y0)/(y1 - y0)*g.ih, bw = g.iw/(fx[1]-fx[0])*0.62;
   let s = '';
   const tk = []; for(let v = y0; v <= y1 + 1e-9; v += paso) tk.push(v);
-  tk.forEach(v=>{ s += '<line x1="' + g.ml + '" x2="' + (g.ml + g.iw) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="' + tok(v === 0 ? '--ink-lo' : '--line')
-    + '" stroke-width="' + (v === 0 ? 1 : .6) + '"/><text x="' + (g.ml - 6) + '" y="' + (Y(v) + 3).toFixed(1) + '" text-anchor="end" font-size="9" fill="' + tok('--ink-lo') + '">' + ndm(v, 0) + '</text>'; });
+  tk.forEach(v=>{ s += '<line x1="' + g.ml + '" x2="' + (g.ml + g.iw) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="' + tok(Math.abs(v) < 1e-9 ? '--ink-lo' : '--line')
+    + '" stroke-width="' + (Math.abs(v) < 1e-9 ? 1 : .6) + '"/><text x="' + (g.ml - 6) + '" y="' + (Y(v) + 3).toFixed(1) + '" text-anchor="end" font-size="9" fill="' + tok('--ink-lo') + '">' + ndm(v, paso < 1 ? 1 : 0) + '</text>'; });
   A.forEach(a=>{ s += '<text x="' + X(a).toFixed(1) + '" y="' + (g.mt + g.ih + 14) + '" text-anchor="middle" font-size="9" fill="' + tok('--ink-lo') + '">' + a + '</text>'; });
   const netos = [];
   A.forEach(a=>{ let up = 0, dn = 0;
-    BR_PZ.forEach(z=>{ const v = cv(a, R[a][z[0]]); if(Math.abs(v) < 1e-9) return;
+    const corta = MO === 'cambio' && a === 2026;   /* en el modo cambio, 2026 va en nivel y se sale de la escala: barra cortada y rotulada */
+    BR_PZ.forEach(z=>{ const v = cv(a, pv(a, z[0])); if(Math.abs(v) < 1e-9) return;
       const b0 = v > 0 ? up : dn, b1 = b0 + v; if(v > 0) up = b1; else dn = b1;
       s += '<rect x="' + (X(a) - bw/2).toFixed(1) + '" y="' + Y(Math.max(b0, b1)).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(.5, Math.abs(Y(b0) - Y(b1))).toFixed(1)
-        + '" fill="' + tok(z[2]) + '" fill-opacity=".85"/>'; });
-    netos.push([a, cv(a, R[a].est - R[a].vyr)]); });
-  /* LA DIFERENCIA NETA SE ROTULA EN SU PUNTO (RM, 14-10-2026): el número iba sobre la barra positiva y en 2027 el 45,7 quedaba a la
-     altura de 60, donde llega el punto de partida; la barra de arriba es lo que amplía la diferencia, no la diferencia. Los puntos se
-     unen con una línea fina, que se lee como la serie de la diferencia. */
+        + '" fill="' + tok(z[2]) + '" fill-opacity="' + z[3] + '"' + (corta ? ' stroke="' + tok('--ink-lo') + '" stroke-dasharray="3 2" stroke-width=".8"' : '') + '/>'; });
+    if(!corta) netos.push([a, cv(a, netv(a))]);
+    else s += '<text x="' + (X(a) + bw/2 + 3).toFixed(1) + '" y="' + (g.mt + 9) + '" text-anchor="start" font-size="8" fill="' + tok('--ink-lo') + '" stroke="' + tok('--surface')
+      + '" stroke-width="3" paint-order="stroke">↑ nivel ' + fu(cv(a, dif(a))) + '</text>'; });
+  /* LA DIFERENCIA NETA SE ROTULA EN SU PUNTO (RM, 14-10-2026): la barra de arriba es lo que amplía la diferencia, no la diferencia */
   s += '<polyline points="' + netos.map(z=>X(z[0]).toFixed(1) + ',' + Y(z[1]).toFixed(1)).join(' ') + '" fill="none" stroke="' + tok('--ink') + '" stroke-width="1.1" stroke-opacity=".7"/>';
   netos.forEach(([a, net])=>{
     s += '<circle cx="' + X(a).toFixed(1) + '" cy="' + Y(net).toFixed(1) + '" r="3.4" fill="' + tok('--surface') + '" stroke="' + tok('--ink') + '" stroke-width="1.6"/>'
       + '<text x="' + (X(a) + 6).toFixed(1) + '" y="' + (Y(net) - 5).toFixed(1) + '" text-anchor="start" font-size="8.5" font-weight="700" fill="' + tok('--ink') + '" stroke="'
-      + tok('--surface') + '" stroke-width="3" paint-order="stroke">' + ndm(net, U === 'M' ? 1 : 0) + '</text>'; });
-  /* la flecha de dos puntas del punto de partida, junto a la barra de 2026 */
-  const p26 = cv(2026, R[2026].partida), xa = X(2026) - bw/2 - 7;
-  s += '<line x1="' + xa + '" x2="' + xa + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(p26).toFixed(1) + '" stroke="' + tok('--ser-b') + '" stroke-width="1.3" marker-start="url(#brFl)" marker-end="url(#brFl)"/>'
-    + '<text transform="translate(' + (X(2026) + 3).toFixed(1) + ',' + Y(p26/2).toFixed(1) + ') rotate(-90)" text-anchor="middle" font-size="8.5" font-weight="600" fill="#fff">Punto de partida: ' + fu(p26) + '</text>';
-  const filas = A.map(a=>({a, est: R[a].est, vyr: R[a].vyr, d: R[a].est - R[a].vyr, p: BR_PZ.map(z=>[z[1], cv(a, R[a][z[0]]), z[2]])}));
+      + tok('--surface') + '" stroke-width="3" paint-order="stroke">' + (MO === 'cambio' && net > 0 ? '+' : '') + ndm(net, U === 'M' ? 1 : 0) + '</text>'; });
+  /* la flecha de dos puntas del punto de partida, junto a la barra de 2026 (sólo en el nivel) */
+  if(MO === 'acum'){
+    const p26 = cv(2026, R[2026].partida), xa = X(2026) - bw/2 - 7;
+    s += '<line x1="' + xa + '" x2="' + xa + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(p26).toFixed(1) + '" stroke="' + tok('--ser-b') + '" stroke-width="1.3" marker-start="url(#brFl)" marker-end="url(#brFl)"/>'
+      + '<text transform="translate(' + (X(2026) + 3).toFixed(1) + ',' + Y(p26/2).toFixed(1) + ') rotate(-90)" text-anchor="middle" font-size="8.5" font-weight="600" fill="#fff">Punto de partida: ' + fu(p26) + '</text>';
+  }
+  const filas = A.map(a=>({a, est: R[a].est, vyr: R[a].vyr, d: dif(a), dn: netv(a), p: BR_PZ.map(z=>[z[1], cv(a, pv(a, z[0])), z[2], z[3]])}));
+  const sw = z => '<i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:' + tok(z[2]) + ';opacity:' + Math.min(1, z[3] + .1) + ';margin-right:5px"></i>';
   const HOVB = filas.map(f=>({a: f.a, x: X(f.a), w: bw, t: '<div class="hA">Año ' + f.a + '</div><div class="hF">Diadro 2023: <b>' + nd(f.est, dM) + ' M</b></div><div class="hF">'
-    + (M ? 'Línea central (tus valores)' : 'Tus valores') + ': <b>' + nd(f.vyr, dM) + ' M</b></div><div class="hF">Diferencia: <b>' + fu(cv(f.a, f.d)) + '</b> (' + nd(f.d/f.vyr*100, 1) + ' % sobre la línea)</div>'
-    + f.p.map(z=>'<div class="hS"><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:' + tok(z[2]) + ';margin-right:5px"></i>' + z[0] + ': ' + (z[1] > 0 ? '+' : '') + fu(z[1]) + '</div>').join('')}));
+    + (M ? 'Línea central (tus valores)' : 'Tus valores') + ': <b>' + nd(f.vyr, dM) + ' M</b></div><div class="hF">Diferencia: <b>' + ndm(f.d, dM) + ' M</b> (' + nd(f.d/f.vyr*100, 1) + ' % sobre la línea)</div>'
+    + (MO === 'cambio' && f.a > 2026 ? '<div class="hF">Cambio de la diferencia respecto de ' + (f.a - 1) + ': <b>' + (f.dn > 0 ? '+' : '') + ndm(f.dn, dM) + ' M</b></div>' : '')
+    + f.p.map(z=>'<div class="hS">' + sw(z) + z[0] + ': ' + (U === 'M' ? sg(z[1], dM) + ' M' : sg(z[1], 1) + ' %') + '</div>').join('')
+    + (MO === 'acum' ? '<div class="hS" style="margin-top:3px">Punto de partida completo: ' + fu(cv(f.a, R[f.a].partida)) + (f.a > 2026 ? ' (los ' + ndm(R[2026].partida, dM) + ' M de 2026 crecidos al ritmo del estudio)' : '') + '</div>' : '')}));
   g0.innerHTML = '<svg viewBox="0 0 ' + g.w + ' ' + g.h + '" role="img" aria-label="De qué se compone la diferencia con el estudio 2023" data-brecha=\''
     + JSON.stringify({mt: g.mt, ih: g.ih, b: HOVB}).replace(/&/g, '&amp;').replace(/'/g, '&#39;') + '\'>'
     + '<defs><marker id="brFl" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="' + tok('--ser-b') + '"/></marker></defs>'
     + s + '<text x="' + g.ml + '" y="' + (g.mt - 14) + '" font-size="9" fill="' + tok('--ink-lo') + '">' + uRot + '</text></svg>';
-  document.getElementById('simL3').innerHTML = BR_PZ.map(z=>'<span class="grp" style="gap:5px"><i style="background:' + tok(z[2]) + ';height:10px;width:14px;border-radius:2px"></i><span>' + z[1] + '</span></span>').join('')
-    + '<span class="grp" style="gap:5px"><i style="width:9px;height:9px;border-radius:50%;border:1.6px solid ' + tok('--ink') + ';background:' + tok('--surface') + '"></i><span>Diferencia neta (Diadro 2023 − línea)</span></span>'
-    + '<div class="mcaviso" style="flex-basis:100%;color:var(--ink-lo)">Cómo leerlo: sobre el cero, lo que amplía la diferencia; bajo el cero, lo que la reduce. La '
-    + 'diferencia de cada año es el punto, que resulta de restar: no es la altura de la barra de arriba. En 2027, por ejemplo, el punto de partida '
-    + 'suma ' + fu(cv(2027, R[2027].partida)) + ' y el resto de las piezas, en conjunto, ' + (cv(2027, R[2027].est - R[2027].vyr - R[2027].partida) < 0 ? 'resta ' : 'suma ')
-    + fu(Math.abs(cv(2027, R[2027].est - R[2027].vyr - R[2027].partida))) + ': la diferencia es ' + fu(cv(2027, R[2027].est - R[2027].vyr)) + '.</div>';
+  const r27 = R[2027], e27 = MO === 'acum'
+    ? 'En 2027, por ejemplo, el punto de partida suma ' + fu(cv(2027, r27.partida)) + ' y el resto de las piezas, en conjunto, ' + (cv(2027, dif(2027) - r27.partida) < 0 ? 'resta ' : 'suma ')
+      + fu(Math.abs(cv(2027, dif(2027) - r27.partida))) + ': la diferencia es ' + fu(cv(2027, dif(2027))) + '. El punto de partida va en dos tonos: la brecha fija de 2026 y lo que '
+      + 'esa brecha crece al ritmo del estudio, porque los dos modelos proyectan en tasas.'
+    : 'En este modo cada barra es lo que la pieza agrega a la diferencia respecto del año anterior: la obra del enlace pesa en 2027 y después '
+      + 'sólo crece con la línea; cada proyecto, en su año de entrada. 2026 va en nivel, cortado, porque es el punto de arranque.';
+  document.getElementById('simL3').innerHTML = BR_PZ.map(z=>'<span class="grp" style="gap:5px"><i style="background:' + tok(z[2]) + ';opacity:' + Math.min(1, z[3] + .1) + ';height:10px;width:14px;border-radius:2px"></i><span>' + z[1] + '</span></span>').join('')
+    + '<span class="grp" style="gap:5px"><i style="width:9px;height:9px;border-radius:50%;border:1.6px solid ' + tok('--ink') + ';background:' + tok('--surface') + '"></i><span>'
+    + (MO === 'cambio' ? 'Cambio de la diferencia' : 'Diferencia neta (Diadro 2023 − línea)') + '</span></span>'
+    + '<div class="mcaviso" style="flex-basis:100%;color:var(--ink-lo)">Cómo leerlo: sobre el cero, lo que amplía la diferencia; bajo el cero, lo que la reduce. El '
+    + 'punto resulta de restar: no es la altura de la barra de arriba. ' + e27 + '</div>';
   document.querySelectorAll('#simBRu button').forEach(b=>{ b.classList.toggle('on', b.dataset.u === U);
+    b.disabled = MO === 'cambio' && b.dataset.u === 'prop';
     b.onclick = ()=>{ BRX.u = b.dataset.u; const v = valSIM(); brPinta(v, simCalc(v)); }; });
+  document.querySelectorAll('#simBRm button').forEach(b=>{ b.classList.toggle('on', b.dataset.m === MO);
+    b.onclick = ()=>{ BRX.modo = b.dataset.m; const v = valSIM(); brPinta(v, simCalc(v)); }; });
   const t3 = document.getElementById('simG3t'); if(t3) t3.textContent = 'De qué se compone la diferencia con el estudio Diadro 2023, año a año · ' + AGR[ag];
-  /* el cuadro, en la misma unidad */
+  /* el cuadro, en la misma unidad y el mismo modo */
   const tb = document.getElementById('simTB');
   if(tb) tb.innerHTML = '<div style="overflow-x:auto"><table class="mctab"><thead><tr><th>Año</th><th>Diadro 2023 (M)</th><th>' + (M ? 'Línea central' : 'Tus valores') + ' (M)</th>'
-    + '<th>Diferencia (M)</th><th>Diferencia (%)</th>' + BR_PZ.map(z=>'<th>' + z[1] + '</th>').join('') + '</tr></thead><tbody>'
-    + filas.map(f=>'<tr><td>' + f.a + '</td><td>' + nd(f.est, dM) + '</td><td>' + nd(f.vyr, dM) + '</td><td><b>' + nd(f.d, dM) + '</b></td><td>' + nd(f.d/f.vyr*100, 1) + ' %</td>'
-      + f.p.map(z=>'<td>' + (Math.abs(z[1]) < 5e-4 ? '—' : (z[1] > 0 ? '+' : '') + (U === 'M' ? ndm(z[1], dM) : ndm(z[1], 1) + ' %')) + '</td>').join('') + '</tr>').join('')
+    + '<th>Diferencia (M)</th><th>Diferencia (%)</th>' + (MO === 'cambio' ? '<th>Cambio de la diferencia (M)</th>' : '') + BR_PZ.map(z=>'<th>' + z[1] + '</th>').join('') + '</tr></thead><tbody>'
+    + filas.map(f=>'<tr><td>' + f.a + '</td><td>' + nd(f.est, dM) + '</td><td>' + nd(f.vyr, dM) + '</td><td><b>' + ndm(f.d, dM) + '</b></td><td>' + nd(f.d/f.vyr*100, 1) + ' %</td>'
+      + (MO === 'cambio' ? '<td>' + (f.a === 2026 ? '—' : (f.dn > 0 ? '+' : '') + ndm(f.dn, dM)) + '</td>' : '')
+      + f.p.map(z=>'<td>' + (Math.abs(z[1]) < 5e-4 ? '—' : (U === 'M' ? sg(z[1], dM) : sg(z[1], 1) + ' %')) + '</td>').join('') + '</tr>').join('')
     + '</tbody></table></div><div class="mcaviso" style="color:var(--ink-lo)">Las piezas están en ' + uRot + '. Positiva: amplía la diferencia; negativa: la reduce. '
-    + 'Suman exactamente la diferencia de cada año. «Diferencia (%)» es cuánto proyecta el estudio sobre la línea. «PIB y elasticidad» es el ritmo de crecimiento '
+    + (MO === 'cambio' ? 'Desde 2027 suman exactamente el cambio de la diferencia respecto del año anterior; en 2026, la diferencia. '
+                       : 'Suman exactamente la diferencia de cada año; las dos columnas del punto de partida juntas son la pieza del informe. ')
+    + '«Diferencia (%)» es cuánto proyecta el estudio sobre la línea. «PIB y elasticidad» es el ritmo de crecimiento '
     + 'de cada modelo, por diferencia: en el estudio arrastra también población, valor del tiempo y estratos de ingreso, que no declara por separado.</div>';
   brLineas(R, A, dM, ndm, filas, M);
 }
@@ -7130,7 +7163,7 @@ function brLineas(R, A, dM, ndm, filas, M){
   const est25 = S_AG(ag, 'tx', ANIOS.indexOf(2025))/1e6, h25 = H[2025]/1e6;
   const P = {};   /* los pasos del recorrido, por año */
   A.forEach(a=>{ const r = R[a], s1 = r.est - r.partida, s2 = s1 - r.vias, s3 = s2 - r.ls, s3b = s3 - r.enl;
-    P[a] = {s0: r.est, s1, s2, s3, s3b, v: r.vyr}; });
+    P[a] = {s0: r.est, s0p: r.est - r.pc, s1, s2, s3, s3b, v: r.vyr}; });
   const vals = hAn.map(y=>H[y]/1e6).concat([est25, h25]).concat(...A.map(a=>Object.values(P[a])));
   const pa = ag === 'TSC' ? 5 : 50, hol = ag === 'TSC' ? 2 : 20;
   const my = Math.ceil(Math.max(...vals)/pa)*pa, y0 = Math.max(0, Math.floor((Math.min(...vals) - hol)/pa)*pa);
@@ -7145,7 +7178,7 @@ function brLineas(R, A, dM, ndm, filas, M){
   let s = '<rect x="' + X(A0) + '" y="' + g.mt + '" width="' + (X(2025) - X(A0)) + '" height="' + g.ih + '" fill="' + tok('--ink-lo') + '" opacity=".08"/>'
     + HS.fondo + '<text x="' + ((X(A0) + X(2025))/2) + '" y="' + (g.mt + 12) + '" text-anchor="middle" font-size="8.5" fill="' + tok('--ink-lo') + '" letter-spacing=".05em">MEDIDO</text>'
     + marco(g, [2017, 2021, 2025, 2029, 2033, 2037], ticks, fx, fy)
-    + banda('s0', 's1', '--ser-b', .30) + banda('s1', 's2', '--ser-nar', .55) + banda('s2', 's3', '--ser-c', .55) + banda('s3', 's3b', '--ser-a', .55)
+    + banda('s0', 's0p', '--ser-b', .16) + banda('s0p', 's1', '--ser-b', .38) + banda('s1', 's2', '--ser-nar', .55) + banda('s2', 's3', '--ser-c', .55) + banda('s3', 's3b', '--ser-a', .55)
     + banda('s3b', 'v', '--accent', .40)
     + lin(ser('s1'), tok('--ser-b'), 1, '3 2') + lin(ser('s3b'), tok('--ser-a'), 1, '3 2')
     + lin(hAn.map(y=>[y, H[y]/1e6]), tok('--ink'), 2.2)
@@ -7163,7 +7196,7 @@ function brLineas(R, A, dM, ndm, filas, M){
   const fM = x => ndm(x, dM) + ' M';
   const HOVL = filas.map(f=>({a: f.a, x: X(f.a), w: (X(2027) - X(2026))*0.5, t: '<div class="hA">Año ' + f.a + '</div><div class="hF">Diadro 2023: <b>' + nd(f.est, dM) + ' M</b></div><div class="hF">'
     + (M ? 'Línea central (tus valores)' : 'Tus valores') + ': <b>' + nd(f.vyr, dM) + ' M</b></div><div class="hF">Diferencia: <b>' + fM(f.d) + '</b> (' + nd(f.d/f.vyr*100, 1) + ' % sobre la línea)</div>'
-    + BR_PZ.map(z=>{ const v = R[f.a][z[0]]; return '<div class="hS"><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:' + tok(z[2]) + ';margin-right:5px"></i>' + z[1] + ': '
+    + BR_PZ.map(z=>{ const v = R[f.a][z[0]]; return '<div class="hS"><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:' + tok(z[2]) + ';opacity:' + Math.min(1, z[3] + .1) + ';margin-right:5px"></i>' + z[1] + ': '
       + (v > 0 ? '+' : '') + fM(v) + '</div>'; }).join('')}));
   g0.innerHTML = '<svg viewBox="0 0 ' + g.w + ' ' + g.h + '" role="img" aria-label="La diferencia con el estudio 2023 sobre las trayectorias" data-brecha=\''
     + JSON.stringify({mt: g.mt, ih: g.ih, b: HOVL}).replace(/&/g, '&amp;').replace(/'/g, '&#39;') + '\'>'
@@ -7171,7 +7204,7 @@ function brLineas(R, A, dM, ndm, filas, M){
     + s + '</svg>';
   const fr = (col, op, txt) => '<span class="grp" style="gap:5px"><i style="background:' + tok(col) + ';opacity:' + Math.min(1, op + .3) + ';height:10px;width:14px;border-radius:2px"></i><span>' + txt + '</span></span>';
   document.getElementById('simL4').innerHTML = chip(tok('--ink'), 'Medido') + chip(tok('--ts'), 'Diadro 2023') + chip(tok('--tbp'), M ? 'Línea central (tus valores)' : 'Tus valores')
-    + fr('--ser-b', .30, 'Punto de partida 2026: hasta la línea punteada azul, el estudio con la partida de la línea') + fr('--ser-nar', .55, 'Proyectos que compiten')
+    + fr('--ser-b', .16, 'Crecimiento del estudio sobre la brecha de 2026') + fr('--ser-b', .38, 'Brecha inicial de 2026 (fija), hasta la línea punteada azul: el estudio con la partida de la línea') + fr('--ser-nar', .55, 'Proyectos que compiten')
     + fr('--ser-c', .55, 'Recuperación de Lo Saldes') + fr('--ser-a', .55, 'Recuperación de la obra del enlace: hasta la línea punteada verde')
     + fr('--accent', .40, 'PIB y elasticidad (ritmo de crecimiento)')
     + '<span class="tipw der" tabindex="0">Hitos del gráfico <span class="tipi">?</span><span class="tip" role="tooltip">' + HS.ley + '</span></span>';
@@ -10764,7 +10797,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 77;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 78;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
