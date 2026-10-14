@@ -7071,15 +7071,21 @@ function brPinta(vv, S){
   tk.forEach(v=>{ s += '<line x1="' + g.ml + '" x2="' + (g.ml + g.iw) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="' + tok(v === 0 ? '--ink-lo' : '--line')
     + '" stroke-width="' + (v === 0 ? 1 : .6) + '"/><text x="' + (g.ml - 6) + '" y="' + (Y(v) + 3).toFixed(1) + '" text-anchor="end" font-size="9" fill="' + tok('--ink-lo') + '">' + ndm(v, 0) + '</text>'; });
   A.forEach(a=>{ s += '<text x="' + X(a).toFixed(1) + '" y="' + (g.mt + g.ih + 14) + '" text-anchor="middle" font-size="9" fill="' + tok('--ink-lo') + '">' + a + '</text>'; });
+  const netos = [];
   A.forEach(a=>{ let up = 0, dn = 0;
     BR_PZ.forEach(z=>{ const v = cv(a, R[a][z[0]]); if(Math.abs(v) < 1e-9) return;
       const b0 = v > 0 ? up : dn, b1 = b0 + v; if(v > 0) up = b1; else dn = b1;
       s += '<rect x="' + (X(a) - bw/2).toFixed(1) + '" y="' + Y(Math.max(b0, b1)).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(.5, Math.abs(Y(b0) - Y(b1))).toFixed(1)
         + '" fill="' + tok(z[2]) + '" fill-opacity=".85"/>'; });
-    const net = cv(a, R[a].est - R[a].vyr);
+    netos.push([a, cv(a, R[a].est - R[a].vyr)]); });
+  /* LA DIFERENCIA NETA SE ROTULA EN SU PUNTO (RM, 14-10-2026): el número iba sobre la barra positiva y en 2027 el 45,7 quedaba a la
+     altura de 60, donde llega el punto de partida; la barra de arriba es lo que amplía la diferencia, no la diferencia. Los puntos se
+     unen con una línea fina, que se lee como la serie de la diferencia. */
+  s += '<polyline points="' + netos.map(z=>X(z[0]).toFixed(1) + ',' + Y(z[1]).toFixed(1)).join(' ') + '" fill="none" stroke="' + tok('--ink') + '" stroke-width="1.1" stroke-opacity=".7"/>';
+  netos.forEach(([a, net])=>{
     s += '<circle cx="' + X(a).toFixed(1) + '" cy="' + Y(net).toFixed(1) + '" r="3.4" fill="' + tok('--surface') + '" stroke="' + tok('--ink') + '" stroke-width="1.6"/>'
-      + '<text x="' + X(a).toFixed(1) + '" y="' + (Y(Math.max(net, pos(a))) - 6).toFixed(1) + '" text-anchor="middle" font-size="8.5" font-weight="600" fill="' + tok('--ink') + '">'
-      + ndm(net, U === 'M' ? 1 : 0) + '</text>'; });
+      + '<text x="' + (X(a) + 6).toFixed(1) + '" y="' + (Y(net) - 5).toFixed(1) + '" text-anchor="start" font-size="8.5" font-weight="700" fill="' + tok('--ink') + '" stroke="'
+      + tok('--surface') + '" stroke-width="3" paint-order="stroke">' + ndm(net, U === 'M' ? 1 : 0) + '</text>'; });
   /* la flecha de dos puntas del punto de partida, junto a la barra de 2026 */
   const p26 = cv(2026, R[2026].partida), xa = X(2026) - bw/2 - 7;
   s += '<line x1="' + xa + '" x2="' + xa + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(p26).toFixed(1) + '" stroke="' + tok('--ser-b') + '" stroke-width="1.3" marker-start="url(#brFl)" marker-end="url(#brFl)"/>'
@@ -7093,7 +7099,11 @@ function brPinta(vv, S){
     + '<defs><marker id="brFl" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="' + tok('--ser-b') + '"/></marker></defs>'
     + s + '<text x="' + g.ml + '" y="' + (g.mt - 14) + '" font-size="9" fill="' + tok('--ink-lo') + '">' + uRot + '</text></svg>';
   document.getElementById('simL3').innerHTML = BR_PZ.map(z=>'<span class="grp" style="gap:5px"><i style="background:' + tok(z[2]) + ';height:10px;width:14px;border-radius:2px"></i><span>' + z[1] + '</span></span>').join('')
-    + '<span class="grp" style="gap:5px"><i style="width:9px;height:9px;border-radius:50%;border:1.6px solid ' + tok('--ink') + ';background:' + tok('--surface') + '"></i><span>Diferencia neta (Diadro 2023 − línea)</span></span>';
+    + '<span class="grp" style="gap:5px"><i style="width:9px;height:9px;border-radius:50%;border:1.6px solid ' + tok('--ink') + ';background:' + tok('--surface') + '"></i><span>Diferencia neta (Diadro 2023 − línea)</span></span>'
+    + '<div class="mcaviso" style="flex-basis:100%;color:var(--ink-lo)">Cómo leerlo: sobre el cero, lo que amplía la diferencia; bajo el cero, lo que la reduce. La '
+    + 'diferencia de cada año es el punto, que resulta de restar: no es la altura de la barra de arriba. En 2027, por ejemplo, el punto de partida '
+    + 'suma ' + fu(cv(2027, R[2027].partida)) + ' y el resto de las piezas, en conjunto, ' + (cv(2027, R[2027].est - R[2027].vyr - R[2027].partida) < 0 ? 'resta ' : 'suma ')
+    + fu(Math.abs(cv(2027, R[2027].est - R[2027].vyr - R[2027].partida))) + ': la diferencia es ' + fu(cv(2027, R[2027].est - R[2027].vyr)) + '.</div>';
   document.querySelectorAll('#simBRu button').forEach(b=>{ b.classList.toggle('on', b.dataset.u === U);
     b.onclick = ()=>{ BRX.u = b.dataset.u; const v = valSIM(); brPinta(v, simCalc(v)); }; });
   const t3 = document.getElementById('simG3t'); if(t3) t3.textContent = 'De qué se compone la diferencia con el estudio Diadro 2023, año a año · ' + AGR[ag];
@@ -10754,7 +10764,7 @@ boOye();
    puede seguir mostrando la versión anterior mucho después de publicar, sin ningún error a la vista. El publicador graba acá el
    número de versión y al cargar se contrasta con el version.json del sitio; si el de allá es más nuevo, se avisa y se ofrece
    recargar saltándose la caché. Sin version.json —archivo local u otro servidor— esto no hace nada. */
-const VERSION_TABLERO = 76;   /* lo reemplaza publica_sitio.py */
+const VERSION_TABLERO = 77;   /* lo reemplaza publica_sitio.py */
 if(VERSION_TABLERO > 0 && location.protocol.startsWith('http')){
   fetch('version.json?cb=' + Date.now(), {cache:'no-store'}).then(r=>r.ok ? r.json() : null).then(v=>{
     if(!v || !(v.version > VERSION_TABLERO)) return;
